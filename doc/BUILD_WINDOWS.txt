@@ -1,0 +1,30 @@
+- Get MSVC 2012 express ( http://www.microsoft.com/en-us/download/details.aspx?id=34673 )
+- Get cmake ( http://www.cmake.org/download/ ) 
+- Get boost 1.55 for windows ( http://www.boost.org/users/history/version_1_55_0.html )
+  - set BOOST_LIBRARYDIR to C:\local\boost_1_55_0\lib64-msvc-11.0
+  - set BOOST_ROOT to C:\local\boost_1_55_0
+  
+  - OR build boost manually:
+    - Start "VS2012 x64 Native Tools Command Prompt"
+    - bootstrap.bat
+    - b2 --build-type=complete --build-dir=build --stagedir=lib64-msvc-11.0-md toolset=msvc-11.0 address-model=64 variant=release link=static threading=multi runtime-link=shared stage
+    - copy lib64-msvc-11.0-md\lib into lib64-msvc-11.0-md
+    - set BOOST_LIBRARYDIR to C:\local\boost_1_55_0\lib64-msvc-11.0-md
+    - set BOOST_ROOT to C:\local\boost_1_55_0
+  
+- Get protobuf 2.5.0
+  - open with MSVC 2012, change config to x64, build
+  - set CMAKE_INCLUDE_PATH to c:\protobuf-2.5.0\src
+  - set CMAKE_LIBRARY_PATH to C:\protobuf-2.5.0\vsprojects\x64\Release
+  - add to PATH: C:\protobuf-2.5.0\vsprojects\x64\Release
+
+- Get OpenSSL ( http://slproweb.com/products/Win32OpenSSL.html ), *64 bit version*
+  - set OPENSSL_ROOT_DIR to C:\OpenSSL-Win64
+  - for static linkage: copy lib\VC\static to lib\VC
+
+- Go to pebblecoin root dir
+- mkdir build/release
+- cd build/release
+- cmake -D STATIC=1 -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 11 Win64" ../..
+- open the Project.sln file, build/compile whatever is needed
+- for faster testing/with less RAM, add "-D SMALL_BOULDERHASH=1" to the cmake command line
