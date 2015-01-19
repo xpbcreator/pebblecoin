@@ -1,2 +1,6 @@
+Release Notes 0.2.0
+- Qt Wallet
+- Hard-coded genesis block and seed nodes
+
 Release Notes 0.1.0
 - Initial release

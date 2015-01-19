@@ -16,12 +16,12 @@ const char *GENESIS_HASH_SIGNATURE_HEX = NULL;
 
 namespace cryptonote_opt
 {
-  const command_line::arg_descriptor<std::string> arg_genesis_nonce_string = {"genesis-nonce-string", "The string that hashes into the nonce of the genesis block", "", true};
-  const command_line::arg_descriptor<uint64_t> arg_genesis_timestamp = {"genesis-timestamp", "The timestamp of the genesis block", 0, true};
-  const command_line::arg_descriptor<std::string> arg_coinbase_tx_hex =      {"genesis-coinbase-hex", "The hash of the coinbase transaction of the genesis block", "", true};
-  const command_line::arg_descriptor<std::string> arg_block_id_hex =         {"genesis-id-hash-hex", "The id hash for the genesis block", "", true};
-  const command_line::arg_descriptor<std::string> arg_work_hash_hex =        {"genesis-work-hash-hex", "The proof of work hash for the genesis block", "", true};
-  const command_line::arg_descriptor<std::string> arg_hash_signature_hex =   {"genesis-work-hash-signature-hex", "The hash of the signature for the work hash for the genesis block", "", true};
+  const command_line::arg_descriptor<std::string> arg_genesis_nonce_string = {"genesis-nonce-string", "The string that hashes into the nonce of the genesis block", "31/Dec/2014 OPEN NASDAQ 4790.53 DAX 9883.10 DOW 17987.66", false};
+  const command_line::arg_descriptor<uint64_t> arg_genesis_timestamp = {"genesis-timestamp", "The timestamp of the genesis block", UINT64_C(1420044761), false};
+  const command_line::arg_descriptor<std::string> arg_coinbase_tx_hex =      {"genesis-coinbase-hex", "The hash of the coinbase transaction of the genesis block", "010a01ff0000210179e231c0574796ecc198e05afaecd3aea2d9a84fa6c51088eb75130c4eb4da72", false};
+  const command_line::arg_descriptor<std::string> arg_block_id_hex =         {"genesis-id-hash-hex", "The id hash for the genesis block", "80e28ab82d17e61319309c7525d2f76a78731d0c6099b646bce2948d670181ff", false};
+  const command_line::arg_descriptor<std::string> arg_work_hash_hex =        {"genesis-work-hash-hex", "The proof of work hash for the genesis block", "9edc9d0ddd03c534300c9f4647a21998af9c0a4cdb9786c9f9b1f10095f5bacf", false};
+  const command_line::arg_descriptor<std::string> arg_hash_signature_hex =   {"genesis-work-hash-signature-hex", "The hash of the signature for the work hash for the genesis block", "9578dd84ed25b51fcde0b87505cf94ebf2b4e4ed5fc28c1a05650a06b80bde040cfaf44a7f32ef415f1e8bd016ce012fb44f5bc1e3aa3f5f41600235a7417f01", false};
   
   void init_options(boost::program_options::options_description& desc)
   {

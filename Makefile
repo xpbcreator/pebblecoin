@@ -11,11 +11,14 @@ test-debug:
 build-daemon-debug: cmake-debug
 	cd build/debug && $(MAKE) daemon
 
+build-qtwallet-debug: cmake-debug
+	cd build/debug && $(MAKE) qtwallet
+  
 build-simplewallet-debug: cmake-debug
 	cd build/debug && $(MAKE) simplewallet
 
 daemon-debug: build-daemon-debug
-
+qtwallet-debug: build-qtwallet-debug
 simplewallet-debug: build-simplewallet-debug
 
 
@@ -30,13 +33,18 @@ test-release:
 build-daemon-release: cmake-release
 	cd build/release && $(MAKE) daemon
 
+build-qtwallet-release: cmake-release
+	cd build/release && $(MAKE) qtwallet
+
 build-simplewallet-release: cmake-release
 	cd build/release && $(MAKE) simplewallet
 
 daemon-release: build-daemon-release
+qtwallet-release: build-qtwallet-release
 simplewallet-release: build-simplewallet-release
 
 daemon: daemon-release
+qtwallet: qtwallet-release
 simplewallet: simplewallet-release
 
 clean:

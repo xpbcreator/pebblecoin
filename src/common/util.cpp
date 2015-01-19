@@ -18,6 +18,10 @@ using namespace epee;
 #include <sys/utsname.h>
 #endif
 
+#include "ui_interface.h"
+
+CClientUIInterface uiInterface;
+
 namespace tools
 {
   std::function<void(void)> signal_handler::m_handler;

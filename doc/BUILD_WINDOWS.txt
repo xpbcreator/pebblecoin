@@ -22,6 +22,14 @@
   - set OPENSSL_ROOT_DIR to C:\OpenSSL-Win64
   - for static linkage: copy lib\VC\static to lib\VC
 
+- Download latest Qt 4.8
+  - Replace qt-everywhere-opensource-src-4.8.3-x64\src\3rdparty\webkit\Source\JavaScriptCore\wtf\HashSet.h by this HashSet.h ( https://bitbucket.org/Vertexwahn/bluego/src/56dbe84212222ec6954d8d327a5e443106bcc447/deploy/BlueGo0.0.4/qt4.8.3vs2012patch/HashSet.h?at=default ).
+  - Start "VS2012 x64 Native Tools Command Prompt"
+  - Switch to Qt 4.8.3 source directory (the directory that contains configure.exe)
+  - configure -release -opensource -confirm-license -static -platform win32-msvc2012 -no-sql-sqlite -no-opengl -qt-zlib -qt-libpng -qt-libjpeg -no-freetype -openssl -I "C:\OpenSSL-Win32\include" -L "C:\OpenSSL-Win32\lib" -no-dbus -no-phonon -no-phonon-backend -no-audio-backend -nomake demos -nomake examples -mp 
+  - nmake
+  - add to PATH: C:\qt\4.8.6-vs2012\bin
+
 - Go to pebblecoin root dir
 - mkdir build/release
 - cd build/release

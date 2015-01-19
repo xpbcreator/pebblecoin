@@ -19,6 +19,8 @@
 #include <miniupnpc/miniupnpc.h>
 #include <miniupnpc/upnpcommands.h>
 
+#include "common/ui_interface.h"
+
 #define NET_MAKE_IP(b1,b2,b3,b4)  ((LPARAM)(((DWORD)(b1)<<24)+((DWORD)(b2)<<16)+((DWORD)(b3)<<8)+((DWORD)(b4))))
 
 
@@ -194,7 +196,11 @@ namespace nodetool
   template<class t_payload_net_handler>
   bool node_server<t_payload_net_handler>::init(const boost::program_options::variables_map& vm)
   {
-    //ADD_HARDCODED_SEED_NODE("seed.pebblecoin.org:8080");
+    ADD_HARDCODED_SEED_NODE("69.60.113.23:6180");
+    ADD_HARDCODED_SEED_NODE("69.60.113.24:6180");
+    ADD_HARDCODED_SEED_NODE("69.60.113.25:6180");
+    ADD_HARDCODED_SEED_NODE("69.60.112.164:6180");
+    ADD_HARDCODED_SEED_NODE("69.60.112.169:6180");
 
     bool res = handle_command_line(vm);
     CHECK_AND_ASSERT_MES(res, false, "Failed to handle command line");
@@ -1100,12 +1106,14 @@ namespace nodetool
   void node_server<t_payload_net_handler>::on_connection_new(p2p_connection_context& context)
   {
     LOG_PRINT_L2("["<< epee::net_utils::print_connection_context(context) << "] NEW CONNECTION");
+    uiInterface.NotifyNumConnectionsChanged(get_connections_count());
   }
   //-----------------------------------------------------------------------------------
   template<class t_payload_net_handler>
   void node_server<t_payload_net_handler>::on_connection_close(p2p_connection_context& context)
   {
     LOG_PRINT_L2("["<< epee::net_utils::print_connection_context(context) << "] CLOSE CONNECTION");
+    uiInterface.NotifyNumConnectionsChanged(get_connections_count());
   }
 
   template<class t_payload_net_handler>
