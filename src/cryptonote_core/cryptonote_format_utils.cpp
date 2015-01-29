@@ -701,7 +701,14 @@ namespace cryptonote
     if (state == NULL)
       return false;
     
-    crypto::pc_boulderhash(bd.data(), bd.size(), res, state);
+    if (height >= BOULDERHASH_2_SWITCH_BLOCK)
+    {
+      crypto::pc_boulderhash(2, bd.data(), bd.size(), res, state);
+    }
+    else
+    {
+      crypto::pc_boulderhash(1, bd.data(), bd.size(), res, state);
+    }
     
     if (use_cache)
     {

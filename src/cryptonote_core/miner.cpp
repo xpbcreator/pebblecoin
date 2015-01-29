@@ -332,6 +332,9 @@ namespace cryptonote
       allocated_state = false;
     }
     
+    uint64_t last_print = misc_utils::get_tick_count();
+    uint64_t m_hashes_since_print = 0;
+    
     while(!m_stop)
     {
       if(m_pausers_count)//anti split workaround
@@ -371,8 +374,10 @@ namespace cryptonote
         //we lucky!
         ++m_config.current_extra_message_index;
         LOG_PRINT_GREEN("Found block for difficulty: " << local_diff << ENDL << "Hash was: " << h << ENDL, LOG_LEVEL_0);
+        crypto::g_hash_cache.add_cached_longhash(get_block_hash(b), h);
         if(!m_phandler->handle_block_found(b))
         {
+          LOG_PRINT_GREEN("(Found block not added to main chain)", LOG_LEVEL_0);
           --m_config.current_extra_message_index;
         }else
         {
@@ -385,6 +390,15 @@ namespace cryptonote
       }
       nonce+=m_threads_total;
       ++m_hashes;
+      ++m_hashes_since_print;
+      uint64_t now = misc_utils::get_tick_count();
+      if (now - last_print >= 60000)
+      {
+        double hr = (double)m_hashes_since_print / ((now - last_print) / 1000.0);
+        LOG_PRINT_L0(hr << " H/s (" << (1.0 / hr) << " s/H), difficulty=" << local_diff);
+        last_print = now;
+        m_hashes_since_print = 0;
+      }
     }
     
     if (allocated_state)

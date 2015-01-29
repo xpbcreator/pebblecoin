@@ -69,10 +69,12 @@ void tree_hash(const char (*hashes)[HASH_SIZE], size_t count, char *root_hash);
 #define BOULDERHASH_STATES 65
 #define BOULDERHASH_STATE_SIZE 26738688 // 204 MiB * 65 = ~12.9 GiB
 #endif
+#define BOULDERHASH_ITERATIONS 1064960
+#define BOULDERHASH2_ITERATIONS 42598400
 
 void pc_boulderhash_init(const void *data, size_t length,
                          uint64_t **state, uint64_t *result, uint64_t *extra);
-void pc_boulderhash_fill_state(uint64_t *cur_state);
-void pc_boulderhash_calc_result(uint64_t *result, uint64_t extra, uint64_t **state);
-void pc_boulderhash(const void *data, size_t length, char *hash, uint64_t **state);
+void pc_boulderhash_fill_state(int version, uint64_t *cur_state);
+void pc_boulderhash_calc_result(int version, uint64_t *result, uint64_t extra, uint64_t **state);
+void pc_boulderhash(int version, const void *data, size_t length, char *hash, uint64_t **state);
 

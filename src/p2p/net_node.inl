@@ -1105,6 +1105,21 @@ namespace nodetool
   template<class t_payload_net_handler>
   void node_server<t_payload_net_handler>::on_connection_new(p2p_connection_context& context)
   {
+    if (!m_exclusive_peers.empty())
+    {
+      bool found = false;
+      BOOST_FOREACH(const auto& exclusive_peer, m_exclusive_peers) {
+        if (exclusive_peer.ip == context.m_remote_ip)
+        {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        LOG_PRINT_L2("["<< epee::net_utils::print_connection_context(context) << "] DROPPING NON-EXCLUSIVE CONNECTION");
+        drop_connection(context);
+      }
+    }
     LOG_PRINT_L2("["<< epee::net_utils::print_connection_context(context) << "] NEW CONNECTION");
     uiInterface.NotifyNumConnectionsChanged(get_connections_count());
   }

@@ -163,7 +163,7 @@ namespace mining
         //uint32_t c = (*((uint32_t*)&job.blob.data()[39]));
         ++(*((uint32_t*)&job.blob.data()[39]));
         crypto::hash h = cryptonote::null_hash;
-        crypto::pc_boulderhash(job.blob.data(), job.blob.size(), h, m_state);
+        crypto::pc_boulderhash(2, job.blob.data(), job.blob.size(), h, m_state);
         if(  ((uint32_t*)&h)[7] < job.target )
         {
           //found!

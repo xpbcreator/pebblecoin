@@ -1,3 +1,4 @@
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Copyright (c) 2012-2013 The Cryptonote developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -118,7 +119,7 @@ void blockchain_storage::catchup_signed_hashes()
     }
 
     crypto::hash proof_of_work = null_hash;
-    if (!get_block_longhash(bl, proof_of_work, 0, crypto::g_boulderhash_state, true))
+    if (!get_block_longhash(bl, proof_of_work, get_block_height(bl), crypto::g_boulderhash_state, true))
     {
       LOG_PRINT_RED_L0("Couldn't get block longhash when catching up signed hash: " << id);
       continue;
@@ -449,7 +450,7 @@ difficulty_type blockchain_storage::get_difficulty_for_next_block()
     timestamps.push_back(m_blocks[offset].bl.timestamp);
     commulative_difficulties.push_back(m_blocks[offset].cumulative_difficulty);
   }
-  return next_difficulty(timestamps, commulative_difficulties);
+  return next_difficulty(m_blocks.size(), timestamps, commulative_difficulties);
 }
 //------------------------------------------------------------------
 bool blockchain_storage::rollback_blockchain_switching(std::list<block>& original_chain, size_t rollback_height)
@@ -583,7 +584,7 @@ difficulty_type blockchain_storage::get_next_difficulty_for_alternative_chain(co
         break;
     }
   }
-  return next_difficulty(timestamps, commulative_difficulties);
+  return next_difficulty(bei.height, timestamps, commulative_difficulties);
 }
 //------------------------------------------------------------------
 bool blockchain_storage::prevalidate_miner_transaction(const block& b, uint64_t height)
@@ -883,7 +884,8 @@ bool blockchain_storage::handle_alternative_block(const block& b, const crypto::
     if (!get_block_longhash(bei.bl, proof_of_work, bei.height, crypto::g_boulderhash_state, true))
     {
       LOG_PRINT_RED_L0("Block with id: " << id
-                       << ENDL << " for alternative chain, couldn't get proof of work");
+                       << ENDL << " and height " << bei.height << " (" << get_block_height(bei.bl)
+                       << ") for alternative chain, couldn't get proof of work");
       bvc.m_missing_longhash = true;
       bvc.m_verifivation_failed = true;
       return false;
@@ -891,7 +893,8 @@ bool blockchain_storage::handle_alternative_block(const block& b, const crypto::
     if(!check_hash(proof_of_work, current_diff))
     {
       LOG_PRINT_RED_L0("Block with id: " << id
-        << ENDL << " for alternative chain, have not enough proof of work: " << proof_of_work
+        << ENDL << " and height " << bei.height << " (" << get_block_height(bei.bl)
+        << ") for alternative chain, have not enough proof of work: " << proof_of_work
         << ENDL << " expected difficulty: " << current_diff);
       bvc.m_verifivation_failed = true;
       return false;
@@ -1649,6 +1652,7 @@ bool blockchain_storage::handle_block_to_main_chain(const block& bl, const crypt
   crypto::hash proof_of_work = null_hash;
   if(!m_checkpoints.is_in_checkpoint_zone(get_current_blockchain_height()))
   {
+    CHECK_AND_ASSERT_MES(get_block_height(bl) == m_blocks.size(), false, "Unexpected block height");
     if (!get_block_longhash(bl, proof_of_work, m_blocks.size(), crypto::g_boulderhash_state, true))
     {
       LOG_PRINT_L0("Block with id: " << id << ENDL

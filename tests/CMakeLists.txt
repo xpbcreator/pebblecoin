@@ -30,6 +30,7 @@ add_executable(core_proxy ${CORE_PROXY})
 add_executable(unit_tests ${UNIT_TESTS})
 add_executable(net_load_tests_clt net_load_tests/clt.cpp)
 add_executable(net_load_tests_srv net_load_tests/srv.cpp)
+add_executable(one_off_test one_off_test/main.cpp)
 
 target_link_libraries(coretests cryptonote_core common crypto ${Boost_LIBRARIES})
 target_link_libraries(crypto-tests ${Boost_LIBRARIES})
@@ -42,13 +43,14 @@ target_link_libraries(performance_tests cryptonote_core common crypto ${Boost_LI
 target_link_libraries(unit_tests cryptonote_core common crypto gtest_main ${Boost_LIBRARIES})
 target_link_libraries(net_load_tests_clt cryptonote_core common crypto gtest_main ${Boost_LIBRARIES})
 target_link_libraries(net_load_tests_srv cryptonote_core common crypto gtest_main ${Boost_LIBRARIES})
+target_link_libraries(one_off_test rpc cryptonote_core crypto common upnpc-static ${Boost_LIBRARIES})
 
 if(NOT MSVC)
   set_property(TARGET gtest gtest_main unit_tests net_load_tests_clt net_load_tests_srv APPEND_STRING PROPERTY COMPILE_FLAGS " -Wno-undef -Wno-sign-compare")
 endif()
 
 add_custom_target(tests DEPENDS coretests crypto-tests difficulty-tests hash-tests hash-target-tests performance_tests core_proxy unit_tests)
-set_property(TARGET coretests crypto-tests functional_tests difficulty-tests gtest gtest_main hash-tests hash-target-tests performance_tests core_proxy unit_tests tests net_load_tests_clt net_load_tests_srv PROPERTY FOLDER "tests")
+set_property(TARGET coretests crypto-tests functional_tests difficulty-tests gtest gtest_main hash-tests hash-target-tests performance_tests core_proxy unit_tests tests net_load_tests_clt net_load_tests_srv one_off_test PROPERTY FOLDER "tests")
 
 add_test(coretests coretests --generate_and_play_test_data)
 add_test(crypto crypto-tests ${CMAKE_CURRENT_SOURCE_DIR}/crypto/tests.txt)

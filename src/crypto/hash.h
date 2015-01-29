@@ -51,9 +51,9 @@ namespace crypto {
   void pc_init_threadpool(const boost::program_options::variables_map& vm);
   void pc_stop_threadpool();
   
-  void pc_boulderhash(const void *data, std::size_t length, hash& hash, uint64_t **state);
-  hash pc_boulderhash(const void *data, std::size_t length, uint64_t **state);
-
+  void pc_boulderhash(int version, const void *data, std::size_t length, hash& hash, uint64_t **state);
+  hash pc_boulderhash(int version, const void *data, std::size_t length, uint64_t **state);
+  
   inline void tree_hash(const hash *hashes, std::size_t count, hash &root_hash) {
     tree_hash(reinterpret_cast<const char (*)[HASH_SIZE]>(hashes), count, reinterpret_cast<char *>(&root_hash));
   }

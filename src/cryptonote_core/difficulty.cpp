@@ -1,3 +1,4 @@
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Copyright (c) 2012-2013 The Cryptonote developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -65,7 +66,7 @@ namespace cryptonote {
     return !carry;
   }
 
-  difficulty_type next_difficulty(vector<uint64_t> timestamps, vector<difficulty_type> cumulative_difficulties, size_t target_seconds) {
+  difficulty_type next_difficulty(uint64_t height, vector<uint64_t> timestamps, vector<difficulty_type> cumulative_difficulties, size_t target_seconds) {
     //cutoff DIFFICULTY_LAG
     if(timestamps.size() > DIFFICULTY_WINDOW)
     {
@@ -86,7 +87,19 @@ namespace cryptonote {
     vector<difficulty_type> difficulties(timestamps.size() - 1);
     for (size_t i=0; i < timestamps.size() - 1; i++)
     {
-      timespans_indices[i] = std::make_pair(timestamps[i + 1] - timestamps[i], i);
+      int64_t timespan_diff;
+      if (height >= BOULDERHASH_2_SWITCH_BLOCK)
+      {
+        if (timestamps[i] > timestamps[i + 1])
+          timespan_diff = 0;
+        else
+          timespan_diff = timestamps[i + 1] - timestamps[i];
+      }
+      else
+      {
+        timespan_diff = timestamps[i + 1] - timestamps[i];
+      }
+      timespans_indices[i] = std::make_pair(timespan_diff, i);
       difficulties[i] = cumulative_difficulties[i + 1] - cumulative_difficulties[i];
     }
     
@@ -131,13 +144,25 @@ namespace cryptonote {
                                                   total_work / 4 / difficulties.size(),
                                                   total_work * 4 / difficulties.size());
     
+    if (height >= BOULDERHASH_2_SWITCH_BLOCK && height < BOULDERHASH_2_SWITCH_BLOCK + BOULDERHASH_2_SWITCH_EASY_WINDOW)
+    {
+      //make difficulty easier for start of new algorithm
+      const uint32_t window_size = BOULDERHASH_2_SWITCH_EASY_WINDOW;
+      const uint32_t window_end = BOULDERHASH_2_SWITCH_BLOCK + BOULDERHASH_2_SWITCH_EASY_WINDOW;
+      difficulty_type old = res;
+      res = res * window_size / (window_size + 14 * (window_end - height));
+      LOG_PRINT_L1("Difficulty for height " << height << " would be " << old << ", but switched to " << res);
+    }
+    
+    if (res < 1) res = 1;
+    
     LOG_PRINT_L3("time_span for " << (cut_end - cut_begin) << " blocks was " << time_span << "s, total work was " << total_work << ", low=" << low << ", high=" << high << ", raw_res=" << raw_res << ", res=" << res);
     
     return res;
   }
 
-  difficulty_type next_difficulty(vector<uint64_t> timestamps, vector<difficulty_type> cumulative_difficulties)
+  difficulty_type next_difficulty(uint64_t height, vector<uint64_t> timestamps, vector<difficulty_type> cumulative_difficulties)
   {
-    return next_difficulty(std::move(timestamps), std::move(cumulative_difficulties), DIFFICULTY_TARGET);
+    return next_difficulty(height, std::move(timestamps), std::move(cumulative_difficulties), DIFFICULTY_TARGET);
   }
 }

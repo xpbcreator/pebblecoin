@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
             begin = end - DIFFICULTY_WINDOW;
         }
         uint64_t res = cryptonote::next_difficulty(
+            n,
             vector<uint64_t>(timestamps.begin() + begin, timestamps.begin() + end),
             vector<uint64_t>(cumulative_difficulties.begin() + begin, cumulative_difficulties.begin() + end), DEFAULT_TEST_DIFFICULTY_TARGET);
         if (res != difficulty) {

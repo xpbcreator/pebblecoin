@@ -554,11 +554,19 @@ namespace cryptonote
   //------------------------------------------------------------------------------------------------------------------------------
   bool core_rpc_server::on_getboulderhash(const COMMAND_RPC_GETBOULDERHASH::request &req, COMMAND_RPC_GETBOULDERHASH::response &res, epee::json_rpc::error &error_resp, connection_context &cntx)
   {
-    LOG_PRINT_L1("on_getboulderhash");
+    LOG_PRINT_L1("on_getboulderhash, version=" << req.version);
+    
     if (!hashing_opt::boulderhash_enabled() || crypto::g_boulderhash_state == NULL)
     {
       error_resp.code = CORE_RPC_ERROR_CODE_CANT_BOULDERHASH;
       error_resp.message = "Daemon can't do boulderhash";
+      return false;
+    }
+    
+    if (req.version != 1 && req.version != 2)
+    {
+      error_resp.code = CORE_RPC_ERROR_CODE_WRONG_PARAM;
+      error_resp.message = "Unknown boulderhash version";
       return false;
     }
     
@@ -567,9 +575,10 @@ namespace cryptonote
     std::string block_hashing_buff;
     string_tools::parse_hexstr_to_binbuff(req.block_hashing_blob_hex, block_hashing_buff);
     
-    crypto::hash h = crypto::pc_boulderhash(block_hashing_buff.data(), block_hashing_buff.size(),
+    crypto::hash h = crypto::pc_boulderhash(req.version, block_hashing_buff.data(), block_hashing_buff.size(),
                                             crypto::g_boulderhash_state);
     
+    res.version = req.version;
     res.block_hash_hex = string_tools::pod_to_hex(h);
     
     //LOG_PRINT_L0("The result hex is: " << res.block_hash_hex);

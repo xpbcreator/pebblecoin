@@ -1,3 +1,4 @@
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Copyright (c) 2012-2013 The Cryptonote developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -37,6 +38,9 @@
 #define DIFFICULTY_LAG                                  0   // !!!
 #define DIFFICULTY_CUT                                  6   // timestamps to cut after sorting
 #define DIFFICULTY_BLOCKS_COUNT                         DIFFICULTY_WINDOW + DIFFICULTY_LAG
+
+#define BOULDERHASH_2_SWITCH_BLOCK                      20250
+#define BOULDERHASH_2_SWITCH_EASY_WINDOW                DIFFICULTY_WINDOW // blocks
 
 #define HOUR_HEIGHT                                     (60*60 / DIFFICULTY_TARGET)
 #define DAY_HEIGHT                                      (60*60*24 / DIFFICULTY_TARGET)

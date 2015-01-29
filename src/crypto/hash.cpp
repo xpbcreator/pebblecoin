@@ -72,36 +72,36 @@ namespace
     f_threads_inited = false;
   }
   
-  int do_fill_states(uint64_t **state, int start_i, int end_i)
+  int do_fill_states(int version, uint64_t **state, int start_i, int end_i)
   {
     end_i = std::min(end_i, BOULDERHASH_STATES);
     
     for (int i=start_i; i < end_i; i++)
     {
-      crypto::pc_boulderhash_fill_state(state[i]);
+      crypto::pc_boulderhash_fill_state(version, state[i]);
     }
     
     return 1;
   }
   
-  boost::shared_future<int> post_fill_states_job(uint64_t **state, int start_i, int end_i)
+  boost::shared_future<int> post_fill_states_job(int version, uint64_t **state, int start_i, int end_i)
   {
     if (!f_threads_inited)
       throw std::runtime_error("boulderhash threadpool not initialized");
     
     // shared_ptr work-around for packaged_task not being CopyConstructible
-    auto ptask = boost::make_shared<boost::packaged_task<int> >(boost::bind(do_fill_states, state, start_i, end_i));
+    auto ptask = boost::make_shared<boost::packaged_task<int> >(boost::bind(do_fill_states, version, state, start_i, end_i));
     boost::shared_future<int> result = ptask->get_future();
     io_service.post(boost::bind(&boost::packaged_task<int>::operator(), ptask));
     return boost::move(result);
   }
   
-  void fill_all_states(uint64_t **state)
+  void fill_all_states(int version, uint64_t **state)
   {
     if (!f_threads_inited)
     {
       for (int i=0; i < BOULDERHASH_STATES; i++) {
-        crypto::pc_boulderhash_fill_state(state[i]);
+        crypto::pc_boulderhash_fill_state(version, state[i]);
       }
       
       return;
@@ -110,7 +110,7 @@ namespace
     std::list<boost::shared_future<int> > futures;
     
     for (int i=0; i < BOULDERHASH_STATES; i += states_per_thread) {
-      futures.push_back(post_fill_states_job(state, i, i+states_per_thread));
+      futures.push_back(post_fill_states_job(version, state, i, i+states_per_thread));
     }
     
     BOOST_FOREACH(auto& result, futures)
@@ -162,22 +162,22 @@ namespace crypto
     check_stop_threads();
   }
   
-  static void _pc_boulderhash(const void *data, std::size_t length, hash& hash, uint64_t **state) {
+  static void _pc_boulderhash(int version, const void *data, std::size_t length, hash& hash, uint64_t **state) {
     uint64_t result[HASH_SIZE / sizeof(uint64_t)];
     uint64_t extra;
     
     pc_boulderhash_init(data, length, state, &result[0], &extra);
     
-    fill_all_states(state);
+    fill_all_states(version, state);
     
-    pc_boulderhash_calc_result(result, extra, state);
+    pc_boulderhash_calc_result(version, result, extra, state);
     
     // final hash
     cn_fast_hash(result, HASH_SIZE, reinterpret_cast<char *>(&hash));
   }
 
   static epee::critical_section g_boulderhash_state_lock;
-  void pc_boulderhash(const void *data, std::size_t length, hash& hash, uint64_t **state) {
+  void pc_boulderhash(int version, const void *data, std::size_t length, hash& hash, uint64_t **state) {
     if (state == NULL)
     {
       if (state == g_boulderhash_state)
@@ -189,17 +189,17 @@ namespace crypto
     if (state == g_boulderhash_state)
     {
       CRITICAL_REGION_LOCAL(g_boulderhash_state_lock);
-      _pc_boulderhash(data, length, hash, state);
+      _pc_boulderhash(version, data, length, hash, state);
     }
     else
     {
-      _pc_boulderhash(data, length, hash, state);
+      _pc_boulderhash(version, data, length, hash, state);
     }
   }
   
-  hash pc_boulderhash(const void *data, std::size_t length, uint64_t **state) {
+  hash pc_boulderhash(int version, const void *data, std::size_t length, uint64_t **state) {
     hash h;
-    pc_boulderhash(data, length, h, state);
+    pc_boulderhash(version, data, length, h, state);
     return h;
   }
 }

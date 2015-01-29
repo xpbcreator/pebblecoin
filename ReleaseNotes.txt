@@ -1,3 +1,9 @@
+Release Notes 0.3.0.1
+- Update algorithm to Boulderhash2 - hard fork at block 20250 (~Friday 1700 GMT)
+- Fix difficulty calculation bug
+- Add hashrate monitor if mining
+- Nodes will now only accept connections from exclusive peers if they are provided via add-exclusive-peer
+
 Release Notes 0.2.0
 - Qt Wallet
 - Hard-coded genesis block and seed nodes
