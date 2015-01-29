@@ -20,7 +20,7 @@
 #include <QRegExp>
 #include <QVariant>
 #include <QColor>
-#include "JSON.h"
+#include "json.h"
 #include "cv/EventManager.h"
 
 #define GET_OPT(x)      g_pCfgManager->getOptionValue(x)
