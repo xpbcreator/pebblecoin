@@ -1652,7 +1652,6 @@ bool blockchain_storage::handle_block_to_main_chain(const block& bl, const crypt
   crypto::hash proof_of_work = null_hash;
   if(!m_checkpoints.is_in_checkpoint_zone(get_current_blockchain_height()))
   {
-    CHECK_AND_ASSERT_MES(get_block_height(bl) == m_blocks.size(), false, "Unexpected block height");
     if (!get_block_longhash(bl, proof_of_work, m_blocks.size(), crypto::g_boulderhash_state, true))
     {
       LOG_PRINT_L0("Block with id: " << id << ENDL
