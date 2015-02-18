@@ -82,24 +82,12 @@ int ClientModel::getNumConnections(unsigned int flags) const
 
 int ClientModel::getWalletProcessedHeight() const
 {
-    LOCK(cs_main);
-    if (!pcore)
-        return 0;
-    if (!pwalletMain)
-        return 0;
-    return pwalletMain->GetWallet2()->get_blockchain_current_height() - 1;
+    return WalletProcessedHeight();
 }
 
 int ClientModel::getDaemonProcessedHeight() const
 {
-    LOCK(cs_main);
-    if (!pcore)
-        return 0;
-    
-    uint64_t current_height;
-    crypto::hash top_id;
-    pcore->get_blockchain_top(current_height, top_id);
-    return (int)current_height;
+    return DaemonProcessedHeight();
 }
 
 /*int ClientModel::getNumBlocksAtStartup()
@@ -237,20 +225,7 @@ enum BlockSource ClientModel::getBlockSource() const
 
 int ClientModel::getNumBlocksOfPeers() const
 {
-    LOCK(cs_main);
-    if (!pnodeSrv)
-        return 0;
-    
-    std::set<uint64_t> block_heights;
-    
-    pnodeSrv->for_each_connection([&](cryptonote::cryptonote_connection_context& context, nodetool::peerid_type peer_id) {
-        block_heights.insert(context.m_last_response_height);
-        return true;
-    });
-    
-    auto it = block_heights.begin();
-    std::advance(it, block_heights.size() / 2);
-    return (int)(*it);
+    return NumBlocksOfPeers();
 }
 
 QString ClientModel::getStatusBarWarnings() const

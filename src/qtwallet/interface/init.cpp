@@ -85,12 +85,21 @@ void WalletRefreshThread(rpc_server_t *prpcServer)
             if (pwalletMain->RefreshOnce())
                 rapidChecks = false;
         }
+      
+        if (DaemonProcessedHeight() + 5 < NumBlocksOfPeers())
+        {
+            rapidChecks = false;
+        }
         
         try {
             boost::this_thread::sleep(boost::posix_time::milliseconds(rapidChecks ? 500 : 30000));
         }
         catch (boost::thread_interrupted& e) {
             rapidChecks = true;
+        }
+      
+        if (!rapidChecks && pcore) {
+            pcore->get_blockchain_storage().store_blockchain();
         }
     }
 }

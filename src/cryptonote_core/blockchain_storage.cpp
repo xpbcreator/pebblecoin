@@ -85,7 +85,7 @@ void blockchain_storage::catchup_signed_hashes()
       to_proc.push_back(get_block_hash(alt_bl.second.bl));
     }
   }
-
+  
   {
     auto it = to_proc.begin();
     while (it != to_proc.end())
@@ -103,8 +103,10 @@ void blockchain_storage::catchup_signed_hashes()
     return;
   }
   
-  LOG_PRINT_GREEN("Catching up to " << to_proc.size() << " signed hashes", LOG_LEVEL_0);
-
+  uint32_t num_caught_up = 0;
+  uint32_t num_total = to_proc.size();
+  LOG_PRINT_GREEN("Catching up to " << num_total << " signed hashes", LOG_LEVEL_0);
+  
   auto it = to_proc.begin();
   while (!m_stop_catchup && it != to_proc.end())
   {
@@ -117,14 +119,14 @@ void blockchain_storage::catchup_signed_hashes()
       LOG_PRINT_RED_L0("Couldn't get block by hash when catching up signed hash: " << id);
       continue;
     }
-
+    
     crypto::hash proof_of_work = null_hash;
     if (!get_block_longhash(bl, proof_of_work, get_block_height(bl), crypto::g_boulderhash_state, true))
     {
       LOG_PRINT_RED_L0("Couldn't get block longhash when catching up signed hash: " << id);
       continue;
     }
-
+    
     crypto::signature sig;
     if (!crypto::g_hash_cache.create_signed_hash(id, proof_of_work, sig))
     {
@@ -132,7 +134,17 @@ void blockchain_storage::catchup_signed_hashes()
       continue;
     }
     
-    LOG_PRINT_L2("Just caught up signed hash for block #" << get_block_height(bl) << ": " << id);
+    LOG_PRINT_L0("(" << (num_caught_up+1) << "/" << num_total <<") Just caught up signed hash for block #"
+                 << get_block_height(bl) << ": " << id);
+    num_caught_up++;
+    if (num_caught_up % 100 == 0)
+    {
+      if (!crypto::g_hash_cache.store())
+      {
+        LOG_PRINT_RED_L0("Could not store hash cache! Not trying to catch up anymore.");
+        break;
+      }
+    }
   }
   
   if (m_stop_catchup)
@@ -143,8 +155,13 @@ void blockchain_storage::catchup_signed_hashes()
   {
     LOG_PRINT_GREEN("Done catching up signed hashes", LOG_LEVEL_0);
   }
-}
   
+  if (!crypto::g_hash_cache.store())
+  {
+    LOG_PRINT_RED_L0("Could not store hash cache!");
+  }
+}
+
 bool blockchain_storage::init(const std::string& config_folder)
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);

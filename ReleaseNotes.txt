@@ -1,3 +1,7 @@
+Release Notes 0.3.0.2
+- Add more seed nodes
+- Add transaction description to Qt Wallet
+
 Release Notes 0.3.0.1
 - Update algorithm to Boulderhash2 - hard fork at block 20250 (~Friday 1700 GMT)
 - Fix difficulty calculation bug

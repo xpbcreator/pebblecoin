@@ -76,7 +76,7 @@ BitcoinGUI::BitcoinGUI(boost::program_options::options_description descOptionsIn
 {
     GUIUtil::restoreWindowGeometry("nWindow", QSize(850, 550), this);
 
-    QString windowTitle = tr("Pebblecoin QT") + " - ";
+    QString windowTitle = tr("Pebblecoin Qt") + " - ";
 #ifdef ENABLE_WALLET
     /* if compiled with wallet support, -disablewallet can still disable the wallet */
     bool enableWallet = !GetArg(qt_opt::arg_disable_wallet);
@@ -276,9 +276,9 @@ void BitcoinGUI::createActions(bool fIsTestnet)
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
     if (!fIsTestnet)
-        aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About Pebblecoin QT"), this);
+        aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About Pebblecoin Qt"), this);
     else
-        aboutAction = new QAction(QIcon(":/icons/bitcoin_testnet"), tr("&About Pebblecoin QT"), this);
+        aboutAction = new QAction(QIcon(":/icons/bitcoin_testnet"), tr("&About Pebblecoin Qt"), this);
     aboutAction->setStatusTip(tr("Show information about Pebblecoin"));
     aboutAction->setMenuRole(QAction::AboutRole);
 #if QT_VERSION < 0x050000
@@ -321,7 +321,7 @@ void BitcoinGUI::createActions(bool fIsTestnet)
     openAction->setStatusTip(tr("Open a bitcoin: URI or payment request"));
 
     showHelpMessageAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Command-line options"), this);
-    showHelpMessageAction->setStatusTip(tr("Show the Pebblecoin QT help message to get a list with possible Pebblecoin command-line options"));
+    showHelpMessageAction->setStatusTip(tr("Show the Pebblecoin Qt help message to get a list with possible Pebblecoin command-line options"));
 
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
