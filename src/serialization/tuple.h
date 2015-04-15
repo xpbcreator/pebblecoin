@@ -9,7 +9,7 @@
 #include <utility>
 
 namespace tuple_serialization_detail {
-  template<uint N>
+  template<unsigned int N>
   struct Serialize
   {
     template<class Archive, typename... Args>
