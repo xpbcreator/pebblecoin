@@ -5,6 +5,15 @@
 #include "sendcoinsdialog.h"
 #include "ui_sendcoinsdialog.h"
 
+#include <QMessageBox>
+#include <QScrollBar>
+#include <QTextDocument>
+
+#include "common/ui_interface.h"
+#include "cryptonote_core/cryptonote_format_utils.h"
+
+#include "interface/base58.h"
+#include "bitcoin/util.h"
 #include "addresstablemodel.h"
 #include "bitcoinunits.h"
 #include "coincontroldialog.h"
@@ -12,16 +21,9 @@
 #include "optionsmodel.h"
 #include "sendcoinsentry.h"
 #include "walletmodel.h"
-
-#include "interface/base58.h"
 //#include "coincontrol.h"
-#include "bitcoin/util.h"
 
-#include "common/ui_interface.h"
 
-#include <QMessageBox>
-#include <QScrollBar>
-#include <QTextDocument>
 
 SendCoinsDialog::SendCoinsDialog(QWidget *parent) :
     QDialog(parent),
@@ -199,7 +201,7 @@ void SendCoinsDialog::on_sendButton_clicked()
     prepareStatus = model->prepareTransaction(currentTransaction);
 
     // process prepareStatus and on error generate message shown to user
-    processSendCoinsReturn(prepareStatus,
+    model->processSendCoinsReturn(prepareStatus,
         BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), currentTransaction.getTransactionFee()));
 
     if(prepareStatus.status != WalletModel::OK) {
@@ -207,6 +209,9 @@ void SendCoinsDialog::on_sendButton_clicked()
         return;
     }
 
+    int minFakeOuts = ui->coinMixSpinBox->value();
+    currentTransaction.setFakeOuts(minFakeOuts, minFakeOuts);
+    
     qint64 txFee = currentTransaction.getTransactionFee();
     QString questionString = tr("Are you sure you want to send?");
     questionString.append("<br /><br />%1");
@@ -243,11 +248,11 @@ void SendCoinsDialog::on_sendButton_clicked()
         fNewRecipientAllowed = true;
         return;
     }
-
+  
     // now send the prepared transaction
     WalletModel::SendCoinsReturn sendStatus = model->sendCoins(currentTransaction);
     // process sendStatus and on error generate message shown to user
-    processSendCoinsReturn(sendStatus);
+    model->processSendCoinsReturn(sendStatus);
 
     if (sendStatus.status == WalletModel::OK)
     {
@@ -426,52 +431,6 @@ void SendCoinsDialog::setBalance(qint64 balance, qint64 unconfirmedBalance, qint
 void SendCoinsDialog::updateDisplayUnit()
 {
     setBalance(model->getBalance(), 0, 0);
-}
-
-void SendCoinsDialog::processSendCoinsReturn(const WalletModel::SendCoinsReturn &sendCoinsReturn, const QString &msgArg)
-{
-    QPair<QString, CClientUIInterface::MessageBoxFlags> msgParams;
-    // Default to a warning message, override if error message is needed
-    msgParams.second = CClientUIInterface::MSG_WARNING;
-
-    // This comment is specific to SendCoinsDialog usage of WalletModel::SendCoinsReturn.
-    // WalletModel::TransactionCommitFailed is used only in WalletModel::sendCoins()
-    // all others are used only in WalletModel::prepareTransaction()
-    switch(sendCoinsReturn.status)
-    {
-    case WalletModel::InvalidAddress:
-        msgParams.first = tr("The recipient address is not valid, please recheck.");
-        break;
-    case WalletModel::InvalidAmount:
-        msgParams.first = tr("The amount to pay must be larger than 0.");
-        break;
-    case WalletModel::AmountExceedsBalance:
-        msgParams.first = tr("The amount exceeds your balance.");
-        break;
-    case WalletModel::AmountWithFeeExceedsBalance:
-        msgParams.first = tr("The total exceeds your balance when the %1 transaction fee is included.").arg(msgArg);
-        break;
-    case WalletModel::DuplicateAddress:
-        msgParams.first = tr("Duplicate address found, can only send to each address once per send operation.");
-        break;
-    case WalletModel::TransactionCreationFailed:
-        msgParams.first = tr("Transaction creation failed!");
-        msgParams.second = CClientUIInterface::MSG_ERROR;
-        break;
-    case WalletModel::TransactionCommitFailed:
-        msgParams.first = tr("The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
-        msgParams.second = CClientUIInterface::MSG_ERROR;
-        break;
-    case WalletModel::NotYetImplemented:
-        msgParams.first = tr("You have attempted to use a feature that is not yet implemented.");
-        break;
-    // included to prevent a compiler warning.
-    case WalletModel::OK:
-    default:
-        return;
-    }
-
-    emit message(tr("Send Coins"), msgParams.first, msgParams.second);
 }
 
 // Coin Control: copy label "Quantity" to clipboard

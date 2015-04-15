@@ -32,19 +32,21 @@ public:
       if (!construct_miner_tx(50, 0, 0, 2, 0, m_miners[i].get_keys().m_account_address, m_miner_txs[i]))
         return false;
       
-      if (m_miner_txs[i].vout.empty())
+      if (m_miner_txs[i].outs().empty())
         throw std::runtime_error("Expected non-empty vout");
 
-      txout_to_key tx_out = boost::get<txout_to_key>(m_miner_txs[i].vout[0].target);
+      const txout_to_key tx_out = boost::get<txout_to_key>(m_miner_txs[i].outs()[0].target);
       output_entries.push_back(std::make_pair(i, tx_out.key));
       m_public_keys[i] = tx_out.key;
       m_public_key_ptrs[i] = &m_public_keys[i];
     }
 
-    m_source_amount = m_miner_txs[0].vout[0].amount;
+    m_source_amount = m_miner_txs[0].outs()[0].amount;
 
     tx_source_entry source_entry;
-    source_entry.amount = m_source_amount;
+    source_entry.type = tx_source_entry::InToKey;
+    source_entry.cp = m_miner_txs[0].out_cp(0);
+    source_entry.amount_in = source_entry.amount_out = m_source_amount;
     source_entry.real_out_tx_key = get_tx_pub_key_from_extra(m_miner_txs[real_source_idx]);
     source_entry.real_output_in_tx_index = 0;
     source_entry.outputs.swap(output_entries);

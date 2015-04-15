@@ -12,7 +12,7 @@
 #include "crypto/crypto.h"
 #include "crypto/hash.h"
 
-// read
+/// read
 template <template <bool> class Archive>
 bool do_serialize(Archive<false> &ar, std::vector<crypto::signature> &v)
 {

@@ -6,7 +6,6 @@
 #include "hash_cache.h"
 
 #include "cryptonote_config.h"
-#include "cryptonote_core/miner.h"
 
 #include "string_tools.h"
 
@@ -19,12 +18,6 @@ namespace hashing_opt
   const command_line::arg_descriptor<uint32_t>    arg_worker_threads =  {"worker-threads", "Specify boulderhash worker threadpool size (default: nproc)", 0, true};
   const command_line::arg_descriptor<uint32_t>    arg_states_per_thread =  {"states-per-thread", "Specify number of boulderhash states each worker thread should generate (default: 1)", 0, true};
   
-  bool _use_signed_hashes = true;
-#ifdef SMALL_BOULDERHASH
-  bool _do_boulderhash = true;
-#else
-  bool _do_boulderhash = false;
-#endif
 }
 using namespace hashing_opt;
 
@@ -55,8 +48,17 @@ namespace crypto
     return crypto::g_hash_cache.set_hash_signing_key(prvk);
   }
   
-  bool process_options(boost::program_options::variables_map& vm)
+  bool process_options(boost::program_options::variables_map& vm, bool is_mining)
   {
+    if (cryptonote::config::testnet)
+    {
+      // always enable small boulderhash for testnet
+      g_hash_ops_small_boulderhash = true;
+      cryptonote::config::use_signed_hashes = false;
+      cryptonote::config::do_boulderhash = true;
+      return true;
+    }
+    
     if (!set_hash_signing_key(vm))
       return false;
     
@@ -69,16 +71,15 @@ namespace crypto
       return false;
     }
     
-    if (!enable_boulder && command_line::has_arg(vm, miner_opt::arg_start_mining))
+    if (!enable_boulder && is_mining)
     {
       LOG_PRINT_RED_L0("Must enable boulderhash to mine");
       return false;
     }
   
-    hashing_opt::_use_signed_hashes = !disable_signed;
-    hashing_opt::_do_boulderhash = enable_boulder;
+    cryptonote::config::use_signed_hashes = !disable_signed;
+    cryptonote::config::do_boulderhash = enable_boulder;
     
     return true;
   }
 }
-

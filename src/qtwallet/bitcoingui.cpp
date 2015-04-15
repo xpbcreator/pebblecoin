@@ -244,18 +244,25 @@ void BitcoinGUI::createActions(bool fIsTestnet)
     receiveCoinsAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_3));
     tabGroup->addAction(receiveCoinsAction);
 
+    dposAction = new QAction(QIcon(":/icons/tx_mined"), tr("DPOS"), this);
+    dposAction->setStatusTip(tr("DPOS-related actions"));
+    dposAction->setToolTip(dposAction->statusTip());
+    dposAction->setCheckable(true);
+    dposAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_4));
+    tabGroup->addAction(dposAction);
+    
     historyAction = new QAction(QIcon(":/icons/history"), tr("&Transactions"), this);
     historyAction->setStatusTip(tr("Browse transaction history"));
     historyAction->setToolTip(historyAction->statusTip());
     historyAction->setCheckable(true);
-    historyAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_4));
+    historyAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
     tabGroup->addAction(historyAction);
 
     supportAction = new QAction(QIcon(":/icons/debugwindow"), tr("Support"), this);
     supportAction->setStatusTip(tr("Get technical support"));
     supportAction->setToolTip(supportAction->statusTip());
     supportAction->setCheckable(true);
-    supportAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
+    supportAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
     tabGroup->addAction(supportAction);
 
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
@@ -270,6 +277,8 @@ void BitcoinGUI::createActions(bool fIsTestnet)
     connect(historyAction, SIGNAL(triggered()), this, SLOT(gotoHistoryPage()));
     connect(supportAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(supportAction, SIGNAL(triggered()), this, SLOT(gotoSupportPage()));
+    connect(dposAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(dposAction, SIGNAL(triggered()), this, SLOT(gotoDposPage()));
 
     quitAction = new QAction(QIcon(":/icons/quit"), tr("E&xit"), this);
     quitAction->setStatusTip(tr("Quit application"));
@@ -398,6 +407,7 @@ void BitcoinGUI::createToolBars()
         toolbar->addAction(overviewAction);
         toolbar->addAction(sendCoinsAction);
         toolbar->addAction(receiveCoinsAction);
+        toolbar->addAction(dposAction);
         toolbar->addAction(historyAction);
         toolbar->addAction(supportAction);
         overviewAction->setChecked(true);
@@ -464,6 +474,7 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     overviewAction->setEnabled(enabled);
     sendCoinsAction->setEnabled(enabled);
     receiveCoinsAction->setEnabled(enabled);
+    dposAction->setEnabled(enabled);
     historyAction->setEnabled(enabled);
     supportAction->setEnabled(enabled);
     encryptWalletAction->setEnabled(enabled);
@@ -599,6 +610,12 @@ void BitcoinGUI::gotoSupportPage()
 {
     supportAction->setChecked(true);
     if (walletFrame) walletFrame->gotoSupportPage();
+}
+
+void BitcoinGUI::gotoDposPage()
+{
+    dposAction->setChecked(true);
+    if (walletFrame) walletFrame->gotoDposPage();
 }
 
 void BitcoinGUI::gotoReceiveCoinsPage()

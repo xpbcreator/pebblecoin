@@ -1,18 +1,17 @@
-#include "wallet.h"
-#include "script.h"
-#include "main.h"
-
-#include "../bitcoin/util.h"
+#include "interface/wallet.h"
 
 #include "string_tools.h"
+#include "serialization/binary_utils.h"
 
 #include "cryptonote_config.h"
-#include "serialization/binary_utils.h"
 #include "wallet/wallet2.h"
+#include "wallet/wallet_errors.h"
 
+#include "bitcoin/util.h"
+#include "interface/script.h"
+#include "interface/main.h"
 
 int64_t nTransactionFee = DEFAULT_FEE;
-
 
 CWalletTx::CWalletTx(const cryptonote::transaction& txIn)
 {
@@ -125,8 +124,8 @@ bool CWalletTx::GetCreditDebit(uint64_t& nMined, uint64_t& nCredit, uint64_t& nD
       nDebit += dest.amount;
     }
     nDebit += kd.m_fee;
-    nDebit += kd.m_change;
-    nCredit += kd.m_change;
+    nDebit += kd.m_xpb_change;
+    nCredit += kd.m_xpb_change;
     
     return true;
   }

@@ -3,7 +3,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chaingen.h"
-#include "chaingen_tests_list.h"
 
 #include "block_reward.h"
 
@@ -86,7 +85,7 @@ namespace
   uint64_t get_tx_out_amount(const transaction& tx)
   {
     uint64_t amount = 0;
-    BOOST_FOREACH(auto& o, tx.vout)
+    BOOST_FOREACH(const auto& o, tx.outs())
       amount += o.amount;
     return amount;
   }

@@ -35,4 +35,4 @@
 - cd build/release
 - cmake -D STATIC=1 -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 11 Win64" ../..
 - open the Project.sln file, build/compile whatever is needed
-- for faster testing/with less RAM, add "-D SMALL_BOULDERHASH=1" to the cmake command line
+

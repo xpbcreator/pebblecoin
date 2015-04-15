@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "serialization/binary_archive.h"
 
 #define TX_EXTRA_PADDING_MAX_COUNT          255
 #define TX_EXTRA_NONCE_MAX_COUNT            255

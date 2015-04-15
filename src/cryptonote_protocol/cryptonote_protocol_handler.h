@@ -6,13 +6,15 @@
 
 #include <boost/program_options/variables_map.hpp>
 
-#include "storages/levin_abstract_invoke2.h"
 #include "warnings.h"
-#include "cryptonote_protocol_defs.h"
-#include "cryptonote_protocol_handler_common.h"
+#include "storages/levin_abstract_invoke2.h"
+
+#include "p2p/net_node_common.h"
 #include "cryptonote_core/connection_context.h"
 #include "cryptonote_core/cryptonote_stat_info.h"
 #include "cryptonote_core/verification_context.h"
+#include "cryptonote_protocol_defs.h"
+#include "cryptonote_protocol_handler_common.h"
 
 PUSH_WARNINGS
 DISABLE_VS_WARNINGS(4355)

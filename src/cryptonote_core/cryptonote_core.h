@@ -7,16 +7,18 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 
-#include "p2p/net_node_common.h"
-#include "cryptonote_protocol/cryptonote_protocol_handler_common.h"
+#include "warnings.h"
 #include "storages/portable_storage_template_helper.h"
+
+#include "common/ntp_time.h"
+#include "crypto/hash.h"
+#include "cryptonote_protocol/cryptonote_protocol_handler_common.h"
+
 #include "tx_pool.h"
 #include "blockchain_storage.h"
 #include "miner.h"
 #include "connection_context.h"
-#include "cryptonote_core/cryptonote_stat_info.h"
-#include "warnings.h"
-#include "crypto/hash.h"
+#include "cryptonote_stat_info.h"
 
 PUSH_WARNINGS
 DISABLE_VS_WARNINGS(4355)
@@ -24,14 +26,17 @@ DISABLE_VS_WARNINGS(4355)
 namespace cryptonote
 {
   class i_core_callback;
+  class core_tester;
   
   /************************************************************************/
   /*                                                                      */
   /************************************************************************/
    class core: public i_miner_handler
    {
+     friend class core_tester;
+     
    public:
-     core(i_cryptonote_protocol* pprotocol);
+     core(i_cryptonote_protocol* pprotocol, tools::ntp_time& ntp_time_in);
      bool handle_get_objects(NOTIFY_REQUEST_GET_OBJECTS::request& arg, NOTIFY_RESPONSE_GET_OBJECTS::request& rsp, cryptonote_connection_context& context);
      bool on_idle();
      bool handle_incoming_tx(const blobdata& tx_blob, tx_verification_context& tvc, bool keeped_by_block);
@@ -40,8 +45,8 @@ namespace cryptonote
 
      //-------------------- i_miner_handler -----------------------
      virtual bool handle_block_found( block& b);
-     virtual bool get_block_template(block& b, const account_public_address& adr, difficulty_type& diffic, uint64_t& height, const blobdata& ex_nonce);
-
+     virtual bool get_block_template(block& b, const account_public_address& adr, difficulty_type& diffic, uint64_t& height, const blobdata& ex_nonce, bool dpos_block);
+     virtual bool get_next_block_info(bool& is_dpos, account_public_address& signing_delegate_address, uint64_t& time_since_last_block);
 
      miner& get_miner(){return m_miner;}
      static void init_options(boost::program_options::options_description& desc);
@@ -72,7 +77,7 @@ namespace cryptonote
      bool get_pool_transactions(std::list<transaction>& txs);
      size_t get_pool_transactions_count();
      size_t get_blockchain_total_transactions();
-     bool get_outs(uint64_t amount, std::list<crypto::public_key>& pkeys);
+     bool get_outs(coin_type type, uint64_t amount, std::list<crypto::public_key>& pkeys);
      bool have_block(const crypto::hash& id);
      bool get_short_chain_history(std::list<crypto::hash>& ids);
      bool find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, NOTIFY_RESPONSE_CHAIN_ENTRY::request& resp);
@@ -96,6 +101,10 @@ namespace cryptonote
      i_core_callback* callback() const { return m_callback; }
      void callback(i_core_callback* callback) { m_callback = callback; }
      
+     bool get_dpos_register_info(cryptonote::delegate_id_t& unused_delegate_id, uint64_t& registration_fee);     
+     bool get_delegate_info(const cryptonote::account_public_address& addr, cryptonote::bs_delegate_info& res);
+     std::vector<cryptonote::bs_delegate_info> get_delegate_infos();
+     
    private:
      bool add_new_tx(const transaction& tx, const crypto::hash& tx_hash, const crypto::hash& tx_prefix_hash, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block);
      bool add_new_tx(const transaction& tx, tx_verification_context& tvc, bool keeped_by_block);
@@ -115,7 +124,6 @@ namespace cryptonote
      bool update_miner_block_template();
      bool handle_command_line(const boost::program_options::variables_map& vm);
      bool on_update_blocktemplate_interval();
-     bool check_tx_inputs_keyimages_diff(const transaction& tx);
 
 
      tx_memory_pool m_mempool;
@@ -127,7 +135,7 @@ namespace cryptonote
      account_public_address m_miner_address;
      std::string m_config_folder;
      cryptonote_protocol_stub m_protocol_stub;
-     epee::math_helper::once_a_time_seconds<60*60*12, false> m_store_blockchain_interval;
+     epee::math_helper::once_a_time_seconds<60*15, false> m_store_blockchain_interval;
      friend class tx_validate_inputs;
      std::atomic<bool> m_starter_message_showed;
      

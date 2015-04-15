@@ -14,6 +14,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <memory>
 
 #include <QObject>
 
@@ -21,6 +22,7 @@ class AddressTableModel;
 class OptionsModel;
 class RecentRequestsTableModel;
 class TransactionTableModel;
+class VotingTableModel;
 class WalletModelTransaction;
 
 class CCoinControl;
@@ -33,6 +35,10 @@ class CWallet;
 QT_BEGIN_NAMESPACE
 class QTimer;
 QT_END_NAMESPACE
+
+namespace cryptonote {
+    struct bs_delegate_info;
+}
 
 class SendCoinsRecipient
 {
@@ -102,7 +108,7 @@ public:
     explicit WalletModel(CWallet *wallet, OptionsModel *optionsModel, QObject *parent = 0);
     ~WalletModel();
 
-    enum StatusCode // Returned by sendCoins
+    enum StatusCode
     {
         OK,
         InvalidAmount,
@@ -112,6 +118,8 @@ public:
         DuplicateAddress,
         TransactionCreationFailed, // Error returned when wallet is still locked
         TransactionCommitFailed,
+        NotEnoughOutsToMix,
+        TxTooBig,
         NotYetImplemented
     };
 
@@ -126,12 +134,14 @@ public:
     AddressTableModel *getAddressTableModel();
     TransactionTableModel *getTransactionTableModel();
     RecentRequestsTableModel *getRecentRequestsTableModel();
+    VotingTableModel *getVotingTableModel();
 
     qint64 getBalance(const CCoinControl *coinControl = NULL) const;
     qint64 getUnconfirmedBalance() const;
     qint64 getImmatureBalance() const;
     int getNumTransactions() const;
     EncryptionStatus getEncryptionStatus() const;
+    cryptonote::bs_delegate_info getDelegateInfo() const;
 
     // Check address for validity
     bool validateAddress(const QString &address);
@@ -139,9 +149,11 @@ public:
     // Return status record for SendCoins, contains error id + information
     struct SendCoinsReturn
     {
-        SendCoinsReturn(StatusCode status = OK):
-            status(status) {}
+        SendCoinsReturn(StatusCode status = OK, qint64 outsFiltered = 0)
+            : status(status)
+            , outsFiltered(outsFiltered) { }
         StatusCode status;
+        qint64 outsFiltered;
     };
 
     // prepare transaction for getting txfee before sending coins
@@ -149,7 +161,10 @@ public:
 
     // Send coins to a list of recipients
     SendCoinsReturn sendCoins(WalletModelTransaction &transaction);
-
+    
+    // Show dialog if necessary
+    void processSendCoinsReturn(const SendCoinsReturn &sendCoinsReturn, const QString &msgArg = QString());
+    
     // Wallet encryption
     bool setWalletEncrypted(bool encrypted, const SecureString &passphrase);
     // Passphrase only needed when unlocking
@@ -193,7 +208,7 @@ public:
 
     void loadReceiveRequests(std::vector<std::string>& vReceiveRequests);
     bool saveReceiveRequest(const std::string &sAddress, const int64_t nId, const std::string &sRequest);
-
+    
 private:
     CWallet *wallet;
 
@@ -204,12 +219,14 @@ private:
     AddressTableModel *addressTableModel;
     TransactionTableModel *transactionTableModel;
     RecentRequestsTableModel *recentRequestsTableModel;
+    VotingTableModel *votingTableModel;
 
     // Cache some values to be able to detect changes
     qint64 cachedBalance;
     qint64 cachedUnconfirmedBalance;
     qint64 cachedImmatureBalance;
     qint64 cachedNumTransactions;
+    std::unique_ptr<cryptonote::bs_delegate_info> cachedDelegateInfo;
     EncryptionStatus cachedEncryptionStatus;
     int cachedNumBlocks;
 
@@ -218,10 +235,13 @@ private:
     void subscribeToCoreSignals();
     void unsubscribeFromCoreSignals();
     void checkBalanceChanged();
+    void checkDelegateInfoChanged();
 
 signals:
     // Signal that balance in wallet changed
     void balanceChanged(qint64 balance, qint64 unconfirmedBalance, qint64 immatureBalance);
+    // Signal that delegate info changed
+    void delegateInfoChanged(const cryptonote::bs_delegate_info& info);
 
     // Number of transactions in wallet changed
     void numTransactionsChanged(int count);

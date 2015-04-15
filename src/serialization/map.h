@@ -14,44 +14,26 @@ namespace {
   template <template <bool> class Archive, class Map>
   inline bool _do_serialize_impl(Archive<false> &ar, Map &m)
   {
-	typedef typename Map::key_type K;
-	typedef typename Map::mapped_type V;
+    typedef typename Map::key_type K;
+    typedef typename Map::mapped_type V;
     
-    uint64_t size;
-    if (!::do_serialize(ar, size))
+    std::vector<std::pair<K, V> > result;
+    if (!::do_serialize(ar, result))
       return false;
     
     m.clear();
-    std::pair<K, V> item;
-    for (uint64_t i=0; i < size; i++)
-    {
-      if (!::do_serialize(ar, item))
-        return false;
-      
-      m.insert(item);
-    }
-    
+    m.insert(result.begin(), result.end());
     return true;
   }
 
   template <template <bool> class Archive, class Map>
-  inline  bool _do_serialize_impl(Archive<true> &ar, Map &m)
+  inline bool _do_serialize_impl(Archive<true> &ar, Map &m)
   {
     typedef typename Map::key_type K;
-	typedef typename Map::mapped_type V;
+    typedef typename Map::mapped_type V;
     
-    uint64_t size = m.size();
-    if (!::do_serialize(ar, size))
-      return false;
-    
-    for (auto it = m.begin(); it != m.end(); ++it)
-    {
-      std::pair<K, V> item = *it;
-      if (!::do_serialize(ar, item))
-        return false;
-    }
-    
-    return true;
+    std::vector<std::pair<K, V> > result(m.begin(), m.end());
+    return ::do_serialize(ar, result);
   }
 }
 
@@ -66,4 +48,3 @@ bool do_serialize(Archive &ar, std::unordered_map<K, V, Hash, Pred, Alloc> &m)
 {
   return _do_serialize_impl(ar, m);
 }
-

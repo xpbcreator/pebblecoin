@@ -13,7 +13,7 @@
 #include "cryptonote_core/cryptonote_format_utils.h"
 
 #include "chaingen.h"
-#include "chaingen_tests_list.h"
+#include "chaingen001.h"
 
 using namespace std;
 
@@ -47,7 +47,7 @@ bool one_block::verify_1(core_t& c, size_t ev_index, const std::vector<test_even
 
     // check balances
     //std::vector<const cryptonote::block*> chain;
-    //map_hash2tx_t mtx;
+    //map_hash2tx_isregular_t mtx;
     //CHECK_TEST_CONDITION(find_block_chain(events, chain, mtx, get_block_hash(boost::get<cryptonote::block>(events[1]))));
     //CHECK_TEST_CONDITION(get_block_reward(0) == get_balance(alice, events, chain, mtx));
 
@@ -90,23 +90,23 @@ bool gen_simple_chain_001::generate(std::vector<test_event_entry> &events)
     //MAKE_TX(events, tx_0, first_miner_account, alice, 151, blk_2);
 
     std::vector<cryptonote::block> chain;
-    map_hash2tx_t mtx;
+    map_hash2tx_isregular_t mtx;
     /*bool r = */find_block_chain(events, chain, mtx, get_block_hash(boost::get<cryptonote::block>(events[3])));
     std::cout << "BALANCE = " << get_balance(miner, chain, mtx) << std::endl;
 
     REWIND_BLOCKS(events, blk_3r, blk_3, miner);
-    MAKE_TX_LIST_START(events, txlist_0, miner, alice, 1, blk_3);
-    MAKE_TX_LIST(events, txlist_0, miner, alice, 2, blk_3);
-    MAKE_TX_LIST(events, txlist_0, miner, alice, 4, blk_3);
+    MAKE_TX_LIST_START(events, txlist_0, miner, alice, 1, blk_3r);
+    MAKE_TX_LIST(events, txlist_0, miner, alice, 2, blk_3r);
+    MAKE_TX_LIST(events, txlist_0, miner, alice, 4, blk_3r);
     MAKE_NEXT_BLOCK_TX_LIST(events, blk_4, blk_3r, miner, txlist_0);
     REWIND_BLOCKS(events, blk_4r, blk_4, miner);
-    MAKE_TX(events, tx_1, miner, alice, 50, blk_4);
+    MAKE_TX(events, tx_1, miner, alice, 50, blk_4r);
     MAKE_NEXT_BLOCK_TX1(events, blk_5, blk_4r, miner, tx_1);
     REWIND_BLOCKS(events, blk_5r, blk_5, miner);
-    MAKE_TX(events, tx_2, miner, alice, 50, blk_5);
+    MAKE_TX(events, tx_2, miner, alice, 50, blk_5r);
     MAKE_NEXT_BLOCK_TX1(events, blk_6, blk_5r, miner, tx_2);
     REWIND_BLOCKS(events, blk_6r, blk_6, miner);
-    MAKE_TX(events, tx_3, miner, alice, 50, blk_6);
+    MAKE_TX(events, tx_3, miner, alice, 50, blk_6r);
     MAKE_NEXT_BLOCK_TX1(events, blk_7, blk_6r, miner, tx_3);
 
     DO_CALLBACK(events, "verify_callback_1");
@@ -116,7 +116,7 @@ bool gen_simple_chain_001::generate(std::vector<test_event_entry> &events)
     //DO_CALLBACK(events, "verify_callback_2");
 
 /*    std::vector<const cryptonote::block*> chain;
-    map_hash2tx_t mtx;
+    map_hash2tx_isregular_t mtx;
     if (!find_block_chain(events, chain, mtx, get_block_hash(blk_6)))
         throw;
     cout << "miner = " << get_balance(first_miner_account, events, chain, mtx) << endl;

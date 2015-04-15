@@ -1,12 +1,20 @@
 #ifndef PEBBLECOIN_BCMAIN_H
 #define PEBBLECOIN_BCMAIN_H
 
-#include "../bitcoin/sync.h"
-#include "common/types.h"
-
 #include <string>
+#include <map>
+
+#include "common/types.h"
+#include "cryptonote_core/delegate_types.h"
+
+#include "bitcoin/sync.h"
 
 class CWallet;
+
+namespace cryptonote {
+  struct bs_delegate_info;
+  struct account_public_address;
+}
 
 extern CCriticalSection cs_main;
 
@@ -25,5 +33,8 @@ int WalletProcessedHeight();
 int DaemonProcessedHeight();
 int NumBlocksOfPeers();
 
-#endif
+bool GetDposRegisterInfo(cryptonote::delegate_id_t& unused_delegate_id, uint64_t& registration_fee);
+bool GetDelegateInfo(const cryptonote::account_public_address& addr, cryptonote::bs_delegate_info& info);
+std::vector<cryptonote::bs_delegate_info> GetDelegateInfos();
 
+#endif

@@ -4,6 +4,7 @@
 
 
 #include "include_base_utils.h"
+#include "cryptonote_core/cryptonote_basic.h"
 #include "cryptonote_core/cryptonote_basic_impl.h"
 #include "cryptonote_core/account.h"
 #include "cryptonote_core/cryptonote_format_utils.h"
@@ -54,31 +55,33 @@ bool test_transaction_generation_and_ring_signature()
   std::vector<tx_source_entry> sources;
   sources.resize(sources.size()+1);
   tx_source_entry& src = sources.back();
-  src.amount = 70368744177663;
+  src.type = tx_source_entry::InToKey;
+  src.cp = CP_XPB;
+  src.amount_in = src.amount_out =70368744177663;
   {
     tx_output_entry oe;
     oe.first = 0;
-    oe.second = boost::get<txout_to_key>(tx_mine_1.vout[0].target).key;
+    oe.second = boost::get<txout_to_key>(tx_mine_1.outs()[0].target).key;
     src.outputs.push_back(oe);
 
     oe.first = 1;
-    oe.second = boost::get<txout_to_key>(tx_mine_2.vout[0].target).key;
+    oe.second = boost::get<txout_to_key>(tx_mine_2.outs()[0].target).key;
     src.outputs.push_back(oe);
 
     oe.first = 2;
-    oe.second = boost::get<txout_to_key>(tx_mine_3.vout[0].target).key;
+    oe.second = boost::get<txout_to_key>(tx_mine_3.outs()[0].target).key;
     src.outputs.push_back(oe);
 
     oe.first = 3;
-    oe.second = boost::get<txout_to_key>(tx_mine_4.vout[0].target).key;
+    oe.second = boost::get<txout_to_key>(tx_mine_4.outs()[0].target).key;
     src.outputs.push_back(oe);
 
     oe.first = 4;
-    oe.second = boost::get<txout_to_key>(tx_mine_5.vout[0].target).key;
+    oe.second = boost::get<txout_to_key>(tx_mine_5.outs()[0].target).key;
     src.outputs.push_back(oe);
 
     oe.first = 5;
-    oe.second = boost::get<txout_to_key>(tx_mine_6.vout[0].target).key;
+    oe.second = boost::get<txout_to_key>(tx_mine_6.outs()[0].target).key;
     src.outputs.push_back(oe);
 
     src.real_out_tx_key = cryptonote::get_tx_pub_key_from_extra(tx_mine_2);
@@ -87,6 +90,7 @@ bool test_transaction_generation_and_ring_signature()
   }
   //fill outputs entry
   tx_destination_entry td;
+  td.cp = src.cp;
   td.addr = rv_acc.get_keys().m_account_address;
   td.amount = 69368744177663;
   std::vector<tx_destination_entry> destinations;
@@ -98,13 +102,13 @@ bool test_transaction_generation_and_ring_signature()
 
   crypto::hash pref_hash = get_transaction_prefix_hash(tx_rc1);
   std::vector<const crypto::public_key *> output_keys;
-  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_1.vout[0].target).key);
-  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_2.vout[0].target).key);
-  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_3.vout[0].target).key);
-  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_4.vout[0].target).key);
-  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_5.vout[0].target).key);
-  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_6.vout[0].target).key);
-  r = crypto::check_ring_signature(pref_hash, boost::get<txin_to_key>(tx_rc1.vin[0]).k_image, output_keys, &tx_rc1.signatures[0][0]);
+  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_1.outs()[0].target).key);
+  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_2.outs()[0].target).key);
+  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_3.outs()[0].target).key);
+  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_4.outs()[0].target).key);
+  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_5.outs()[0].target).key);
+  output_keys.push_back(&boost::get<txout_to_key>(tx_mine_6.outs()[0].target).key);
+  r = crypto::check_ring_signature(pref_hash, boost::get<txin_to_key>(tx_rc1.ins()[0]).k_image, output_keys, &tx_rc1.signatures[0][0]);
   CHECK_AND_ASSERT_MES(r, false, "failed to check ring signature");
 
   std::vector<size_t> outs;

@@ -1,9 +1,10 @@
+// Copyright (c) 2015 The Cryptonote developers
 // Copyright (c) 2012-2013 The Cryptonote developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chaingen.h"
-#include "chaingen_tests_list.h"
+#include "chain_switch_1.h"
 
 using namespace epee;
 using namespace cryptonote;
@@ -48,37 +49,37 @@ bool gen_chain_switch_1::generate(std::vector<test_event_entry>& events) const
   MAKE_ACCOUNT(events, recipient_account_3);                                                      //  3
   MAKE_ACCOUNT(events, recipient_account_4);                                                      //  4
   REWIND_BLOCKS(events, blk_0r, blk_0, miner_account)                                             // <N blocks>
-  MAKE_TX(events, tx_00, miner_account, recipient_account_1, 5, blk_0);                 //  5 + N
+  MAKE_TX(events, tx_00, miner_account, recipient_account_1, 5, blk_0r);                 //  5 + N
   MAKE_NEXT_BLOCK_TX1(events, blk_1, blk_0r, miner_account, tx_00);                               //  6 + N
   MAKE_NEXT_BLOCK(events, blk_2, blk_1, miner_account);                                           //  7 + N
   REWIND_BLOCKS(events, blk_2r, blk_2, miner_account)                                             // <N blocks>
 
   // Transactions to test account balances after switch
-  MAKE_TX_LIST_START(events, txs_blk_3, miner_account, recipient_account_2, 7, blk_2);  //  8 + 2N
-  MAKE_TX_LIST_START(events, txs_blk_4, miner_account, recipient_account_3, 11, blk_2); //  9 + 2N
-  MAKE_TX_LIST_START(events, txs_blk_5, miner_account, recipient_account_4, 13, blk_2); // 10 + 2N
+  MAKE_TX_LIST_START(events, txs_blk_3, miner_account, recipient_account_2, 7, blk_2r);  //  8 + 2N
+  MAKE_TX_LIST_START(events, txs_blk_4, miner_account, recipient_account_3, 11, blk_2r); //  9 + 2N
+  MAKE_TX_LIST_START(events, txs_blk_5, miner_account, recipient_account_4, 13, blk_2r); // 10 + 2N
   std::list<transaction> txs_blk_6;
   txs_blk_6.push_back(txs_blk_4.front());
 
   // Transactions, that has different order in alt block chains
-  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_1, 1, blk_2);        // 11 + 2N
+  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_1, 1, blk_2r);        // 11 + 2N
   txs_blk_5.push_back(txs_blk_3.back());
-  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_1, 2, blk_2);        // 12 + 2N
+  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_1, 2, blk_2r);        // 12 + 2N
   txs_blk_6.push_back(txs_blk_3.back());
 
-  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_2, 1, blk_2);        // 13 + 2N
+  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_2, 1, blk_2r);        // 13 + 2N
   txs_blk_5.push_back(txs_blk_3.back());
-  MAKE_TX_LIST(events, txs_blk_4, miner_account, recipient_account_2, 2, blk_2);        // 14 + 2N
+  MAKE_TX_LIST(events, txs_blk_4, miner_account, recipient_account_2, 2, blk_2r);        // 14 + 2N
   txs_blk_5.push_back(txs_blk_4.back());
 
-  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_3, 1, blk_2);        // 15 + 2N
+  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_3, 1, blk_2r);        // 15 + 2N
   txs_blk_6.push_back(txs_blk_3.back());
-  MAKE_TX_LIST(events, txs_blk_4, miner_account, recipient_account_3, 2, blk_2);        // 16 + 2N
+  MAKE_TX_LIST(events, txs_blk_4, miner_account, recipient_account_3, 2, blk_2r);        // 16 + 2N
   txs_blk_5.push_back(txs_blk_4.back());
 
-  MAKE_TX_LIST(events, txs_blk_4, miner_account, recipient_account_4, 1, blk_2);        // 17 + 2N
+  MAKE_TX_LIST(events, txs_blk_4, miner_account, recipient_account_4, 1, blk_2r);        // 17 + 2N
   txs_blk_5.push_back(txs_blk_4.back());
-  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_4, 2, blk_2);        // 18 + 2N
+  MAKE_TX_LIST(events, txs_blk_3, miner_account, recipient_account_4, 2, blk_2r);        // 18 + 2N
   txs_blk_6.push_back(txs_blk_3.back());
 
   MAKE_NEXT_BLOCK_TX_LIST(events, blk_3, blk_2r, miner_account, txs_blk_3);                       // 19 + 2N
@@ -113,7 +114,7 @@ bool gen_chain_switch_1::check_split_not_switched(core_t& c, size_t ev_index, co
   CHECK_EQ(2, c.get_alternative_blocks_count());
 
   std::vector<cryptonote::block> chain;
-  map_hash2tx_t mtx;
+  map_hash2tx_isregular_t mtx;
   r = find_block_chain(events, chain, mtx, get_block_hash(blocks.back()));
   CHECK_TEST_CONDITION(r);
   CHECK_EQ(8,  get_balance(m_recipient_account_1, chain, mtx));
@@ -163,7 +164,7 @@ bool gen_chain_switch_1::check_split_switched(core_t& c, size_t ev_index, const 
   }
 
   std::vector<cryptonote::block> chain;
-  map_hash2tx_t mtx;
+  map_hash2tx_isregular_t mtx;
   r = find_block_chain(events, chain, mtx, get_block_hash(blocks.back()));
   CHECK_TEST_CONDITION(r);
   CHECK_EQ(8,  get_balance(m_recipient_account_1, chain, mtx));
@@ -182,5 +183,61 @@ bool gen_chain_switch_1::check_split_switched(core_t& c, size_t ev_index, const 
   lookup_acc_outs(m_recipient_account_2.get_keys(), tx_pool.front(), tx_outs, transfered);
   CHECK_EQ(7, transfered);
 
+  return true;
+}
+
+bool gen_chainswitch_invalid_1::generate(std::vector<test_event_entry>& events) const
+{
+  // make a long chain with a double-spend at the beginning, make sure rolls back + marks invalid ok
+  uint64_t ts_start = 1338224400;
+  GENERATE_ACCOUNT(miner_account);
+  GENERATE_ACCOUNT(alice);
+  GENERATE_ACCOUNT(bob);
+  MAKE_STARTING_BLOCKS(events, blk_0, miner_account, ts_start);
+  
+  REWIND_BLOCKS_N(events, blk_1r, blk_0, miner_account, 20);
+
+  // start alt chain
+  REWIND_BLOCKS_N(events, b_blk_1r, blk_0, miner_account, 5); // 5
+  
+  SET_EVENT_VISITOR_SETT(events, event_visitor_settings::set_txs_keeped_by_block, true);
+  MAKE_TX(events, tx_spend1, miner_account, alice, 500, blk_1r);
+  
+  MAKE_NEXT_BLOCK_TX1(events, b_blk_2, b_blk_1r, miner_account, tx_spend1); // 6
+  MAKE_NEXT_BLOCK_TX1(events, b_blk_3, b_blk_2, miner_account, tx_spend1);  // 7
+  
+  REWIND_BLOCKS_N(events, b_blk_4r, b_blk_3, miner_account, 13); // 20
+ 
+  DO_CALLBACK(events, "mark_invalid_block");
+  MAKE_NEXT_BLOCK(events, b_blk_5, b_blk_4r, miner_account); // 21 - fail to reorg
+  
+  return true;
+}
+
+bool gen_chainswitch_invalid_2::generate(std::vector<test_event_entry>& events) const
+{
+  // make a long chain with a double-spend at the end, make sure rolls back + marks invalid ok
+  uint64_t ts_start = 1338224400;
+  GENERATE_ACCOUNT(miner_account);
+  GENERATE_ACCOUNT(alice);
+  GENERATE_ACCOUNT(bob);
+  MAKE_STARTING_BLOCKS(events, blk_0, miner_account, ts_start);
+  
+  REWIND_BLOCKS_N(events, blk_1r, blk_0, miner_account, 20);
+
+  // start alt chain
+  REWIND_BLOCKS_N(events, b_blk_1r, blk_0, miner_account, 17); // 17
+  
+  SET_EVENT_VISITOR_SETT(events, event_visitor_settings::set_txs_keeped_by_block, true);
+  MAKE_TX(events, tx_spend1, miner_account, alice, 500, blk_1r);
+  
+  MAKE_NEXT_BLOCK_TX1(events, b_blk_2, b_blk_1r, miner_account, tx_spend1); // 18
+  MAKE_NEXT_BLOCK_TX1(events, b_blk_3, b_blk_2, miner_account, tx_spend1);  // 19
+  
+  MAKE_NEXT_BLOCK(events, b_blk_4, b_blk_3, miner_account); // 20
+ 
+  DO_CALLBACK(events, "mark_invalid_block");
+  MAKE_NEXT_BLOCK(events, b_blk_5, b_blk_4, miner_account); // 21 - fail to reorg
+  
   return true;
 }

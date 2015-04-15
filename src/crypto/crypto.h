@@ -8,14 +8,17 @@
 #include <mutex>
 #include <vector>
 
+#include <boost/functional/hash.hpp>
+
 #include "common/pod-class.h"
+
 #include "generic-ops.h"
 #include "hash.h"
 
 namespace crypto {
 
   extern "C" {
-#include "random.h"
+#include "crypto_core/random.h"
   }
 
   extern std::mutex random_lock;
@@ -48,6 +51,7 @@ namespace crypto {
   POD_CLASS signature {
     ec_scalar c, r;
     friend class crypto_ops;
+    friend std::size_t hash_value(const signature&);
   };
 #pragma pack(pop)
 
@@ -181,6 +185,28 @@ namespace crypto {
   }
 }
 
-CRYPTO_MAKE_COMPARABLE(public_key)
+CRYPTO_MAKE_HASHABLE(ec_point)
+CRYPTO_MAKE_HASHABLE(ec_scalar)
+CRYPTO_MAKE_HASHABLE(public_key)
+CRYPTO_MAKE_HASHABLE(secret_key)
+CRYPTO_MAKE_HASHABLE(key_derivation)
 CRYPTO_MAKE_HASHABLE(key_image)
 CRYPTO_MAKE_COMPARABLE(signature)
+
+namespace crypto {
+  inline std::size_t hash_value(const signature &s) {
+    std::size_t seed = 0;
+    boost::hash_combine(seed, s.c);
+    boost::hash_combine(seed, s.r);
+    return seed;
+  }
+}
+
+namespace std {
+  template<>
+  struct hash<crypto::signature> {
+    std::size_t operator()(const crypto::signature &s) const {
+      return crypto::hash_value(s);
+    }
+  };
+}

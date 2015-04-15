@@ -125,6 +125,13 @@ void WalletFrame::gotoSupportPage()
     i.value()->gotoSupportPage();
 }
 
+void WalletFrame::gotoDposPage()
+{
+  QMap<QString, WalletView*>::const_iterator i;
+  for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
+    i.value()->gotoDposPage();
+}
+
 void WalletFrame::gotoReceiveCoinsPage()
 {
     QMap<QString, WalletView*>::const_iterator i;

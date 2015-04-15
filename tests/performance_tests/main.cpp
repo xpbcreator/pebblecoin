@@ -2,7 +2,6 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "cryptonote_core/miner_opt.cpp"
 #include "common/util.cpp"
 
 #include "performance_tests.h"

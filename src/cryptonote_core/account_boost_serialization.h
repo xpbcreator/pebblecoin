@@ -1,3 +1,4 @@
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Copyright (c) 2012-2013 The Cryptonote developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -8,7 +9,6 @@
 #include "cryptonote_core/cryptonote_boost_serialization.h"
 #include "cryptonote_core/cryptonote_format_utils.h"
 
-//namespace cryptonote {
 namespace boost
 {
   namespace serialization
@@ -31,8 +31,20 @@ namespace boost
     template <class Archive>
     inline void serialize(Archive &a, cryptonote::tx_destination_entry& x, const boost::serialization::version_type ver)
     {
+      if (ver >= (boost::serialization::version_type)(2))
+      {
+        a & x.cp;
+      }
+      else {
+        if (Archive::is_saving()) {
+          throw std::runtime_error("Invalid cp for old archive");
+        }
+        x.cp = cryptonote::CP_XPB;
+      }
       a & x.amount;
       a & x.addr;
     }
   }
 }
+
+BOOST_CLASS_VERSION(cryptonote::tx_destination_entry, 2)

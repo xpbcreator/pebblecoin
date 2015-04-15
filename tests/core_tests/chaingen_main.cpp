@@ -7,6 +7,7 @@
 #include "common/command_line.h"
 #include "transaction_tests.h"
 #include "../test_genesis_config.h"
+#include "crypto/hash_options.h"
 
 namespace po = boost::program_options;
 
@@ -17,6 +18,7 @@ namespace
   const command_line::arg_descriptor<bool>        arg_play_test_data              = {"play_test_data", ""};
   const command_line::arg_descriptor<bool>        arg_generate_and_play_test_data = {"generate_and_play_test_data", ""};
   const command_line::arg_descriptor<bool>        arg_test_transactions           = {"test_transactions", ""};
+  const command_line::arg_descriptor<bool>        arg_stop_on_fail                = {"stop_on_fail", ""};
 }
 
 int main(int argc, char* argv[])
@@ -42,6 +44,7 @@ int main(int argc, char* argv[])
   command_line::add_arg(desc_options, arg_play_test_data);
   command_line::add_arg(desc_options, arg_generate_and_play_test_data);
   command_line::add_arg(desc_options, arg_test_transactions);
+  command_line::add_arg(desc_options, arg_stop_on_fail);
 
   po::variables_map vm;
   bool r = command_line::handle_error_helper(desc_options, [&]()
@@ -59,12 +62,14 @@ int main(int argc, char* argv[])
     return 0;
   }
 
-#ifdef SMALL_BOULDERHASH
-  std::cout << "SMALL_BOULDERHASH is on" << std::endl;
-#else
-  std::cout << "SMALL_BOULDERHASH is off" << std::endl;
-#endif
-
+  // testing params
+  g_hash_ops_small_boulderhash = true;
+  cryptonote::config::do_boulderhash = true;
+  cryptonote::config::no_reward_ramp = true;
+  cryptonote::config::test_serialize_unserialize_block = true;
+  cryptonote::config::dpos_num_delegates = 5;
+  DEFAULT_FEE = 0; // add no-fee txs, lot of tests use them
+  
   crypto::g_boulderhash_state = crypto::pc_malloc_state();
   
   size_t tests_count = 0;
@@ -80,10 +85,126 @@ int main(int argc, char* argv[])
   }
   else if (command_line::get_arg(vm, arg_generate_and_play_test_data))
   {
+    bool stop_on_fail = command_line::get_arg(vm, arg_stop_on_fail);
+    
+    GENERATE_AND_PLAY(gen_dpos_register);
+    GENERATE_AND_PLAY(gen_dpos_register_invalid_id);
+    GENERATE_AND_PLAY(gen_dpos_register_invalid_id_2);
+    GENERATE_AND_PLAY(gen_dpos_register_invalid_address);
+    GENERATE_AND_PLAY(gen_dpos_register_low_fee);
+    GENERATE_AND_PLAY(gen_dpos_register_low_fee_2);
+    
+    GENERATE_AND_PLAY(gen_dpos_vote);
+    
+    GENERATE_AND_PLAY(gen_dpos_switch_to_dpos);
+    GENERATE_AND_PLAY(gen_dpos_altchain_voting);
+    GENERATE_AND_PLAY(gen_dpos_altchain_voting_invalid);
+    GENERATE_AND_PLAY(gen_dpos_limit_delegates);
+    GENERATE_AND_PLAY(gen_dpos_unapply_votes);
+    GENERATE_AND_PLAY(gen_dpos_limit_votes);
+    GENERATE_AND_PLAY(gen_dpos_change_votes);
+    GENERATE_AND_PLAY(gen_dpos_spend_votes);
+    GENERATE_AND_PLAY(gen_dpos_vote_tiebreaker);
+    GENERATE_AND_PLAY(gen_dpos_delegate_timeout);
+    GENERATE_AND_PLAY(gen_dpos_delegate_timeout_2);
+    GENERATE_AND_PLAY(gen_dpos_timestamp_checks);
+    GENERATE_AND_PLAY(gen_dpos_invalid_votes);
+    GENERATE_AND_PLAY(gen_dpos_receives_fees);
+    GENERATE_AND_PLAY(gen_dpos_altchain_voting_2);
+    GENERATE_AND_PLAY(gen_dpos_altchain_voting_3);
+    GENERATE_AND_PLAY(gen_dpos_altchain_voting_4);
+    
+    /*// Contract chain-switch
+    GENERATE_AND_PLAY(gen_chainswitch_txin_to_key);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_create_id_1);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_create_id_2);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_create_id_3);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_create_id_4);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_create_descr_1);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_create_descr_2);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_create_descr_3);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_create_descr_4);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_create_send);
+    GENERATE_AND_PLAY(gen_chainswitch_contract_grade);
+    
+    // Contracts
+    GENERATE_AND_PLAY(gen_contracts_create);
+    GENERATE_AND_PLAY(gen_contracts_create_mint);
+    GENERATE_AND_PLAY(gen_contracts_grade);
+    GENERATE_AND_PLAY(gen_contracts_grade_with_fee);
+    GENERATE_AND_PLAY(gen_contracts_grade_spend_backing);
+    GENERATE_AND_PLAY(gen_contracts_grade_spend_backing_cant_overspend_misgrade);
+    GENERATE_AND_PLAY(gen_contracts_grade_spend_contract);
+    GENERATE_AND_PLAY(gen_contracts_grade_send_then_spend_contract);
+    GENERATE_AND_PLAY(gen_contracts_grade_cant_send_and_spend_contract_1);
+    GENERATE_AND_PLAY(gen_contracts_grade_cant_send_and_spend_contract_2);
+    GENERATE_AND_PLAY(gen_contracts_grade_spend_contract_cant_overspend_misgrade);
+    GENERATE_AND_PLAY(gen_contracts_grade_spend_fee);
+    GENERATE_AND_PLAY(gen_contracts_grade_spend_fee_cant_overspend_misgrade);
+    GENERATE_AND_PLAY(gen_contracts_grade_spend_all_rounding);
+    GENERATE_AND_PLAY(gen_contracts_resolve_backing_cant_change_contract);
+    GENERATE_AND_PLAY(gen_contracts_resolve_backing_expired);
+    GENERATE_AND_PLAY(gen_contracts_resolve_contract_cant_change_contract);
+    GENERATE_AND_PLAY(gen_contracts_resolve_contract_expired);
+
+    GENERATE_AND_PLAY(gen_contracts_extra_currency_checks);
+    GENERATE_AND_PLAY(gen_contracts_create_checks);
+    GENERATE_AND_PLAY(gen_contracts_mint_checks);
+    GENERATE_AND_PLAY(gen_contracts_grade_checks);
+    GENERATE_AND_PLAY(gen_contracts_resolve_backing_checks);
+    GENERATE_AND_PLAY(gen_contracts_resolve_contract_checks);
+    
+    GENERATE_AND_PLAY(gen_contracts_create_mint_fuse);
+    GENERATE_AND_PLAY(gen_contracts_create_mint_fuse_fee);
+    GENERATE_AND_PLAY(gen_contracts_create_mint_fuse_checks);
+    
+    // Sub-currencies
+    GENERATE_AND_PLAY(gen_chainswitch_mint);
+    GENERATE_AND_PLAY(gen_chainswitch_mint_2);
+    GENERATE_AND_PLAY(gen_chainswitch_mint_3);
+    GENERATE_AND_PLAY(gen_chainswitch_remint);
+    GENERATE_AND_PLAY(gen_chainswitch_remint_2);
+    
+    GENERATE_AND_PLAY(gen_currency_mint);
+    GENERATE_AND_PLAY(gen_currency_mint_many);
+    GENERATE_AND_PLAY(gen_currency_invalid_amount_0);
+    GENERATE_AND_PLAY(gen_currency_invalid_currency_0);
+    GENERATE_AND_PLAY(gen_currency_invalid_currency_70);
+    GENERATE_AND_PLAY(gen_currency_invalid_currency_255);
+    GENERATE_AND_PLAY(gen_currency_invalid_large_description);
+    GENERATE_AND_PLAY(gen_currency_invalid_reuse_currency_1);
+    GENERATE_AND_PLAY(gen_currency_invalid_reuse_currency_2);
+    GENERATE_AND_PLAY(gen_currency_invalid_reuse_description_1);
+    GENERATE_AND_PLAY(gen_currency_invalid_reuse_description_2);
+    GENERATE_AND_PLAY(gen_currency_invalid_remint_key);
+    GENERATE_AND_PLAY(gen_currency_invalid_spend_more_than_mint);
+    GENERATE_AND_PLAY(gen_currency_ok_spend_less_than_mint);
+    
+    GENERATE_AND_PLAY(gen_currency_spend_currency);
+    GENERATE_AND_PLAY(gen_currency_cant_spend_other_currency);
+    GENERATE_AND_PLAY(gen_currency_spend_currency_mix);
+    
+    GENERATE_AND_PLAY(gen_currency_remint_valid);
+    GENERATE_AND_PLAY(gen_currency_remint_invalid_amount_0);
+    GENERATE_AND_PLAY(gen_currency_remint_invalid_unremintable);
+    GENERATE_AND_PLAY(gen_currency_remint_invalid_currency);
+    GENERATE_AND_PLAY(gen_currency_remint_invalid_new_remint_key);
+    GENERATE_AND_PLAY(gen_currency_remint_invalid_signature);
+    GENERATE_AND_PLAY(gen_currency_remint_invalid_spend_more_than_remint);
+    GENERATE_AND_PLAY(gen_currency_remint_twice);
+    GENERATE_AND_PLAY(gen_currency_remint_change_key_old_invalid);
+    GENERATE_AND_PLAY(gen_currency_remint_change_key_remint);
+    GENERATE_AND_PLAY(gen_currency_remint_can_remint_twice_per_block);
+    GENERATE_AND_PLAY(gen_currency_remint_cant_mint_remint_same_block);
+    GENERATE_AND_PLAY(gen_currency_remint_limit_uint64max);*/
+    
+    // Vanilla:
     GENERATE_AND_PLAY(gen_simple_chain_001);
     GENERATE_AND_PLAY(gen_simple_chain_split_1);
     GENERATE_AND_PLAY(one_block);
     GENERATE_AND_PLAY(gen_chain_switch_1);
+    GENERATE_AND_PLAY(gen_chainswitch_invalid_1);
+    GENERATE_AND_PLAY(gen_chainswitch_invalid_2);
     GENERATE_AND_PLAY(gen_ring_signature_1);
     GENERATE_AND_PLAY(gen_ring_signature_2);
     //GENERATE_AND_PLAY(gen_ring_signature_big); // Takes up to XXX hours (if CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW == 10)
@@ -150,7 +271,7 @@ int main(int argc, char* argv[])
     GENERATE_AND_PLAY(gen_uint_overflow_1);
     GENERATE_AND_PLAY(gen_uint_overflow_2);
 
-    GENERATE_AND_PLAY(gen_block_reward);
+    //GENERATE_AND_PLAY(gen_block_reward); // Takes a while
 
     std::cout << (failed_tests.empty() ? concolor::green : concolor::magenta);
     std::cout << "\nREPORT:\n";

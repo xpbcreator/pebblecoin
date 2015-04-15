@@ -3,9 +3,13 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <boost/interprocess/detail/atomic.hpp>
-#include "cryptonote_core/cryptonote_format_utils.h"
+
 #include "profile_tools.h"
+
+#include "crypto/crypto_basic_impl.h"
 #include "crypto/hash_options.h"
+
+#include "cryptonote_core/cryptonote_format_utils.h"
 
 namespace cryptonote
 {
@@ -124,7 +128,7 @@ namespace cryptonote
 
     int64_t diff = static_cast<int64_t>(hshd.current_height) - static_cast<int64_t>(m_core.get_current_blockchain_height());
     LOG_PRINT_CCONTEXT_YELLOW("Sync data returned unknown top block: " << m_core.get_current_blockchain_height() << " -> " << hshd.current_height
-      << " [" << std::abs(diff) << " blocks (" << diff / (24 * 60 * 60 / DIFFICULTY_TARGET) << " days) "
+      << " [" << std::abs(diff) << " blocks (" << diff / (24 * 60 * 60 / cryptonote::config::difficulty_target()) << " days) "
       << (0 <= diff ? std::string("behind") : std::string("ahead"))
       << "] " << ENDL << "SYNCHRONIZATION started", (is_inital ? LOG_LEVEL_0:LOG_LEVEL_1));
     LOG_PRINT_L1("Remote top block height: " << hshd.current_height << ", id: " << hshd.top_id);
@@ -160,7 +164,7 @@ namespace cryptonote
     LOG_PRINT_CCONTEXT_L2("NOTIFY_NEW_BLOCK (hop " << arg.hop << ")");
     if(context.m_state != cryptonote_connection_context::state_normal)
     {
-      if (!hashing_opt::boulderhash_enabled())
+      if (!cryptonote::config::do_boulderhash)
       {
         LOG_PRINT_CCONTEXT_L2("Requesting callback to ask for signed hashes");
         ++context.m_callback_request_count;
@@ -358,7 +362,7 @@ namespace cryptonote
     
     if (arg.blocks_not_sent.size())
     {
-      if (hashing_opt::boulderhash_enabled()) {
+      if (cryptonote::config::do_boulderhash) {
         LOG_PRINT_CCONTEXT_RED("sent wrong NOTIFY_RESPONSE_GET_OBJECTS: didn't send blocks but not relying on signed hashes, dropping connection", LOG_LEVEL_0);
         m_p2p->drop_connection(context);
         return 1;
@@ -482,7 +486,7 @@ namespace cryptonote
       //we know objects that we need, request this objects
       NOTIFY_REQUEST_GET_OBJECTS::request req;
       
-      req.require_signed_hashes = !hashing_opt::boulderhash_enabled();
+      req.require_signed_hashes = !cryptonote::config::do_boulderhash;
       
       {
         size_t count = 0;

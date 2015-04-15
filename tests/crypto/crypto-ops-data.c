@@ -2,4 +2,4 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "crypto/crypto-ops-data.c"
+#include "crypto_core/crypto-ops-data.c"

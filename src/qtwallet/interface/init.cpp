@@ -11,9 +11,11 @@ using namespace epee;
 #include <boost/thread.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/thread.hpp>
+#include <string>
 
 #include "version.h"
 #include "common/types.h"
+#include "common/ntp_time.h"
 #include "daemon/daemon_options.h"
 #include "common/util.h"
 #include "crypto/hash.h"
@@ -234,7 +236,8 @@ bool DaemonThread(DaemonInitState& initState)
     CHECK_AND_ASSERT_MES(res, false, "Failed to initialize checkpoints");
     
     //create objects and link them
-    core_t ccore(NULL);
+    tools::ntp_time ntp(60*60);
+    core_t ccore(NULL, ntp);
     ccore.set_checkpoints(std::move(checkpoints));
     protocol_handler_t cprotocol(ccore, NULL);
     node_server_t p2psrv(cprotocol);
@@ -429,8 +432,13 @@ bool AppInit2(boost::thread_group& threadGroup, QString& error)
         error = QObject::tr("Failed to load wallet: %1").arg(e.what());
         return false;
     }
-    
-    pwallet2->init("http://localhost:" + GetArg(core_rpc_opt::arg_rpc_bind_port));    
+  
+    std::string rpc_bind_port = GetArg(core_rpc_opt::arg_rpc_bind_port);
+    if (rpc_bind_port.empty())
+    {
+        rpc_bind_port = std::to_string(cryptonote::config::rpc_default_port());
+    }
+    pwallet2->init("http://localhost:" + rpc_bind_port);
     
     LOG_PRINT_L0("Creating CWallet...");
     pwalletMain = new CWallet(GetWalletFile().string() + ".cwallet");

@@ -28,6 +28,9 @@
 #ifndef _PROFILE_TOOLS_H_
 #define _PROFILE_TOOLS_H_
 
+#include <stdlib.h>
+#include <stdint.h>
+
 namespace epee
 {
 
@@ -63,47 +66,24 @@ namespace profile_tools
 {
 	struct local_call_account
 	{
-		local_call_account(const char* pstr):m_count_of_call(0), m_summary_time_used(0),m_pname(pstr)
-		{}
-		~local_call_account()
-		{
-			LOG_PRINT2("profile_details.log", "PROFILE "<<m_pname<<":av_time:\t" << (m_count_of_call ? (m_summary_time_used/m_count_of_call):0) <<" sum_time:\t"<<m_summary_time_used<<" call_count:\t" << m_count_of_call, LOG_LEVEL_0);
-		}
+		local_call_account(const char* pstr);
+		~local_call_account();
 
 		size_t m_count_of_call;
 		uint64_t m_summary_time_used;
 		const char* m_pname;
 	};
 	
+  struct call_frame_impl;
 	struct call_frame
 	{
-
-		call_frame(local_call_account& cc):m_cc(cc)
-		{
-			cc.m_count_of_call++;
-			m_call_time = boost::posix_time::microsec_clock::local_time();
-			//::QueryPerformanceCounter((LARGE_INTEGER *)&m_call_time);
-		}
-		
-		~call_frame()
-		{
-			//__int64 ret_time = 0;
-			
-			boost::posix_time::ptime now_t(boost::posix_time::microsec_clock::local_time());
-			boost::posix_time::time_duration delta_microsec = now_t - m_call_time;
-			uint64_t miliseconds_used = delta_microsec.total_microseconds();
-
-			//::QueryPerformanceCounter((LARGE_INTEGER *)&ret_time);
-			//m_call_time = (ret_time-m_call_time)/1000;
-			m_cc.m_summary_time_used += miliseconds_used;
-		}
+		call_frame(local_call_account& cc);
+		~call_frame();
 		
 	private:
 		local_call_account& m_cc;
-		boost::posix_time::ptime m_call_time;
+    call_frame_impl *m_pimpl;
 	};
-	
-
 }
 }
 

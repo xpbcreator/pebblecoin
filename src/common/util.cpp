@@ -7,8 +7,9 @@
 #include "include_base_utils.h"
 using namespace epee;
 
+#include <boost/filesystem.hpp>
+
 #include "util.h"
-#include "cryptonote_config.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -21,6 +22,7 @@ using namespace epee;
 #include "ui_interface.h"
 
 CClientUIInterface uiInterface;
+extern const char *CRYPTONOTE_NAME;
 
 namespace tools
 {

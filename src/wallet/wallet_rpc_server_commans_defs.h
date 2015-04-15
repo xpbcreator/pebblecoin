@@ -3,10 +3,12 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #pragma once
+
 #include "cryptonote_protocol/cryptonote_protocol_defs.h"
-#include "cryptonote_core/cryptonote_basic.h"
 #include "crypto/hash.h"
+
 #include "wallet_rpc_server_error_codes.h"
+
 namespace tools
 {
 namespace wallet_rpc

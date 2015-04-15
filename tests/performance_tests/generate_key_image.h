@@ -6,6 +6,7 @@
 
 #include "crypto/crypto.h"
 #include "cryptonote_core/cryptonote_basic.h"
+#include "cryptonote_core/keypair.h"
 
 #include "single_tx_test_base.h"
 

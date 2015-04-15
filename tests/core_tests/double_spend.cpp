@@ -3,7 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chaingen.h"
-#include "chaingen_tests_list.h"
+#include "double_spend.h"
 
 using namespace epee;
 using namespace cryptonote;
@@ -60,7 +60,7 @@ bool gen_double_spend_in_different_chains::check_double_spend(core_t& c, size_t 
   cryptonote::account_base alice_account = boost::get<cryptonote::account_base>(events[5]);
 
   std::vector<cryptonote::block> chain;
-  map_hash2tx_t mtx;
+  map_hash2tx_isregular_t mtx;
   r = find_block_chain(events, chain, mtx, get_block_hash(blocks.back()));
   CHECK_TEST_CONDITION(r);
   CHECK_EQ(0, get_balance(bob_account, blocks, mtx));

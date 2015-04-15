@@ -29,6 +29,7 @@
 #pragma once 
 
 #include "misc_language.h"
+#include "misc_log_ex.h"
 #include "portable_storage_base.h"
 
 #ifdef EPEE_PORTABLE_STORAGE_RECURSION_LIMIT

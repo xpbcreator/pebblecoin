@@ -54,7 +54,7 @@ TEST(Transfers, Transfers)
   //getline(cin, s);
   sleep_no_w(1000);
   ASSERT_TRUE(miner.refresh());
-  cout << "miner balance: " << miner.balance() << endl;
+  cout << "miner balance: " << miner.balance()[CP_XPB] << endl;
 
   vector<pair<account_public_address, uint64_t>> d_accs;
   for (int i = 0; i < ACCS; i++)
@@ -72,6 +72,6 @@ TEST(Transfers, Transfers)
   cout << "wait for block" << endl;
   sleep_no_w(10000);
   receiver.refresh();
-  ASSERT_TRUE(receiver.balance() == ACCS);
+  ASSERT_TRUE(receiver.balance()[CP_XPB] == ACCS);
   cout << "OK" << endl;
 }

@@ -56,7 +56,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     {
         auto& kd = *wtx.optKnownTransfers;
         bool fIncludeFee = true;
-        LOG_PRINT_L2("kd.m_fee = " << kd.m_fee << ", kd.m_change=" << kd.m_change);
+        LOG_PRINT_L2("kd.m_fee = " << kd.m_fee << ", m_xpb_change=" << kd.m_xpb_change);
         BOOST_FOREACH(const auto& dest, kd.m_dests)
         {
             uint64_t nThisAmount = dest.amount;
@@ -66,7 +66,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             }
             if (nThisAmount > nDebit)
             {
-                LOG_PRINT_RED_L0("Known transfer amount greater than debit amount?");
+                LOG_PRINT_RED_L0("Known transfer amount " << cryptonote::print_money(nThisAmount) << " greater than debit amount " << cryptonote::print_money(nDebit) << "?");
                 continue;
             }
             nDebit -= nThisAmount;
@@ -103,23 +103,23 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
         }
         
         LOG_PRINT_L2("after transfers, nDebit=" << nDebit << ", nCredit=" << nCredit);
-        if (kd.m_change > nCredit)
+        if (kd.m_xpb_change > nCredit)
         {
-            LOG_PRINT_RED_L0("Known transfer amount change greater than credit amount?");
+            LOG_PRINT_RED_L0("Known transfer amount change " << cryptonote::print_money(kd.m_xpb_change) << " greater than credit amount " << cryptonote::print_money(nCredit) << "?");
             nCredit = 0;
         }
         else
         {
-            nCredit -= kd.m_change;
+            nCredit -= kd.m_xpb_change;
         }
-        if (kd.m_change > nDebit)
+        if (kd.m_xpb_change > nDebit)
         {
-            LOG_PRINT_RED_L0("Known transfer amount change greater than debit amount?");
+            LOG_PRINT_RED_L0("Known transfer amount change " << cryptonote::print_money(kd.m_xpb_change) << " greater than debit amount " << cryptonote::print_money(nDebit) << "?");
             nDebit = 0;
         }
         else
         {
-            nDebit -= kd.m_change;
+            nDebit -= kd.m_xpb_change;
         }
     }
     

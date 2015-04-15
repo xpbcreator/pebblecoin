@@ -32,6 +32,12 @@
 #include <mutex>
 #include <thread>
 
+#include <boost/thread.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+
+#include "misc_log_ex.h"
+
 namespace epee
 {
   class async_stdin_reader

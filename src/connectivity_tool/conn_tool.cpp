@@ -10,6 +10,7 @@
 using namespace epee;
 #include <boost/program_options.hpp>
 #include "p2p/p2p_protocol_defs.h"
+#include "p2p/net_util.h"
 #include "common/command_line.h"
 #include "cryptonote_core/cryptonote_core.h"
 #include "cryptonote_protocol/cryptonote_protocol_handler.h"

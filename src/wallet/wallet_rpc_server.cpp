@@ -1,18 +1,25 @@
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Copyright (c) 2012-2013 The Cryptonote developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 
 #include "include_base_utils.h"
-using namespace epee;
-
-#include "wallet_rpc_server.h"
-#include "common/command_line.h"
-#include "cryptonote_core/cryptonote_format_utils.h"
-#include "cryptonote_core/account.h"
 #include "misc_language.h"
 #include "string_tools.h"
+
+#include "common/command_line.h"
 #include "crypto/hash.h"
+#include "crypto/crypto_basic_impl.h"
+#include "cryptonote_core/cryptonote_format_utils.h"
+#include "cryptonote_core/cryptonote_basic_impl.h"
+#include "cryptonote_core/account.h"
+
+#include "wallet2.h"
+#include "wallet_rpc_server.h"
+#include "wallet_errors.h"
+
+using namespace epee;
 
 namespace tools
 {
@@ -59,8 +66,8 @@ namespace tools
   {
     try
     {
-      res.balance = m_wallet.balance();
-      res.unlocked_balance = m_wallet.unlocked_balance();
+      res.balance = m_wallet.balance()[cryptonote::CP_XPB];
+      res.unlocked_balance = m_wallet.unlocked_balance()[cryptonote::CP_XPB];
     }
     catch (std::exception& e)
     {
@@ -90,7 +97,7 @@ namespace tools
     try
     {
       cryptonote::transaction tx;
-      m_wallet.transfer(dsts, req.mixin, req.unlock_time, req.fee, std::vector<uint8_t>(), tx);
+      m_wallet.transfer(dsts, req.mixin, req.mixin, req.unlock_time, req.fee, std::vector<uint8_t>(), tx);
       res.tx_hash = boost::lexical_cast<std::string>(cryptonote::get_transaction_hash(tx));
       return true;
     }

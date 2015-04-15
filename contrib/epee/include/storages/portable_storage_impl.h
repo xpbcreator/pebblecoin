@@ -1,0 +1,213 @@
+// Copyright (c) 2006-2013, Andrey N. Sabelnikov, www.sabelnikov.net
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+// * Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+// * Neither the name of the Andrey N. Sabelnikov nor the
+// names of its contributors may be used to endorse or promote products
+// derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER  BE LIABLE FOR ANY
+// DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+
+
+#pragma once
+
+#include "portable_storage_def.h"
+
+#include "misc_language.h"
+#include "portable_storage_to_bin.h"
+#include "portable_storage_from_bin.h"
+#include "portable_storage_to_json.h"
+#include "portable_storage_from_json.h"
+#include "portable_storage_val_converters.h"
+
+namespace epee
+{
+  namespace serialization
+  {
+    template<class trace_policy>
+    bool portable_storage::dump_as_xml(std::string& targetObj, const std::string& root_name)
+    {
+      return false;//TODO: don't think i ever again will use xml - ambiguous and "overtagged" format
+    }
+
+    //---------------------------------------------------------------------------------------------------------------
+    template<class to_type>
+    struct get_value_visitor: boost::static_visitor<void>
+    {
+      to_type& m_target;
+      get_value_visitor(to_type& target):m_target(target){}
+      template<class from_type>
+      void operator()(const from_type& v){convert_t(v, m_target);}
+    };
+
+    template<class t_value>
+    bool portable_storage::get_value(const std::string& value_name, t_value& val, hsection hparent_section)
+    {
+      BOOST_MPL_ASSERT(( boost::mpl::contains<storage_entry::types, t_value> )); 
+      //TRY_ENTRY();
+      if(!hparent_section) hparent_section = &m_root;
+      storage_entry* pentry = find_storage_entry(value_name, hparent_section);
+      if(!pentry)
+        return false;
+
+      get_value_visitor<t_value> gvv(val);
+      boost::apply_visitor(gvv, *pentry);
+      return true;
+      //CATCH_ENTRY("portable_storage::template<>get_value", false);
+    }
+    //---------------------------------------------------------------------------------------------------------------
+    template<class t_value>
+    bool portable_storage::set_value(const std::string& value_name, const t_value& v, hsection hparent_section)        
+    {
+      BOOST_MPL_ASSERT(( boost::mpl::contains<boost::mpl::push_front<storage_entry::types, storage_entry>::type, t_value> )); 
+      TRY_ENTRY();
+      if(!hparent_section)
+        hparent_section = &m_root;
+      storage_entry* pentry = find_storage_entry(value_name, hparent_section);
+      if(!pentry)
+      {
+        pentry = insert_new_entry_get_storage_entry(value_name, hparent_section, v);
+        if(!pentry)
+          return false;
+        return true;
+      }
+      *pentry = storage_entry(v);
+      return true;
+      CATCH_ENTRY("portable_storage::template<>set_value", false);
+    }
+    //---------------------------------------------------------------------------------------------------------------
+    template<class entry_type>
+    storage_entry* portable_storage::insert_new_entry_get_storage_entry(const std::string& pentry_name, hsection psection, const entry_type& entry)
+    {
+      TRY_ENTRY();
+      CHECK_AND_ASSERT(psection, nullptr);
+      auto ins_res = psection->m_entries.insert(std::pair<std::string, storage_entry>(pentry_name, entry));
+      return &ins_res.first->second;
+      CATCH_ENTRY("portable_storage::insert_new_entry_get_storage_entry", nullptr);
+    }
+    //---------------------------------------------------------------------------------------------------------------
+    template<class to_type>
+    struct get_first_value_visitor: boost::static_visitor<bool>
+    {
+      to_type& m_target;
+      get_first_value_visitor(to_type& target):m_target(target){}
+      template<class from_type>
+      bool operator()(const array_entry_t<from_type>& a)
+      {
+        const from_type* pv = a.get_first_val();
+        if(!pv)
+          return false;
+        convert_t(*pv, m_target);
+        return true;
+      }
+    };
+    //---------------------------------------------------------------------------------------------------------------
+    template<class t_value>
+    harray portable_storage::get_first_value(const std::string& value_name, t_value& target, hsection hparent_section)
+    {
+      BOOST_MPL_ASSERT(( boost::mpl::contains<storage_entry::types, t_value> )); 
+      //TRY_ENTRY();
+      if(!hparent_section) hparent_section = &m_root;
+      storage_entry* pentry = find_storage_entry(value_name, hparent_section);
+      if(!pentry)
+        return nullptr;
+      if(pentry->type() != typeid(array_entry))
+        return nullptr;
+      array_entry& ar_entry = boost::get<array_entry>(*pentry);
+      
+      get_first_value_visitor<t_value> gfv(target);
+      if(!boost::apply_visitor(gfv, ar_entry))
+        return nullptr;
+      return &ar_entry;
+      //CATCH_ENTRY("portable_storage::get_first_value", nullptr);
+    }
+    //---------------------------------------------------------------------------------------------------------------
+    template<class to_type>
+    struct get_next_value_visitor: boost::static_visitor<bool>
+    {
+      to_type& m_target;
+      get_next_value_visitor(to_type& target):m_target(target){}
+      template<class from_type>
+      bool operator()(const array_entry_t<from_type>& a)
+      {
+        //TODO: optimize code here: work without get_next_val function
+        const from_type* pv = a.get_next_val();
+        if(!pv)
+          return false;
+        convert_t(*pv, m_target);
+        return true;
+      }
+    };
+
+    template<class t_value>
+    bool portable_storage::get_next_value(harray hval_array, t_value& target)
+    {
+      BOOST_MPL_ASSERT(( boost::mpl::contains<storage_entry::types, t_value> )); 
+      //TRY_ENTRY();
+      CHECK_AND_ASSERT(hval_array, false);
+      array_entry& ar_entry = *hval_array;
+      get_next_value_visitor<t_value> gnv(target);
+      if(!boost::apply_visitor(gnv, ar_entry))
+        return false;
+      return true;
+      //CATCH_ENTRY("portable_storage::get_next_value", false);
+    } 
+    //---------------------------------------------------------------------------------------------------------------
+    template<class t_value>
+    harray portable_storage::insert_first_value(const std::string& value_name, const t_value& target, hsection hparent_section)
+    {
+      TRY_ENTRY();
+      if(!hparent_section) hparent_section = &m_root;
+      storage_entry* pentry = find_storage_entry(value_name, hparent_section);
+      if(!pentry)
+      {
+        pentry = insert_new_entry_get_storage_entry(value_name, hparent_section, array_entry(array_entry_t<t_value>()));
+        if(!pentry)
+          return nullptr;
+      }
+      if(pentry->type() != typeid(array_entry))
+        *pentry = storage_entry(array_entry(array_entry_t<t_value>()));
+
+      array_entry& arr = boost::get<array_entry>(*pentry);
+      if(arr.type() != typeid(array_entry_t<t_value>))
+        arr = array_entry(array_entry_t<t_value>());
+
+      array_entry_t<t_value>& arr_typed = boost::get<array_entry_t<t_value> >(arr);
+      arr_typed.insert_first_val(target);
+      return &arr;
+      CATCH_ENTRY("portable_storage::insert_first_value", nullptr);
+    }
+    //---------------------------------------------------------------------------------------------------------------
+    template<class t_value>
+    bool portable_storage::insert_next_value(harray hval_array, const t_value& target)
+    {
+      TRY_ENTRY();
+      CHECK_AND_ASSERT(hval_array, false);
+
+      CHECK_AND_ASSERT_MES(hval_array->type() == typeid(array_entry_t<t_value>), 
+        false, "unexpected type in insert_next_value: " << typeid(array_entry_t<t_value>).name());
+
+      array_entry_t<t_value>& arr_typed = boost::get<array_entry_t<t_value> >(*hval_array);
+      arr_typed.insert_next_value(target);
+      return true;
+      CATCH_ENTRY("portable_storage::insert_next_value", false);
+    }
+    //---------------------------------------------------------------------------------------------------------------
+  }
+}
