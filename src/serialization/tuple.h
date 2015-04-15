@@ -7,7 +7,7 @@
 #include "serialization.h"
 
 #include <utility>
-
+/*
 namespace tuple_serialization_detail {
   template<unsigned int N>
   struct Serialize
@@ -36,3 +36,4 @@ bool do_serialize(Archive& ar, std::tuple<Args...>& t)
 {
   return tuple_serialization_detail::Serialize<sizeof...(Args)>::do_serialize(ar, t);
 }
+*/

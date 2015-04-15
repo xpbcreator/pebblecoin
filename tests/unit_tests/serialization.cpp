@@ -405,7 +405,7 @@ TEST(Serialization, serialization_preserves_value__vector)
     }
   }
 }
-
+/*
 TEST(Serialization, serialization_preserves_value__tuple)
 {
   { auto t = std::make_tuple(); ASSERT_TRUE(both_serialization_preserves_value(t)); }
@@ -417,7 +417,7 @@ TEST(Serialization, serialization_preserves_value__tuple)
   { auto t = std::make_tuple(1, 2, 3, 4, 5); ASSERT_TRUE(both_serialization_preserves_value(t)); }
   { auto t = std::make_tuple(100, 'z', std::string("cor"), std::make_pair(1, 2));
     ASSERT_TRUE(both_serialization_preserves_value(t)); }
-}
+}*/
 
 namespace
 {

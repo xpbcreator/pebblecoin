@@ -113,7 +113,7 @@ namespace boost
     authors and should not be interpreted as representing official policies, either expressed
     or implied, of Christopher Allen Ogden.
     */
-    template<uint N>
+    /*template<uint N>
     struct Serialize
     {
       template<class Archive, typename... Args>
@@ -137,6 +137,6 @@ namespace boost
     void serialize(Archive & ar, std::tuple<Args...> & t, const unsigned int version)
     {
       Serialize<sizeof...(Args)>::serialize(ar, t, version);
-    }
+    }*/
   }
 }
