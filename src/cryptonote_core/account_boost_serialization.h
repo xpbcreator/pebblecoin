@@ -36,7 +36,7 @@ namespace boost
         a & x.cp;
       }
       else {
-        if (Archive::is_saving()) {
+        if (typename Archive::is_saving()) {
           throw std::runtime_error("Invalid cp for old archive");
         }
         x.cp = cryptonote::CP_XPB;
