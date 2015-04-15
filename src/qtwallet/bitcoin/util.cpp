@@ -880,7 +880,6 @@ const boost::filesystem::path &GetDataDir(bool fNetSpecific)
     if (ProvidedArg(command_line::arg_data_dir)) {
         path = fs::system_complete(GetArg(command_line::arg_data_dir));
         if (!fs::is_directory(path)) {
-            path = "";
             return path;
         }
     } else {

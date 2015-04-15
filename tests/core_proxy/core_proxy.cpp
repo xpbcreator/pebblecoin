@@ -30,7 +30,6 @@ using namespace std;
 #include <crtdbg.h>
 #endif
 
-#include "cryptonote_core/miner_opt.cpp"
 #include "../test_genesis_config.h"
 
 namespace po = boost::program_options;

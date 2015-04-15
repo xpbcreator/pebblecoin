@@ -7,8 +7,9 @@
 #include <boost/uuid/uuid.hpp>
 #include "serialization/keyvalue_serialization.h"
 #include "misc_language.h"
-#include "cryptonote_config.h"
 #include "crypto/crypto.h"
+
+extern const bool ALLOW_DEBUG_COMMANDS;
 
 namespace nodetool
 {
@@ -39,19 +40,20 @@ namespace nodetool
 
 #pragma pack(pop)
 
-  inline
-  bool operator < (const net_address& a, const net_address& b)
+  inline bool operator <(const net_address& a, const net_address& b)
   {
     return  epee::misc_utils::is_less_as_pod(a, b);
   }
-
-  inline
-    bool operator == (const net_address& a, const net_address& b)
+  inline bool operator ==(const net_address& a, const net_address& b)
   {
     return  memcmp(&a, &b, sizeof(a)) == 0;
   }
-  inline 
-  std::string print_peerlist_to_string(const std::list<peerlist_entry>& pl)
+  inline std::ostream &operator <<(std::ostream &o, const net_address& a)
+  {
+    return o << epee::string_tools::get_ip_string_from_int32(a.ip) << ":" << boost::lexical_cast<std::string>(a.port);
+  }
+  
+  inline std::string print_peerlist_to_string(const std::list<peerlist_entry>& pl)
   {
     time_t now_time = 0;
     time(&now_time);
@@ -59,11 +61,10 @@ namespace nodetool
     ss << std::setfill ('0') << std::setw (8) << std::hex << std::noshowbase;
     BOOST_FOREACH(const peerlist_entry& pe, pl)
     {
-      ss << pe.id << "\t" << epee::string_tools::get_ip_string_from_int32(pe.adr.ip) << ":" << boost::lexical_cast<std::string>(pe.adr.port) << " \tlast_seen: " << epee::misc_utils::get_time_interval_string(now_time - pe.last_seen) << std::endl;
+      ss << pe.id << "\t" << pe.adr << " \tlast_seen: " << epee::misc_utils::get_time_interval_string(now_time - pe.last_seen) << std::endl;
     }
     return ss.str();
   }
-
 
   struct network_config
   {
@@ -201,9 +202,8 @@ namespace nodetool
   };
 
   
-#ifdef ALLOW_DEBUG_COMMANDS
-  //These commands are considered as insecure, and made in debug purposes for a limited lifetime. 
-  //Anyone who feel unsafe with this commands can disable the ALLOW_GET_STAT_COMMAND macro.
+  //These commands are considered as insecure, and made in debug purposes for a limited lifetime.
+  //Anyone who feel unsafe with this commands can set ALLOW_DEBUG_COMMANDS = false in cryptonote_config.cpp
 
   struct proof_of_trust
   {
@@ -305,9 +305,6 @@ namespace nodetool
       END_KV_SERIALIZE_MAP()    
     };
   };
-
-#endif
-
 
 }
 

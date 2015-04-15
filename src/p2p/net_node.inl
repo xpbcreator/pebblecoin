@@ -9,6 +9,7 @@
 #include "version.h"
 #include "string_tools.h"
 #include "common/util.h"
+#include "p2p/net_util.h"
 #include "net/net_helper.h"
 #include "math_helper.h"
 #include "p2p_protocol_defs.h"
@@ -18,6 +19,7 @@
 #include "storages/levin_abstract_invoke2.h"
 #include <miniupnpc/miniupnpc.h>
 #include <miniupnpc/upnpcommands.h>
+#include <string>
 
 #include "common/ui_interface.h"
 
@@ -29,7 +31,7 @@ namespace nodetool
   namespace
   {
     const command_line::arg_descriptor<std::string> arg_p2p_bind_ip        = {"p2p-bind-ip", "Interface for p2p network protocol", "0.0.0.0"};
-    const command_line::arg_descriptor<std::string> arg_p2p_bind_port      = {"p2p-bind-port", "Port for p2p network protocol", boost::to_string(P2P_DEFAULT_PORT)};
+    const command_line::arg_descriptor<std::string> arg_p2p_bind_port      = {"p2p-bind-port", "Port for p2p network protocol", ""};
     const command_line::arg_descriptor<uint32_t>    arg_p2p_external_port  = {"p2p-external-port", "External port for p2p network protocol (if port forwarding used with NAT)", 0};
     const command_line::arg_descriptor<bool>        arg_p2p_allow_local_ip = {"allow-local-ip", "Allow local ip add to peer list, mostly in debug purposes"};
     const command_line::arg_descriptor<std::vector<std::string> > arg_p2p_add_peer   = {"add-peer", "Manually add peer to local peerlist"};
@@ -112,6 +114,10 @@ namespace nodetool
   {
     m_bind_ip = command_line::get_arg(vm, arg_p2p_bind_ip);
     m_port = command_line::get_arg(vm, arg_p2p_bind_port);
+    if (m_port.empty())
+    {
+      m_port = std::to_string(cryptonote::config::p2p_default_port());
+    }
     m_external_port = command_line::get_arg(vm, arg_p2p_external_port);
     m_allow_local_ip = command_line::get_arg(vm, arg_p2p_allow_local_ip);
 
@@ -197,39 +203,50 @@ namespace nodetool
   template<class t_payload_net_handler>
   bool node_server<t_payload_net_handler>::init(const boost::program_options::variables_map& vm)
   {
-    ADD_HARDCODED_SEED_NODE("69.60.113.23:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.24:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.25:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.164:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.169:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.21:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.57:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.239:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.253:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.2:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.3:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.4:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.5:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.6:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.17:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.61:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.113.62:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.165:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.167:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.168:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.221:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.219:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.218:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.217:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.216:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.215:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.214:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.213:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.212:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.211:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.210:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.208:6180");
-    ADD_HARDCODED_SEED_NODE("69.60.112.207:6180");
+    if (cryptonote::config::testnet)
+    {
+      ADD_HARDCODED_SEED_NODE("69.60.113.57:6182");
+      ADD_HARDCODED_SEED_NODE("69.60.112.239:6182");
+      ADD_HARDCODED_SEED_NODE("69.60.112.253:6182");
+      ADD_HARDCODED_SEED_NODE("69.60.113.2:6182");
+      ADD_HARDCODED_SEED_NODE("69.60.113.3:6182");
+    }
+    else
+    {
+      ADD_HARDCODED_SEED_NODE("69.60.113.23:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.24:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.25:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.164:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.169:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.21:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.57:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.239:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.253:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.2:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.3:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.4:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.5:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.6:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.17:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.61:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.113.62:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.165:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.167:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.168:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.221:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.219:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.218:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.217:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.216:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.215:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.214:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.213:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.212:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.211:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.210:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.208:6180");
+      ADD_HARDCODED_SEED_NODE("69.60.112.207:6180");
+    }
     std::random_shuffle(m_seed_nodes.begin(), m_seed_nodes.end());
 
     bool res = handle_command_line(vm);
@@ -404,7 +421,7 @@ namespace nodetool
         return;
       }
 
-      if(rsp.node_data.network_id != PEBBLECOIN_NETWORK)
+      if(rsp.node_data.network_id != network_id())
       {
         LOG_ERROR_CCONTEXT("COMMAND_HANDSHAKE Failed, wrong network!  (" << epee::string_tools::get_str_from_guid_a(rsp.node_data.network_id) << "), closing connection.");
         return;
@@ -668,8 +685,14 @@ namespace nodetool
         if(m_net_server.is_stop_signal_sent())
           return false;
 
-        if(try_to_connect_and_handshake_with_new_peer(m_seed_nodes[current_index], true))
+        // connect to the seed as a white peer
+        bool res = try_to_connect_and_handshake_with_new_peer(m_seed_nodes[current_index], false);
+        LOG_PRINT_L3((res ? "Succeeded" : "Failed") << " to try_to_connect_and_handshake_with_new_peer(" <<
+                     m_seed_nodes[current_index] << ", true)");
+        if(res)
+        {
           break;
+        }
         if(++try_count > m_seed_nodes.size())
         {
           LOG_PRINT_RED_L0("Failed to connect to any of seed peers, continuing without seeds");
@@ -687,6 +710,7 @@ namespace nodetool
     size_t conn_count = get_outgoing_connections_count();
     if(conn_count < m_config.m_net_config.connections_count)
     {
+      LOG_PRINT_L3("Have only " << conn_count << " /" << m_config.m_net_config.connections_count << " nodes, trying to connect more");
       if(conn_count < expected_white_connections)
       {
         //start from white list
@@ -812,11 +836,10 @@ namespace nodetool
       node_data.my_port = m_external_port ? m_external_port : m_listenning_port;
     else 
       node_data.my_port = 0;
-    node_data.network_id = PEBBLECOIN_NETWORK;
+    node_data.network_id = network_id();
     return true;
   }
   //-----------------------------------------------------------------------------------
-#ifdef ALLOW_DEBUG_COMMANDS
   template<class t_payload_net_handler>
   bool node_server<t_payload_net_handler>::check_trust(const proof_of_trust& tr)
   {
@@ -897,7 +920,6 @@ namespace nodetool
     rsp.my_id = m_config.m_peer_id;
     return 1;
   }
-#endif
   //-----------------------------------------------------------------------------------
   template<class t_payload_net_handler>
   void node_server<t_payload_net_handler>::request_callback(const epee::net_utils::connection_context_base& context)
@@ -1032,7 +1054,7 @@ namespace nodetool
   template<class t_payload_net_handler>
   int node_server<t_payload_net_handler>::handle_handshake(int command, typename COMMAND_HANDSHAKE::request& arg, typename COMMAND_HANDSHAKE::response& rsp, p2p_connection_context& context)
   {
-    if(arg.node_data.network_id != PEBBLECOIN_NETWORK)
+    if(arg.node_data.network_id != network_id())
     {
 
       LOG_PRINT_CCONTEXT_L0("WRONG NETWORK AGENT CONNECTED! id=" << epee::string_tools::get_str_from_guid_a(arg.node_data.network_id));

@@ -42,6 +42,7 @@ using namespace epee; // needed for epee util imports to work
 #include "p2p/net_node.h"
 #include "crypto/hash_options.h"
 #include "cryptonote_core/cryptonote_core.h"
+#include "cryptonote_core/miner_opt.h"
 #include "rpc/core_rpc_server.h"
 #include "cryptonote_protocol/cryptonote_protocol_handler.h"
 #include "common/types.h"
@@ -500,7 +501,8 @@ static po::options_description InitParameters()
     command_line::add_arg(desc_cmd_sett, daemon_opt::arg_log_file);
     command_line::add_arg(desc_cmd_sett, daemon_opt::arg_log_level);
     command_line::add_arg(desc_cmd_sett, daemon_opt::arg_console);
-    
+    command_line::add_arg(desc_cmd_sett, daemon_opt::arg_testnet_on);
+
     cryptonote_opt::init_options(desc_cmd_sett);
     core_t::init_options(desc_cmd_sett);
     rpc_server_t::init_options(desc_cmd_sett);
@@ -532,7 +534,7 @@ int main(int argc, char *argv[])
     log_space::get_set_log_detalisation_level(true, LOG_LEVEL_0);
     log_space::log_singletone::add_logger(LOGGER_CONSOLE, NULL, NULL);
     LOG_PRINT_L0("Starting...");
-
+  
     /// 1. Parse command-line options. These take precedence over anything else.
     po::options_description desc_options = InitParameters();
     // Command-line options take precedence:
@@ -607,7 +609,15 @@ int main(int argc, char *argv[])
                               QObject::tr("Error: Cannot parse configuration file. Only use key=value syntax."));
         return 1;
     }
+    
+    /// Enable testnet if necessary
+    if (GetArg(daemon_opt::arg_testnet_on) || cryptonote::config::testnet_only)
+    {
+        cryptonote::config::enable_testnet();
+    }
 
+    bool isaTestNet = cryptonote::config::testnet;
+    
     if (!cryptonote_opt::handle_command_line(vmapArgs))
     {
         QMessageBox::critical(0, QObject::tr("Pebblecoin"),
@@ -661,17 +671,17 @@ int main(int argc, char *argv[])
             return 1;
         }
         
-        bool enable_boulder = GetArg(hashing_opt::arg_enable_boulderhash);
+        bool enable_boulder = GetArg(hashing_opt::arg_enable_boulderhash) || isaTestNet;
         if (enable_boulder)
         {
             SoftSetArg(miner_opt::arg_start_mining, cryptonote::get_account_address_as_str(w.get_public_address()));
-            SoftSetArg(miner_opt::arg_mining_threads, (uint32_t)1);
         }
+        SoftSetArg(miner_opt::arg_delegate_wallet_file, wallet_path);
     }
 
 #endif
     
-    if (!crypto::process_options(vmapArgs))
+    if (!crypto::process_options(vmapArgs, HasArg(miner_opt::arg_start_mining)))
     {
         QMessageBox::critical(0, QObject::tr("Pebblecoin"),
                               QObject::tr("Error: Invalid hash-related options (see debug messages)."));
@@ -683,7 +693,6 @@ int main(int argc, char *argv[])
     if (!PaymentServer::ipcParseCommandLine(argc, argv))
         exit(0);
 #endif*/
-    bool isaTestNet = false; //Params().NetworkID() != CChainParams::MAIN;
     // Allow for separate UI settings for testnets
     if (isaTestNet)
         QApplication::setApplicationName(QAPP_APP_NAME_TESTNET);

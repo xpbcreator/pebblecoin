@@ -3,9 +3,10 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chaingen.h"
-#include "chaingen_tests_list.h"
 
 #include "integer_overflow.h"
+#include "cryptonote_core/tx_builder.h"
+#include "cryptonote_core/tx_tester.h"
 
 using namespace epee;
 using namespace cryptonote;
@@ -14,28 +15,30 @@ namespace
 {
   void split_miner_tx_outs(transaction& miner_tx, uint64_t amount_1)
   {
-    uint64_t total_amount = get_outs_money_amount(miner_tx);
+    uint64_t total_amount = get_outs_money_amount(miner_tx)[CP_XPB];
     uint64_t amount_2 = total_amount - amount_1;
-    txout_target_v target = miner_tx.vout[0].target;
+    txout_target_v target = miner_tx.outs()[0].target;
 
-    miner_tx.vout.clear();
+    miner_tx.clear_outs();
 
     tx_out out1;
     out1.amount = amount_1;
     out1.target = target;
-    miner_tx.vout.push_back(out1);
+    miner_tx.add_out(out1, CP_XPB);
 
     tx_out out2;
     out2.amount = amount_2;
     out2.target = target;
-    miner_tx.vout.push_back(out2);
+    miner_tx.add_out(out2, CP_XPB);
   }
 
   void append_tx_source_entry(std::vector<cryptonote::tx_source_entry>& sources, const transaction& tx, size_t out_idx)
   {
-    cryptonote::tx_source_entry se;
-    se.amount = tx.vout[out_idx].amount;
-    se.outputs.push_back(std::make_pair(0, boost::get<cryptonote::txout_to_key>(tx.vout[out_idx].target).key));
+    tx_source_entry se;
+    se.type = tx_source_entry::InToKey;
+    se.cp = tx.out_cp(out_idx);
+    se.amount_in = se.amount_out = tx.outs()[out_idx].amount;
+    se.outputs.push_back(std::make_pair(0, boost::get<cryptonote::txout_to_key>(tx.outs()[out_idx].target).key));
     se.real_output = 0;
     se.real_out_tx_key = get_tx_pub_key_from_extra(tx);
     se.real_output_in_tx_index = out_idx;
@@ -97,9 +100,12 @@ bool gen_uint_overflow_1::generate(std::vector<test_event_entry>& events) const
   events.push_back(blk_2);
 
   REWIND_BLOCKS(events, blk_2r, blk_2, miner_account);
-  MAKE_TX_LIST_START(events, txs_0, miner_account, bob_account, MONEY_SUPPLY, blk_2);
-  MAKE_TX_LIST(events, txs_0, miner_account, bob_account, MONEY_SUPPLY, blk_2);
-  MAKE_NEXT_BLOCK_TX_LIST(events, blk_3, blk_2r, miner_account, txs_0);
+  MAKE_TX_LIST_START(events, txs_0, miner_account, bob_account, MONEY_SUPPLY, blk_2r);
+  MAKE_TX_LIST(events, txs_0, miner_account, bob_account, MONEY_SUPPLY, blk_2r);
+  //MAKE_NEXT_BLOCK_TX_LIST(events, blk_3, blk_2r, miner_account, txs_0);
+  cryptonote::block blk_3;
+  CHECK_AND_ASSERT_MES(generator.construct_block(blk_3, blk_2r, miner_account, txs_0, true), false, "Failed to make_next_block_tx_list while ignoring overflow");
+  events.push_back(blk_3);
   REWIND_BLOCKS(events, blk_3r, blk_3, miner_account);
 
   // Problem 2. total_fee overflow, block_reward overflow
@@ -107,7 +113,10 @@ bool gen_uint_overflow_1::generate(std::vector<test_event_entry>& events) const
   // Create txs with huge fee
   txs_1.push_back(construct_tx_with_fee(events, blk_3, bob_account, alice_account, 1, MONEY_SUPPLY - 1));
   txs_1.push_back(construct_tx_with_fee(events, blk_3, bob_account, alice_account, 1, MONEY_SUPPLY - 1));
-  MAKE_NEXT_BLOCK_TX_LIST(events, blk_4, blk_3r, miner_account, txs_1);
+  //MAKE_NEXT_BLOCK_TX_LIST(events, blk_4, blk_3r, miner_account, txs_1);
+  cryptonote::block blk_4;
+  CHECK_AND_ASSERT_MES(generator.construct_block(blk_4, blk_3r, miner_account, txs_1, true), false, "Failed to make_next_block_tx_list while ignoring overflow");
+  events.push_back(blk_4);
 
   return true;
 }
@@ -127,9 +136,9 @@ bool gen_uint_overflow_2::generate(std::vector<test_event_entry>& events) const
 
   // Problem 1. Regular tx outputs overflow
   std::vector<cryptonote::tx_source_entry> sources;
-  for (size_t i = 0; i < blk_0.miner_tx.vout.size(); ++i)
+  for (size_t i = 0; i < blk_0.miner_tx.outs().size(); ++i)
   {
-    if (TESTS_DEFAULT_FEE < blk_0.miner_tx.vout[i].amount)
+    if (TESTS_DEFAULT_FEE < blk_0.miner_tx.outs()[i].amount)
     {
       append_tx_source_entry(sources, blk_0.miner_tx, i);
       break;
@@ -142,24 +151,32 @@ bool gen_uint_overflow_2::generate(std::vector<test_event_entry>& events) const
 
   std::vector<cryptonote::tx_destination_entry> destinations;
   const account_public_address& bob_addr = bob_account.get_keys().m_account_address;
-  destinations.push_back(tx_destination_entry(MONEY_SUPPLY, bob_addr));
-  destinations.push_back(tx_destination_entry(MONEY_SUPPLY - 1, bob_addr));
+  destinations.push_back(tx_destination_entry(CP_XPB, MONEY_SUPPLY, bob_addr));
+  destinations.push_back(tx_destination_entry(CP_XPB, MONEY_SUPPLY - 1, bob_addr));
   // sources.front().amount = destinations[0].amount + destinations[2].amount + destinations[3].amount + TESTS_DEFAULT_FEE
-  destinations.push_back(tx_destination_entry(sources.front().amount - MONEY_SUPPLY - MONEY_SUPPLY + 1 - TESTS_DEFAULT_FEE, bob_addr));
+  destinations.push_back(tx_destination_entry(CP_XPB, sources.front().amount_out - MONEY_SUPPLY - MONEY_SUPPLY + 1 - TESTS_DEFAULT_FEE, bob_addr));
 
   cryptonote::transaction tx_1;
   if (!construct_tx(miner_account.get_keys(), sources, destinations, std::vector<uint8_t>(), tx_1, 0))
     return false;
   events.push_back(tx_1);
 
-  MAKE_NEXT_BLOCK_TX1(events, blk_1, blk_0r, miner_account, tx_1);
+  //MAKE_NEXT_BLOCK_TX1(events, blk_1, blk_0r, miner_account, tx_1);
+  cryptonote::block blk_1;
+  {
+    std::list<cryptonote::transaction> tx_list;
+    tx_list.push_back(tx_1);
+    CHECK_AND_ASSERT_MES(generator.construct_block(blk_1, blk_0r, miner_account, tx_list, true), false, "Failed to make_next_block_tx1");
+  }
+  events.push_back(blk_1);
+  
   REWIND_BLOCKS(events, blk_1r, blk_1, miner_account);
 
   // Problem 2. Regular tx inputs overflow
   sources.clear();
-  for (size_t i = 0; i < tx_1.vout.size(); ++i)
+  for (size_t i = 0; i < tx_1.outs().size(); ++i)
   {
-    auto& tx_1_out = tx_1.vout[i];
+    auto& tx_1_out = tx_1.outs()[i];
     if (tx_1_out.amount < MONEY_SUPPLY - 1)
       continue;
 
@@ -168,17 +185,29 @@ bool gen_uint_overflow_2::generate(std::vector<test_event_entry>& events) const
 
   destinations.clear();
   cryptonote::tx_destination_entry de;
+  de.cp = CP_XPB;
   de.addr = alice_account.get_keys().m_account_address;
   de.amount = MONEY_SUPPLY - TESTS_DEFAULT_FEE;
   destinations.push_back(de);
   destinations.push_back(de);
 
   cryptonote::transaction tx_2;
-  if (!construct_tx(bob_account.get_keys(), sources, destinations, std::vector<uint8_t>(), tx_2, 0))
+  cryptonote::tx_builder txb;
+  txb.init(0, std::vector<uint8_t>(), true);
+  txb.add_send(bob_account.get_keys(), sources, destinations);
+  txb.finalize();
+  if (!txb.get_finalized_tx(tx_2))
     return false;
   events.push_back(tx_2);
 
-  MAKE_NEXT_BLOCK_TX1(events, blk_2, blk_1r, miner_account, tx_2);
+  //MAKE_NEXT_BLOCK_TX1(events, blk_2, blk_1r, miner_account, tx_2);
+  cryptonote::block blk_2;
+  {
+    std::list<cryptonote::transaction> tx_list;
+    tx_list.push_back(tx_2);
+    CHECK_AND_ASSERT_MES(generator.construct_block(blk_2, blk_1r, miner_account, tx_list, true), false, "Failed to make_next_block_tx1");
+  }
+  events.push_back(blk_2);
 
   return true;
 }

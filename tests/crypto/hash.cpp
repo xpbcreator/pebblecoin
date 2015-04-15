@@ -5,8 +5,6 @@
 #include "crypto/hash_options.cpp"
 #include "crypto/hash_cache.cpp"
 
-#include "cryptonote_core/miner_opt.cpp"
-
 #include "common/util.cpp"
 
 #include "crypto/hash.cpp"

@@ -54,6 +54,8 @@ public slots:
     void gotoHistoryPage();
     /** Switch to support (IRC) page */
     void gotoSupportPage();
+    /** Switch to DPOS page */
+    void gotoDposPage();
     /** Switch to receive coins page */
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */

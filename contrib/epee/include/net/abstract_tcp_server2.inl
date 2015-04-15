@@ -34,6 +34,7 @@
 #include <boost/chrono.hpp>
 #include <boost/utility/value_init.hpp>
 #include <boost/asio/deadline_timer.hpp>
+#include <string>
 #include "misc_language.h"
 #include "pragma_comp_defs.h"
 
@@ -489,7 +490,7 @@ POP_WARNINGS
     TRY_ENTRY();
     uint32_t local_thr_index = boost::interprocess::ipcdetail::atomic_inc32(&m_thread_index); 
     std::string thread_name = std::string("[") + m_thread_name_prefix;
-    thread_name += boost::to_string(local_thr_index) + "]";
+    thread_name += std::to_string(local_thr_index) + "]";
     log_space::log_singletone::set_thread_log_prefix(thread_name);
     while(!m_stop_signal_sent)
     {

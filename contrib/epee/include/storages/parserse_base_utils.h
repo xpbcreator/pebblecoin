@@ -28,6 +28,8 @@
 
 #pragma once 
 
+#include "misc_log_ex.h"
+
 namespace epee 
 {
 namespace misc_utils

@@ -2,22 +2,28 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/foreach.hpp>
-#include "include_base_utils.h"
-using namespace epee;
+#include <string>
 
-#include "core_rpc_server.h"
+#include <boost/foreach.hpp>
+
+#include "include_base_utils.h"
+#include "misc_language.h"
+
+#include "crypto/hash.h"
 #include "cryptonote_core/cryptonote_format_utils.h"
 #include "cryptonote_core/account.h"
 #include "cryptonote_core/cryptonote_basic_impl.h"
-#include "misc_language.h"
-#include "crypto/hash.h"
+#include "cryptonote_core/nulls.h"
+
+#include "core_rpc_server.h"
 #include "core_rpc_server_error_codes.h"
+
+using namespace epee;
 
 namespace core_rpc_opt
 {
   const command_line::arg_descriptor<std::string> arg_rpc_bind_ip   = {"rpc-bind-ip", "", "127.0.0.1"};
-  const command_line::arg_descriptor<std::string> arg_rpc_bind_port = {"rpc-bind-port", "", std::to_string(RPC_DEFAULT_PORT)};
+  const command_line::arg_descriptor<std::string> arg_rpc_bind_port = {"rpc-bind-port", "", ""};
 }
 using namespace core_rpc_opt;
 
@@ -37,6 +43,10 @@ namespace cryptonote
   {
     m_bind_ip = command_line::get_arg(vm, arg_rpc_bind_ip);
     m_port = command_line::get_arg(vm, arg_rpc_bind_port);
+    if (m_port.empty())
+    {
+      m_port = std::to_string(cryptonote::config::rpc_default_port());
+    }
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------------
@@ -228,7 +238,7 @@ namespace cryptonote
     if(!tvc.m_should_be_relayed)
     {
       LOG_PRINT_L0("[on_send_raw_tx]: tx accepted, but not relayed");
-      res.status = "Not relayed";
+      res.status = CORE_RPC_STATUS_NORELAY;
       return true;
     }
 
@@ -251,10 +261,7 @@ namespace cryptonote
       return true;
     }
 
-    boost::thread::attributes attrs;
-    attrs.set_stack_size(THREAD_STACK_SIZE);
-
-    if(!m_core.get_miner().start(adr, static_cast<size_t>(req.threads_count), attrs))
+    if(!m_core.get_miner().start(adr, static_cast<size_t>(req.threads_count)))
     {
       res.status = "Failed, mining not started";
       return true;
@@ -350,7 +357,7 @@ namespace cryptonote
     block b = AUTO_VAL_INIT(b);
     cryptonote::blobdata blob_reserve;
     blob_reserve.resize(req.reserve_size, 0);
-    if(!m_core.get_block_template(b, acc, res.difficulty, res.height, blob_reserve))
+    if(!m_core.get_block_template(b, acc, res.difficulty, res.height, blob_reserve, false))
     {
       error_resp.code = CORE_RPC_ERROR_CODE_INTERNAL_ERROR;
       error_resp.message = "Internal error: failed to create block template";
@@ -418,7 +425,7 @@ namespace cryptonote
   uint64_t core_rpc_server::get_block_reward(const block& blk)
   {
     uint64_t reward = 0;
-    BOOST_FOREACH(const tx_out& out, blk.miner_tx.vout)
+    BOOST_FOREACH(const tx_out& out, blk.miner_tx.outs())
     {
       reward += out.amount;
     }
@@ -501,13 +508,13 @@ namespace cryptonote
       error_resp.message = "Internal error: can't get block by hash. Hash = " + req.hash + '.';
       return false;
     }
-    if (blk.miner_tx.vin.front().type() != typeid(txin_gen))
+    if (blk.miner_tx.ins().front().type() != typeid(txin_gen))
     {
       error_resp.code = CORE_RPC_ERROR_CODE_INTERNAL_ERROR;
       error_resp.message = "Internal error: coinbase transaction in the block has the wrong type";
       return false;
     }
-    uint64_t block_height = boost::get<txin_gen>(blk.miner_tx.vin.front()).height;
+    uint64_t block_height = boost::get<txin_gen>(blk.miner_tx.ins().front()).height;
     bool responce_filled = fill_block_header_responce(blk, false, block_height, block_hash, res.block_header);
     if (!responce_filled)
     {
@@ -556,14 +563,14 @@ namespace cryptonote
   {
     LOG_PRINT_L1("on_getboulderhash, version=" << req.version);
     
-    if (!hashing_opt::boulderhash_enabled() || crypto::g_boulderhash_state == NULL)
+    if (!cryptonote::config::do_boulderhash || crypto::g_boulderhash_state == NULL)
     {
       error_resp.code = CORE_RPC_ERROR_CODE_CANT_BOULDERHASH;
       error_resp.message = "Daemon can't do boulderhash";
       return false;
     }
     
-    if (req.version != 1 && req.version != 2)
+    if (req.version != BOULDERHASH_VERSION_REGULAR_1 && req.version != BOULDERHASH_VERSION_REGULAR_2)
     {
       error_resp.code = CORE_RPC_ERROR_CODE_WRONG_PARAM;
       error_resp.message = "Unknown boulderhash version";
@@ -586,5 +593,15 @@ namespace cryptonote
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------------
+  bool core_rpc_server::on_get_autovote_delegates(const COMMAND_RPC_GET_AUTOVOTE_DELEGATES::request& req, COMMAND_RPC_GET_AUTOVOTE_DELEGATES::response& res, connection_context& cntx)
+  {
+    CHECK_CORE_READY();
+    
+    const auto& set_delegates = m_core.get_blockchain_storage().get_autovote_delegates();
+    
+    res.autovote_delegates = std::vector<delegate_id_t>(set_delegates.begin(), set_delegates.end());
+    res.status = CORE_RPC_STATUS_OK;
+    
+    return true;
+  }
 }
-

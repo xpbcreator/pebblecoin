@@ -26,6 +26,8 @@
 #include "net_node_common.h"
 #include "common/command_line.h"
 
+extern const bool ALLOW_DEBUG_COMMANDS;
+
 PUSH_WARNINGS
 DISABLE_VS_WARNINGS(4355)
 
@@ -87,11 +89,11 @@ namespace nodetool
       HANDLE_INVOKE_T2(COMMAND_HANDSHAKE, &node_server::handle_handshake)
       HANDLE_INVOKE_T2(COMMAND_TIMED_SYNC, &node_server::handle_timed_sync)
       HANDLE_INVOKE_T2(COMMAND_PING, &node_server::handle_ping)
-#ifdef ALLOW_DEBUG_COMMANDS
-      HANDLE_INVOKE_T2(COMMAND_REQUEST_STAT_INFO, &node_server::handle_get_stat_info)
-      HANDLE_INVOKE_T2(COMMAND_REQUEST_NETWORK_STATE, &node_server::handle_get_network_state)
-      HANDLE_INVOKE_T2(COMMAND_REQUEST_PEER_ID, &node_server::handle_get_peer_id)
-#endif
+      if (ALLOW_DEBUG_COMMANDS) {
+        HANDLE_INVOKE_T2(COMMAND_REQUEST_STAT_INFO, &node_server::handle_get_stat_info)
+        HANDLE_INVOKE_T2(COMMAND_REQUEST_NETWORK_STATE, &node_server::handle_get_network_state)
+        HANDLE_INVOKE_T2(COMMAND_REQUEST_PEER_ID, &node_server::handle_get_peer_id)
+      }
       CHAIN_INVOKE_MAP_TO_OBJ_FORCE_CONTEXT(m_payload_handler, typename t_payload_net_handler::connection_context&)
     END_INVOKE_MAP2()
 
@@ -99,11 +101,9 @@ namespace nodetool
     int handle_handshake(int command, typename COMMAND_HANDSHAKE::request& arg, typename COMMAND_HANDSHAKE::response& rsp, p2p_connection_context& context);
     int handle_timed_sync(int command, typename COMMAND_TIMED_SYNC::request& arg, typename COMMAND_TIMED_SYNC::response& rsp, p2p_connection_context& context);
     int handle_ping(int command, COMMAND_PING::request& arg, COMMAND_PING::response& rsp, p2p_connection_context& context);
-#ifdef ALLOW_DEBUG_COMMANDS
     int handle_get_stat_info(int command, typename COMMAND_REQUEST_STAT_INFO::request& arg, typename COMMAND_REQUEST_STAT_INFO::response& rsp, p2p_connection_context& context);
     int handle_get_network_state(int command, COMMAND_REQUEST_NETWORK_STATE::request& arg, COMMAND_REQUEST_NETWORK_STATE::response& rsp, p2p_connection_context& context);
     int handle_get_peer_id(int command, COMMAND_REQUEST_PEER_ID::request& arg, COMMAND_REQUEST_PEER_ID::response& rsp, p2p_connection_context& context);
-#endif
     bool init_config();
     bool make_default_config();
     bool store_config();
@@ -195,9 +195,7 @@ namespace nodetool
 
     std::string m_bind_ip;
     std::string m_port;
-#ifdef ALLOW_DEBUG_COMMANDS
     uint64_t m_last_stat_request_time;
-#endif
     std::list<net_address>   m_priority_peers;
     std::vector<net_address> m_exclusive_peers;
     std::vector<net_address> m_seed_nodes;

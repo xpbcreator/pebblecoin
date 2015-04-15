@@ -3,29 +3,36 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 
-#include "include_base_utils.h"
-using namespace epee;
+#include <unordered_set>
 
 #include <boost/foreach.hpp>
-#include <unordered_set>
-#include "cryptonote_core.h"
-#include "common/command_line.h"
-#include "common/util.h"
+
+#include "include_base_utils.h"
 #include "warnings.h"
+#include "misc_language.h"
+
+#include "common/command_line.h"
+#include "common/functional.h"
+#include "common/util.h"
 #include "crypto/crypto.h"
+
+#include "cryptonote_core.h"
 #include "cryptonote_config.h"
 #include "cryptonote_format_utils.h"
-#include "misc_language.h"
+#include "visitors.h"
+#include "tx_input_compat_checker.h"
+#include "nulls.h"
+
+using namespace epee;
 
 DISABLE_VS_WARNINGS(4355)
 
 namespace cryptonote
 {
-
   //-----------------------------------------------------------------------------------------------
-  core::core(i_cryptonote_protocol* pprotocol):
+  core::core(i_cryptonote_protocol* pprotocol, tools::ntp_time& ntp_time_in):
               m_mempool(m_blockchain_storage),
-              m_blockchain_storage(m_mempool),
+              m_blockchain_storage(m_mempool, ntp_time_in),
               m_miner(this),
               m_miner_address(boost::value_initialized<account_public_address>()), 
               m_starter_message_showed(false),
@@ -120,7 +127,7 @@ namespace cryptonote
     CHECK_AND_ASSERT_MES(r, false, "Failed to initialize blockchain storage");
 
     r = m_miner.init(vm);
-    CHECK_AND_ASSERT_MES(r, false, "Failed to initialize blockchain storage");
+    CHECK_AND_ASSERT_MES(r, false, "Failed to initialize miner");
 
     return load_state_data();
   }
@@ -207,39 +214,35 @@ namespace cryptonote
   //-----------------------------------------------------------------------------------------------
   bool core::check_tx_semantic(const transaction& tx, bool keeped_by_block)
   {
-    if(!tx.vin.size())
+    crypto::hash tx_hash;
+    if (!get_transaction_hash(tx, tx_hash))
+      return false;
+    
+    if(tx.ins().empty())
     {
-      LOG_PRINT_RED_L0("tx with empty inputs, rejected for tx id= " << get_transaction_hash(tx));
+      LOG_PRINT_RED_L0("tx with empty inputs, rejected for tx id= " << tx_hash);
       return false;
     }
 
     if(!check_inputs_types_supported(tx))
     {
-      LOG_PRINT_RED_L0("unsupported input types for tx id= " << get_transaction_hash(tx));
+      LOG_PRINT_RED_L0("unsupported input types for tx id= " << tx_hash);
+      return false;
+    }
+    
+    if(!check_outputs_types_supported(tx))
+    {
+      LOG_PRINT_RED_L0("unsupported output types for tx id= " << tx_hash);
       return false;
     }
 
     if(!check_outs_valid(tx))
     {
-      LOG_PRINT_RED_L0("tx with invalid outputs, rejected for tx id= " << get_transaction_hash(tx));
+      LOG_PRINT_RED_L0("tx with invalid outputs, rejected for tx id= " << tx_hash);
       return false;
     }
 
-    if(!check_money_overflow(tx))
-    {
-      LOG_PRINT_RED_L0("tx have money overflow, rejected for tx id= " << get_transaction_hash(tx));
-      return false;
-    }
-
-    uint64_t amount_in = 0;
-    get_inputs_money_amount(tx, amount_in);
-    uint64_t amount_out = get_outs_money_amount(tx);
-
-    if(amount_in <= amount_out)
-    {
-      LOG_PRINT_RED_L0("tx with wrong amounts: ins " << amount_in << ", outs " << amount_out << ", rejected for tx id= " << get_transaction_hash(tx));
-      return false;
-    }
+    CHECK_AND_ASSERT(check_inputs_outputs(tx), false);
 
     if(!keeped_by_block && get_object_blobsize(tx) >= m_blockchain_storage.get_current_comulative_blocksize_limit() - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE)
     {
@@ -247,36 +250,22 @@ namespace cryptonote
       return false;
     }
 
-    //check if tx use different key images
-    if(!check_tx_inputs_keyimages_diff(tx))
+    if (!tx_input_compat_checker::is_tx_valid(tx))
     {
-      //LOG_PRINT_RED_L0("tx have to big size " << get_object_blobsize(tx) << ", expected not bigger than " << m_blockchain_storage.get_current_comulative_blocksize_limit() - CRYPTONOTE_COINBASE_BLOB_RESERVED_SIZE);
-      LOG_PRINT_RED_L0("tx uses same key image, rejected fot x id= " << get_transaction_hash(tx));
+      LOG_PRINT_RED_L0("tx have invalid inputs");
       return false;
     }
 
-
-    return true;
-  }
-  //-----------------------------------------------------------------------------------------------
-  bool core::check_tx_inputs_keyimages_diff(const transaction& tx)
-  {
-    std::unordered_set<crypto::key_image> ki;
-    BOOST_FOREACH(const auto& in, tx.vin)
-    {
-      CHECKED_GET_SPECIFIC_VARIANT(in, const txin_to_key, tokey_in, false);
-      if(!ki.insert(tokey_in.k_image).second)
-        return false;
-    }
     return true;
   }
   //-----------------------------------------------------------------------------------------------
   bool core::add_new_tx(const transaction& tx, tx_verification_context& tvc, bool keeped_by_block)
   {
-    crypto::hash tx_hash = get_transaction_hash(tx);
-    crypto::hash tx_prefix_hash = get_transaction_prefix_hash(tx);
+    crypto::hash tx_hash, tx_prefix_hash;;
     blobdata bl;
-    t_serializable_object_to_blob(tx, bl);
+    CHECK_AND_ASSERT(get_transaction_hash(tx, tx_hash), false);
+    CHECK_AND_ASSERT(get_transaction_prefix_hash(tx, tx_hash), false);
+    CHECK_AND_ASSERT(t_serializable_object_to_blob(tx, bl), false);
     return add_new_tx(tx, tx_hash, tx_prefix_hash, bl.size(), tvc, keeped_by_block);
   }
   //-----------------------------------------------------------------------------------------------
@@ -285,9 +274,9 @@ namespace cryptonote
     return m_blockchain_storage.get_total_transactions();
   }
   //-----------------------------------------------------------------------------------------------
-  bool core::get_outs(uint64_t amount, std::list<crypto::public_key>& pkeys)
+  bool core::get_outs(coin_type type, uint64_t amount, std::list<crypto::public_key>& pkeys)
   {
-    return m_blockchain_storage.get_outs(amount, pkeys);
+    return m_blockchain_storage.get_outs(type, amount, pkeys);
   }
   //-----------------------------------------------------------------------------------------------
   bool core::add_new_tx(const transaction& tx, const crypto::hash& tx_hash, const crypto::hash& tx_prefix_hash, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block)
@@ -307,9 +296,45 @@ namespace cryptonote
     return m_mempool.add_tx(tx, tx_hash, blob_size, tvc, keeped_by_block);
   }
   //-----------------------------------------------------------------------------------------------
-  bool core::get_block_template(block& b, const account_public_address& adr, difficulty_type& diffic, uint64_t& height, const blobdata& ex_nonce)
+  bool core::get_next_block_info(bool& is_dpos, account_public_address& signing_delegate_address, uint64_t& time_since_last_block)
   {
-    return m_blockchain_storage.create_block_template(b, adr, diffic, height, ex_nonce);
+    uint64_t tail_height;
+    crypto::hash tail_id = m_blockchain_storage.get_tail_id(tail_height);
+    block tail_block;
+    CHECK_AND_ASSERT_MES(m_blockchain_storage.get_block_by_hash(tail_id, tail_block),
+                         false, "Could not get latest block hash");
+    uint64_t adjusted_now = m_blockchain_storage.get_adjusted_time();
+    
+    uint64_t next_block_height = tail_height + 1;
+    is_dpos = config::in_pos_era(next_block_height);
+    time_since_last_block = tail_block.timestamp > adjusted_now ? 0 : adjusted_now - tail_block.timestamp;
+    
+    if (is_dpos)
+    {
+      if (time_since_last_block < CRYPTONOTE_DPOS_BLOCK_MINIMUM_BLOCK_SPACING)
+      {
+        // no next delegate yet
+        signing_delegate_address = null_public_address;
+        return true;
+      }
+        
+      delegate_id_t did;
+      CHECK_AND_ASSERT_MES(m_blockchain_storage.get_signing_delegate(tail_block, adjusted_now, did),
+                           false, "could not get_signing_delegate for dpos block");
+      CHECK_AND_ASSERT_MES(m_blockchain_storage.get_delegate_address(did, signing_delegate_address),
+                           false, "could not get_delegate_address of signing delegate");
+    }
+    else
+    {
+      signing_delegate_address = null_public_address;
+    }
+    
+    return true;
+  }
+  //-----------------------------------------------------------------------------------------------
+  bool core::get_block_template(block& b, const account_public_address& adr, difficulty_type& diffic, uint64_t& height, const blobdata& ex_nonce, bool dpos_block)
+  {
+    return m_blockchain_storage.create_block_template(b, adr, diffic, height, ex_nonce, dpos_block);
   }
   //-----------------------------------------------------------------------------------------------
   bool core::find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, NOTIFY_RESPONSE_CHAIN_ENTRY::request& resp)
@@ -345,6 +370,21 @@ namespace cryptonote
   bool core::get_tx_outputs_gindexs(const crypto::hash& tx_id, std::vector<uint64_t>& indexs)
   {
     return m_blockchain_storage.get_tx_outputs_gindexs(tx_id, indexs);
+  }
+  //-----------------------------------------------------------------------------------------------
+  bool core::get_dpos_register_info(cryptonote::delegate_id_t& unused_delegate_id, uint64_t& registration_fee)
+  {
+    return m_blockchain_storage.get_dpos_register_info(unused_delegate_id, registration_fee);
+  }
+  //-----------------------------------------------------------------------------------------------
+  bool core::get_delegate_info(const cryptonote::account_public_address& addr, cryptonote::bs_delegate_info& res)
+  {
+    return m_blockchain_storage.get_delegate_info(addr, res);
+  }
+  //-----------------------------------------------------------------------------------------------
+  std::vector<cryptonote::bs_delegate_info> core::get_delegate_infos()
+  {
+    return m_blockchain_storage.get_delegate_infos();
   }
   //-----------------------------------------------------------------------------------------------
   void core::pause_mine()
@@ -444,6 +484,7 @@ namespace cryptonote
       bvc.m_verifivation_failed = true;
       return false;
     }
+    // if block fails to add, bvc will contain the error - this function returns true for having been able to try to handle it
     add_new_block(b, bvc);
     if(update_miner_blocktemplate && bvc.m_added_to_main_chain)
        update_miner_block_template();

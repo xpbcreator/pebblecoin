@@ -9,6 +9,8 @@
 
 #include <QObject>
 
+#include "cryptonote_core/delegate_types.h"
+
 class SendCoinsRecipient;
 
 class CReserveKey;
@@ -28,10 +30,23 @@ public:
     qint64 getTransactionFee();
 
     qint64 getTotalTransactionAmount();
+    
+    void setFakeOuts(qint64 min, qint64 desired);
+    void getFakeOuts(qint64& min, qint64& desired);
+
+    void setRegisteringDelegate(cryptonote::delegate_id_t delegateId, qint64 registrationFee);
+    
+    bool getRegisteringDelegate(cryptonote::delegate_id_t& delegateId, qint64& registrationFee);
 
 private:
     const QList<SendCoinsRecipient> recipients;
     qint64 fee;
+    qint64 minFakeOuts;
+    qint64 desiredFakeOuts;
+    
+    bool registeringDelegate;
+    cryptonote::delegate_id_t delegateId;
+    qint64 registrationFee;
 };
 
 #endif // WALLETMODELTRANSACTION_H

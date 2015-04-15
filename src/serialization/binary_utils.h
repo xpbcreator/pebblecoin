@@ -3,6 +3,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <sstream>
+
+#include "serialization.h"
 #include "binary_archive.h"
 
 namespace serialization {

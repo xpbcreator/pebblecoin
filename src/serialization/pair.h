@@ -8,14 +8,23 @@
 
 #include <utility>
 
-template <template <bool> class Archive, class K, class V>
-bool do_serialize(Archive<false> &ar, std::pair<K, V> &p)
+template <class Archive, class K, class V>
+bool do_serialize(Archive &ar, std::pair<K, V> &p)
 {
-  return ::do_serialize(ar, p.first) && ::do_serialize(ar, p.second);
-}
-
-template <template <bool> class Archive, class K, class V>
-bool do_serialize(Archive<true> &ar, std::pair<K, V> &p)
-{
-  return ::do_serialize(ar, p.first) && ::do_serialize(ar, p.second);
+  size_t s = 2;
+  ar.begin_array(s);
+  if (s != 2)
+    return false;
+  
+  if (!::do_serialize(ar, p.first))
+    return false;
+  
+  ar.delimit_array();
+  
+  if (!::do_serialize(ar, p.second))
+    return false;
+  
+  ar.end_array();
+  
+  return true;
 }

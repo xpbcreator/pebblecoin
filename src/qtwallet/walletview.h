@@ -9,6 +9,7 @@
 
 class BitcoinGUI;
 class ClientModel;
+class DposDialog;
 class OverviewPage;
 class ReceiveCoinsDialog;
 class SendCoinsDialog;
@@ -65,6 +66,7 @@ private:
     cv::gui::Client *supportPage;
     ReceiveCoinsDialog *receiveCoinsPage;
     SendCoinsDialog *sendCoinsPage;
+    DposDialog *dposPage;
 
     TransactionView *transactionView;
 
@@ -77,6 +79,8 @@ public slots:
     void gotoHistoryPage();
     /** Switch to support (IRC) page */
     void gotoSupportPage();
+    /** Switch to DPOS page */
+    void gotoDposPage();
     /** Switch to receive coins page */
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */

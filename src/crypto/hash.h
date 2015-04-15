@@ -14,7 +14,7 @@
 
 namespace crypto {
   extern "C" {
-#include "hash-ops.h"
+#include "crypto_core/hash-ops.h"
   }
 
 #pragma pack(push, 1)

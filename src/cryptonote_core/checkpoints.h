@@ -3,9 +3,17 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #pragma once
-#include <map>
-#include "cryptonote_basic_impl.h"
 
+#include <stdint.h>
+#include <string>
+#include <map>
+
+#include "common/pod-class.h"
+
+namespace crypto
+{
+  POD_CLASS hash;
+}
 
 namespace cryptonote
 {

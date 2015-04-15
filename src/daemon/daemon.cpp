@@ -1,3 +1,4 @@
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Copyright (c) 2012-2013 The Cryptonote developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -5,37 +6,34 @@
 // node.cpp : Defines the entry point for the console application.
 //
 
-
-#include "include_base_utils.h"
-#include "version.h"
-
-using namespace epee;
-
-#include <boost/program_options.hpp>
-
-#include "crypto/hash.h"
-#include "crypto/hash_options.h"
-#include "crypto/hash_cache.h"
-#include "console_handler.h"
-#include "p2p/net_node.h"
-#include "cryptonote_core/checkpoints_create.h"
-#include "cryptonote_core/cryptonote_core.h"
-#include "rpc/core_rpc_server.h"
-#include "cryptonote_protocol/cryptonote_protocol_handler.h"
-#include "daemon_commands_handler.h"
-#include "daemon_options.h"
-#include "version.h"
-#include "cryptonote_genesis_config.h"
-
-#include "common/types.h"
-
 #if defined(WIN32)
 #include <crtdbg.h>
 #endif
 
-namespace po = boost::program_options;
+#include <boost/program_options.hpp>
 
+#include "include_base_utils.h"
+#include "console_handler.h"
+
+#include "version.h"
+#include "cryptonote_genesis_config.h"
+#include "common/types.h"
+#include "common/ntp_time.h"
+#include "crypto/hash_options.h"
+#include "crypto/hash_cache.h"
+#include "p2p/net_node.h"
+#include "cryptonote_core/checkpoints_create.h"
+#include "cryptonote_core/cryptonote_core.h"
+#include "cryptonote_core/miner_opt.h"
+
+#include "rpc/core_rpc_server.h"
+#include "cryptonote_protocol/cryptonote_protocol_handler.h"
+#include "daemon_options.h"
+#include "daemon_commands_handler.h"
+
+using namespace epee;
 using namespace daemon_opt;
+namespace po = boost::program_options;
 
 bool command_line_preprocessor(const boost::program_options::variables_map& vm);
 
@@ -49,7 +47,7 @@ int main(int argc, char* argv[])
   log_space::log_singletone::add_logger(LOGGER_CONSOLE, NULL, NULL);
   LOG_PRINT_L0("Starting...");
 
-  TRY_ENTRY();  
+  TRY_ENTRY();
 
   po::options_description desc_cmd_only("Command line options");
   po::options_description desc_cmd_sett("Command line options and settings options");
@@ -64,6 +62,7 @@ int main(int argc, char* argv[])
   command_line::add_arg(desc_cmd_sett, arg_log_file);
   command_line::add_arg(desc_cmd_sett, arg_log_level);
   command_line::add_arg(desc_cmd_sett, arg_console);
+  command_line::add_arg(desc_cmd_sett, arg_testnet_on);
 
   cryptonote_opt::init_options(desc_cmd_sett);
   core_t::init_options(desc_cmd_sett);
@@ -74,7 +73,6 @@ int main(int argc, char* argv[])
   
   po::options_description desc_options("Allowed options");
   desc_options.add(desc_cmd_only).add(desc_cmd_sett);
-
   po::variables_map vm;
   bool r = command_line::handle_error_helper(desc_options, [&]()
   {
@@ -108,7 +106,12 @@ int main(int argc, char* argv[])
   });
   if (!r)
     return 1;
-
+  
+  if (command_line::get_arg(vm, arg_testnet_on) || cryptonote::config::testnet_only)
+  {
+    cryptonote::config::enable_testnet();
+  }
+  
   //set up logging options
   boost::filesystem::path log_file_path(command_line::get_arg(vm, arg_log_file));
   if (log_file_path.empty())
@@ -117,7 +120,7 @@ int main(int argc, char* argv[])
   log_dir = log_file_path.has_parent_path() ? log_file_path.parent_path().string() : log_space::log_singletone::get_default_log_folder();
 
   log_space::log_singletone::add_logger(LOGGER_FILE, log_file_path.filename().string().c_str(), log_dir.c_str());
-  LOG_PRINT_L0(CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG);
+  LOG_PRINT_L0(CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG << (cryptonote::config::testnet ? " (testnet)" : ""));
 
   if (command_line_preprocessor(vm))
   {
@@ -126,7 +129,7 @@ int main(int argc, char* argv[])
   
   LOG_PRINT("Module folder: " << argv[0], LOG_LEVEL_0);
   
-  if (!crypto::process_options(vm))
+  if (!crypto::process_options(vm, command_line::has_arg(vm, miner_opt::arg_start_mining)))
     return 1;
   
   if (!cryptonote_opt::handle_command_line(vm))
@@ -142,16 +145,17 @@ int main(int argc, char* argv[])
   res = crypto::g_hash_cache.init(command_line::get_arg(vm, command_line::arg_data_dir));
   CHECK_AND_ASSERT_MES(res, 1, "Failed to initialize global hash cache.");
   LOG_PRINT_L0("Global hash cache initialized OK...");
-
-  core_t ccore(NULL);
-  ccore.set_checkpoints(std::move(checkpoints));  
+  
+  tools::ntp_time ntp(60*60);
+  core_t ccore(NULL, ntp);
+  ccore.set_checkpoints(std::move(checkpoints));
   protocol_handler_t cprotocol(ccore, NULL);
   node_server_t p2psrv(cprotocol);
   rpc_server_t rpc_server(ccore, p2psrv);
   cprotocol.set_p2p_endpoint(&p2psrv);
   ccore.set_cryptonote_protocol(&cprotocol);
   daemon_cmmands_handler dch(p2psrv);
-
+  
   //initialize objects
   LOG_PRINT_L0("Initializing shared boulderhash state...");
   crypto::g_boulderhash_state = crypto::pc_malloc_state();
@@ -180,7 +184,7 @@ int main(int argc, char* argv[])
   res = ccore.init(vm);
   CHECK_AND_ASSERT_MES(res, 1, "Failed to initialize core");
   LOG_PRINT_L0("Core initialized OK");
-  
+
   // start components
   if(!command_line::has_arg(vm, arg_console))
   {
@@ -237,6 +241,7 @@ int main(int argc, char* argv[])
 bool command_line_preprocessor(const boost::program_options::variables_map& vm)
 {
   bool exit = false;
+  
   if (command_line::get_arg(vm, command_line::arg_version))
   {
     std::cout << CRYPTONOTE_NAME  << " v" << PROJECT_VERSION_LONG << ENDL;
@@ -263,6 +268,6 @@ bool command_line_preprocessor(const boost::program_options::variables_map& vm)
     log_space::get_set_log_detalisation_level(true, new_log_level);
     LOG_PRINT_L0("LOG_LEVEL set to " << new_log_level);
   }
-
+  
   return false;
 }

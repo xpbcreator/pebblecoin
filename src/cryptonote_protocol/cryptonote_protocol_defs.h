@@ -4,13 +4,12 @@
 
 #pragma once
 
-#include "crypto/hash_cache.h"
-#include "cryptonote_core/cryptonote_basic.h"
-#include "cryptonote_protocol/blobdatatype.h"
+#include <list>
 
 #include "serialization/keyvalue_serialization.h"
+#include "crypto/hash_cache.h"
 
-#include <list>
+#include "cryptonote_protocol/blobdatatype.h"
 
 namespace cryptonote
 {

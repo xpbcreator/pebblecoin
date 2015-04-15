@@ -29,9 +29,11 @@
 #pragma once 
 
 #include <boost/variant.hpp>
-#include <boost/any.hpp>
 #include <string>
 #include <list>
+#include <map>
+
+#include "pragma_comp_defs.h"
 
 #define PORTABLE_STORAGE_SIGNATUREA 0x01011101
 #define PORTABLE_STORAGE_SIGNATUREB 0x01020101 // bender's nightmare 

@@ -7,9 +7,10 @@
 #include "interface/wallet.h"
 #include "interface/placeholders.h"
 
-WalletModelTransaction::WalletModelTransaction(const QList<SendCoinsRecipient> &recipients) :
-    recipients(recipients),
-    fee(0)
+WalletModelTransaction::WalletModelTransaction(const QList<SendCoinsRecipient> &recipients)
+    : recipients(recipients)
+    , fee(0)
+    , registeringDelegate(false)
 {
 }
 
@@ -39,5 +40,37 @@ qint64 WalletModelTransaction::getTotalTransactionAmount()
     {
         totalTransactionAmount += rcp.amount;
     }
+    if (registeringDelegate)
+        totalTransactionAmount += registrationFee;
+    
     return totalTransactionAmount;
+}
+
+void WalletModelTransaction::setFakeOuts(qint64 min, qint64 desired)
+{
+    minFakeOuts = min;
+    desiredFakeOuts = desired;
+}
+
+void WalletModelTransaction::getFakeOuts(qint64& min, qint64& desired)
+{
+    min = minFakeOuts;
+    desired = desiredFakeOuts;
+}
+
+void WalletModelTransaction::setRegisteringDelegate(cryptonote::delegate_id_t newDelegateId, qint64 newRegistrationFee)
+{
+    registeringDelegate = true;
+    delegateId = newDelegateId;
+    registrationFee = newRegistrationFee;
+}
+
+bool WalletModelTransaction::getRegisteringDelegate(cryptonote::delegate_id_t& outDelegateId, qint64& outRegistrationFee)
+{
+    if (!registeringDelegate)
+        return false;
+    
+    outDelegateId = delegateId;
+    outRegistrationFee = registrationFee;
+    return true;
 }

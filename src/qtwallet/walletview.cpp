@@ -16,6 +16,7 @@
 #include "signverifymessagedialog.h"
 #include "transactiontablemodel.h"
 #include "transactionview.h"
+#include "dposdialog.h"
 #include "walletmodel.h"
 #include "bitcoin/util.h"
 
@@ -64,12 +65,14 @@ WalletView::WalletView(QWidget *parent, WalletModel *walletModelArg):
 
     receiveCoinsPage = new ReceiveCoinsDialog();
     sendCoinsPage = new SendCoinsDialog();
+    dposPage = new DposDialog();
 
     addWidget(overviewPage);
     addWidget(transactionsPage);
     addWidget(receiveCoinsPage);
     addWidget(sendCoinsPage);
     addWidget(supportPage);
+    addWidget(dposPage);
 
     // Clicking on a transaction on the overview pre-selects the transaction on the transaction history page
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), transactionView, SLOT(focusTransaction(QModelIndex)));
@@ -84,6 +87,8 @@ WalletView::WalletView(QWidget *parent, WalletModel *walletModelArg):
     connect(sendCoinsPage, SIGNAL(message(QString,QString,unsigned int)), this, SIGNAL(message(QString,QString,unsigned int)));
     // Pass through messages from transactionView
     connect(transactionView, SIGNAL(message(QString,QString,unsigned int)), this, SIGNAL(message(QString,QString,unsigned int)));
+    // Pass through messages from dposPage
+    connect(dposPage, SIGNAL(message(QString,QString,unsigned int)), this, SIGNAL(message(QString,QString,unsigned int)));
     
     setWalletModel(walletModel);
 }
@@ -126,6 +131,7 @@ void WalletView::setWalletModel(WalletModel *walletModel)
     overviewPage->setWalletModel(walletModel);
     receiveCoinsPage->setModel(walletModel);
     sendCoinsPage->setModel(walletModel);
+    dposPage->setModel(walletModel);
 
     if (walletModel)
     {
@@ -177,6 +183,11 @@ void WalletView::gotoHistoryPage()
 void WalletView::gotoSupportPage()
 {
     setCurrentWidget(supportPage);
+}
+
+void WalletView::gotoDposPage()
+{
+    setCurrentWidget(dposPage);
 }
 
 void WalletView::gotoReceiveCoinsPage()

@@ -28,8 +28,8 @@ namespace crypto {
   using std::uint64_t;
 
   extern "C" {
-#include "crypto-ops.h"
-#include "random.h"
+#include "crypto_core/crypto-ops.h"
+#include "crypto_core/random.h"
   }
 
   mutex random_lock;

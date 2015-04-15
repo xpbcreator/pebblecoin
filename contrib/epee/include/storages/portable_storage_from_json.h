@@ -25,8 +25,13 @@
 // 
 
 #pragma once
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/thread.hpp>
 #include "parserse_base_utils.h"
 #include "file_io_utils.h"
+#include "misc_log_ex.h"
 
 namespace epee
 {

@@ -23,7 +23,7 @@ namespace crypto
     m_config_folder = config_folder;
     LOG_PRINT_L0("Loading hash cache...");
     
-    const std::string filename = m_config_folder + "/" CRYPTONOTE_HASHCACHEDATA_FILENAME;
+    const std::string filename = m_config_folder + "/" + CRYPTONOTE_HASHCACHEDATA_FILENAME;
     
     bool r = false;
     {
@@ -73,7 +73,7 @@ namespace crypto
       return false;
     }
     
-    const std::string filename = m_config_folder + "/" CRYPTONOTE_HASHCACHEDATA_FILENAME;
+    const std::string filename = m_config_folder + "/" + CRYPTONOTE_HASHCACHEDATA_FILENAME;
     
     CRITICAL_REGION_LOCAL(m_hashes_lock);
     

@@ -17,4 +17,5 @@ namespace daemon_opt
   extern const command_line::arg_descriptor<std::string> arg_log_file;
   extern const command_line::arg_descriptor<int> arg_log_level;
   extern const command_line::arg_descriptor<bool> arg_console;
+  extern const command_line::arg_descriptor<bool> arg_testnet_on;
 }

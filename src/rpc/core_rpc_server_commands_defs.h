@@ -1,18 +1,22 @@
+// Copyright (c) 2015 The Pebblecoin developers
 // Copyright (c) 2012-2013 The Cryptonote developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #pragma once
+
+#include "crypto/hash.h"
 #include "cryptonote_protocol/cryptonote_protocol_defs.h"
 #include "cryptonote_core/cryptonote_basic.h"
 #include "cryptonote_core/difficulty.h"
-#include "crypto/hash.h"
+#include "cryptonote_core/delegate_types.h"
 
 namespace cryptonote
 {
   //-----------------------------------------------
 #define CORE_RPC_STATUS_OK   "OK"
 #define CORE_RPC_STATUS_BUSY   "BUSY"
+#define CORE_RPC_STATUS_NORELAY "Not relayed"
 
   struct COMMAND_RPC_GET_HEIGHT
   {
@@ -115,9 +119,11 @@ namespace cryptonote
   {
     struct request
     {
+      //coin_type type;
       std::list<uint64_t> amounts;
       uint64_t            outs_count;
       BEGIN_KV_SERIALIZE_MAP()
+        //KV_SERIALIZE(type)
         KV_SERIALIZE(amounts)
         KV_SERIALIZE(outs_count)
       END_KV_SERIALIZE_MAP()
@@ -144,9 +150,11 @@ namespace cryptonote
 
     struct response
     {
+      //coin_type type;
       std::vector<outs_for_amount> outs;
       std::string status;
       BEGIN_KV_SERIALIZE_MAP()
+        //KV_SERIALIZE(type)
         KV_SERIALIZE(outs)
         KV_SERIALIZE(status)
       END_KV_SERIALIZE_MAP()
@@ -452,5 +460,24 @@ namespace cryptonote
       END_KV_SERIALIZE_MAP()
     };
   };
-}
+  
+  struct COMMAND_RPC_GET_AUTOVOTE_DELEGATES
+  {
+    struct request
+    {
+      BEGIN_KV_SERIALIZE_MAP()
+      END_KV_SERIALIZE_MAP()
+    };
 
+    struct response
+    {
+      std::string status;
+      std::vector<delegate_id_t> autovote_delegates;
+
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(status)
+        KV_SERIALIZE(autovote_delegates)
+      END_KV_SERIALIZE_MAP()
+    };
+  };
+}

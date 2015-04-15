@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 2.8.6)
+cmake_minimum_required(VERSION 2.8.11)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/CMake)
+include (cotire)
 
 set(VERSION "0.1")
 # $Format:Packaged from commit %H%nset(COMMIT %h)%nset(REFS "%d")$
@@ -17,10 +20,6 @@ enable_testing()
 include_directories(src contrib/epee/include external "${CMAKE_BINARY_DIR}/version")
 if(APPLE)
   include_directories(SYSTEM /usr/include/malloc)
-endif()
-
-if(SMALL_BOULDERHASH) # for running tests 
-  add_definitions(-DSMALL_BOULDERHASH)
 endif()
 
 set(STATIC ${MSVC} CACHE BOOL "Link libraries statically")

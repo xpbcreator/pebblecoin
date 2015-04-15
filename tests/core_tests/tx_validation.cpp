@@ -3,7 +3,8 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chaingen.h"
-#include "chaingen_tests_list.h"
+#include "tx_validation.h"
+#include "cryptonote_core/tx_tester.h"
 
 using namespace epee;
 using namespace crypto;
@@ -11,13 +12,23 @@ using namespace cryptonote;
 
 namespace
 {
-  struct tx_builder
+  void fill_tx_sources_and_destinations_x(const std::vector<test_event_entry>& events, const block& blk_head,
+                                          const cryptonote::account_base& from, const cryptonote::account_base& to,
+                                          uint64_t amount, uint64_t fee, size_t nmix, std::vector<tx_source_entry>& sources,
+                                          std::vector<tx_destination_entry>& destinations,
+                                          bool ignore_unlock_times=false)
+  {
+    if (!fill_tx_sources_and_destinations(events, blk_head, from, to, amount, fee, nmix, sources, destinations, CURRENCY_XPB, ignore_unlock_times))
+    {
+      throw std::runtime_error("Couldn't fill_tx_sources_and_destinations");
+    }
+  }
+  
+  struct test_tx_builder
   {
     void step1_init(size_t version = CURRENT_TRANSACTION_VERSION, uint64_t unlock_time = 0)
     {
-      m_tx.vin.clear();
-      m_tx.vout.clear();
-      m_tx.signatures.clear();
+      m_tx.set_null();
 
       m_tx.version = version;
       m_tx.unlock_time = unlock_time;
@@ -37,7 +48,7 @@ namespace
 
         // put key image into tx input
         txin_to_key input_to_key;
-        input_to_key.amount = src_entr.amount;
+        input_to_key.amount = src_entr.amount_out;
         input_to_key.k_image = img;
 
         // fill outputs array and use relative offsets
@@ -45,7 +56,7 @@ namespace
           input_to_key.key_offsets.push_back(out_entry.first);
 
         input_to_key.key_offsets = absolute_output_offsets_to_relative(input_to_key.key_offsets);
-        m_tx.vin.push_back(input_to_key);
+        m_tx.add_in(input_to_key, src_entr.cp);
       }
     }
 
@@ -64,14 +75,15 @@ namespace
         txout_to_key tk;
         tk.key = out_eph_public_key;
         out.target = tk;
-        m_tx.vout.push_back(out);
+        m_tx.add_out(out, dst_entr.cp);
         output_index++;
       }
     }
 
     void step4_calc_hash()
     {
-      get_transaction_prefix_hash(m_tx, m_tx_prefix_hash);
+      if (!get_transaction_prefix_hash(m_tx, m_tx_prefix_hash))
+        LOG_ERROR("Warning: step4_calc_hash couldn't serialize tx prefix hash");
     }
 
     void step5_sign(const std::vector<tx_source_entry>& sources)
@@ -90,7 +102,7 @@ namespace
         m_tx.signatures.push_back(std::vector<crypto::signature>());
         std::vector<crypto::signature>& sigs = m_tx.signatures.back();
         sigs.resize(src_entr.outputs.size());
-        generate_ring_signature(m_tx_prefix_hash, boost::get<txin_to_key>(m_tx.vin[i]).k_image, keys_ptrs, m_in_contexts[i].sec, src_entr.real_output, sigs.data());
+        generate_ring_signature(m_tx_prefix_hash, boost::get<txin_to_key>(m_tx.ins()[i]).k_image, keys_ptrs, m_in_contexts[i].sec, src_entr.real_output, sigs.data());
         i++;
       }
     }
@@ -103,13 +115,14 @@ namespace
 
   transaction make_simple_tx_with_unlock_time(const std::vector<test_event_entry>& events,
     const cryptonote::block& blk_head, const cryptonote::account_base& from, const cryptonote::account_base& to,
-    uint64_t amount, uint64_t unlock_time)
+    uint64_t amount, uint64_t unlock_time, bool ignore_unlock_time)
   {
     std::vector<tx_source_entry> sources;
     std::vector<tx_destination_entry> destinations;
-    fill_tx_sources_and_destinations(events, blk_head, from, to, amount, TESTS_DEFAULT_FEE, 0, sources, destinations);
+    fill_tx_sources_and_destinations_x(events, blk_head, from, to, amount, TESTS_DEFAULT_FEE, 0, sources, destinations,
+                                       ignore_unlock_time);
 
-    tx_builder builder;
+    test_tx_builder builder;
     builder.step1_init(CURRENT_TRANSACTION_VERSION, unlock_time);
     builder.step2_fill_inputs(from.get_keys(), sources);
     builder.step3_fill_outputs(destinations);
@@ -150,9 +163,9 @@ bool gen_tx_big_version::generate(std::vector<test_event_entry>& events) const
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init(CURRENT_TRANSACTION_VERSION + 1, 0);
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
   builder.step3_fill_outputs(destinations);
@@ -176,7 +189,7 @@ bool gen_tx_unlock_time::generate(std::vector<test_event_entry>& events) const
 
   auto make_tx_with_unlock_time = [&](uint64_t unlock_time) -> transaction
   {
-    return make_simple_tx_with_unlock_time(events, blk_1, miner_account, miner_account, 1, unlock_time);
+    return make_simple_tx_with_unlock_time(events, blk_1r, miner_account, miner_account, 1, unlock_time, false);
   };
 
   std::list<transaction> txs_0;
@@ -226,11 +239,11 @@ bool gen_tx_input_is_not_txin_to_key::generate(std::vector<test_event_entry>& ev
   {
     std::vector<tx_source_entry> sources;
     std::vector<tx_destination_entry> destinations;
-    fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+    fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-    tx_builder builder;
+    test_tx_builder builder;
     builder.step1_init();
-    builder.m_tx.vin.push_back(tx_input);
+    builder.m_tx.add_in(tx_input, CP_XPB);
     builder.step3_fill_outputs(destinations);
     return builder.m_tx;
   };
@@ -251,7 +264,7 @@ bool gen_tx_no_inputs_no_outputs::generate(std::vector<test_event_entry>& events
   GENERATE_ACCOUNT(miner_account);
   MAKE_GENESIS_BLOCK(events, blk_0, miner_account, ts_start);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
 
   DO_CALLBACK(events, "mark_invalid_tx");
@@ -266,12 +279,13 @@ bool gen_tx_no_inputs_has_outputs::generate(std::vector<test_event_entry>& event
 
   GENERATE_ACCOUNT(miner_account);
   MAKE_STARTING_BLOCKS(events, blk_0, miner_account, ts_start);
+  REWIND_BLOCKS(events, blk_0r, blk_0, miner_account);
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step3_fill_outputs(destinations);
 
@@ -291,10 +305,10 @@ bool gen_tx_has_inputs_no_outputs::generate(std::vector<test_event_entry>& event
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
   destinations.clear();
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
   builder.step3_fill_outputs(destinations);
@@ -317,10 +331,11 @@ bool gen_tx_invalid_input_amount::generate(std::vector<test_event_entry>& events
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
-  sources.front().amount++;
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  sources.front().amount_in++;
+  sources.front().amount_out++;
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
   builder.step3_fill_outputs(destinations);
@@ -343,13 +358,13 @@ bool gen_tx_input_wo_key_offsets::generate(std::vector<test_event_entry>& events
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
   builder.step3_fill_outputs(destinations);
-  txin_to_key& in_to_key = boost::get<txin_to_key>(builder.m_tx.vin.front());
+  txin_to_key& in_to_key = boost::get<txin_to_key>(tx_tester(builder.m_tx).vin.front());
   uint64_t key_offset = in_to_key.key_offsets.front();
   in_to_key.key_offsets.pop_back();
   CHECK_AND_ASSERT_MES(in_to_key.key_offsets.empty(), false, "txin contained more than one key_offset");
@@ -374,22 +389,22 @@ bool gen_tx_key_offest_points_to_foreign_key::generate(std::vector<test_event_en
   REWIND_BLOCKS(events, blk_1r, blk_1, miner_account);
   MAKE_ACCOUNT(events, alice_account);
   MAKE_ACCOUNT(events, bob_account);
-  MAKE_TX_LIST_START(events, txs_0, miner_account, bob_account, 6 + 1, blk_1);
-  MAKE_TX_LIST(events, txs_0, miner_account, alice_account, 6 + 1, blk_1);
+  MAKE_TX_LIST_START(events, txs_0, miner_account, bob_account, 6 + 1, blk_1r);
+  MAKE_TX_LIST(events, txs_0, miner_account, alice_account, 6 + 1, blk_1r);
   MAKE_NEXT_BLOCK_TX_LIST(events, blk_2, blk_1r, miner_account, txs_0);
 
   std::vector<tx_source_entry> sources_bob;
   std::vector<tx_destination_entry> destinations_bob;
-  fill_tx_sources_and_destinations(events, blk_2, bob_account, miner_account, 6 + 1 - TESTS_DEFAULT_FEE, TESTS_DEFAULT_FEE, 0, sources_bob, destinations_bob);
+  fill_tx_sources_and_destinations_x(events, blk_2, bob_account, miner_account, 6 + 1 - TESTS_DEFAULT_FEE, TESTS_DEFAULT_FEE, 0, sources_bob, destinations_bob);
 
   std::vector<tx_source_entry> sources_alice;
   std::vector<tx_destination_entry> destinations_alice;
-  fill_tx_sources_and_destinations(events, blk_2, alice_account, miner_account, 6 + 1 - TESTS_DEFAULT_FEE, TESTS_DEFAULT_FEE, 0, sources_alice, destinations_alice);
+  fill_tx_sources_and_destinations_x(events, blk_2, alice_account, miner_account, 6 + 1 - TESTS_DEFAULT_FEE, TESTS_DEFAULT_FEE, 0, sources_alice, destinations_alice);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(bob_account.get_keys(), sources_bob);
-  txin_to_key& in_to_key = boost::get<txin_to_key>(builder.m_tx.vin.front());
+  txin_to_key& in_to_key = boost::get<txin_to_key>(tx_tester(builder.m_tx).vin.front());
   in_to_key.key_offsets.front() = sources_alice.front().outputs.front().first;
   builder.step3_fill_outputs(destinations_bob);
   builder.step4_calc_hash();
@@ -411,12 +426,12 @@ bool gen_tx_sender_key_offest_not_exist::generate(std::vector<test_event_entry>&
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
-  txin_to_key& in_to_key = boost::get<txin_to_key>(builder.m_tx.vin.front());
+  txin_to_key& in_to_key = boost::get<txin_to_key>(tx_tester(builder.m_tx).vin.front());
   in_to_key.key_offsets.front() = std::numeric_limits<uint64_t>::max();
   builder.step3_fill_outputs(destinations);
   builder.step4_calc_hash();
@@ -438,17 +453,17 @@ bool gen_tx_mixed_key_offest_not_exist::generate(std::vector<test_event_entry>& 
   REWIND_BLOCKS(events, blk_1r, blk_1, miner_account);
   MAKE_ACCOUNT(events, alice_account);
   MAKE_ACCOUNT(events, bob_account);
-  MAKE_TX_LIST_START(events, txs_0, miner_account, bob_account, 1 + TESTS_DEFAULT_FEE, blk_1);
-  MAKE_TX_LIST(events, txs_0, miner_account, alice_account, 1 + TESTS_DEFAULT_FEE, blk_1);
+  MAKE_TX_LIST_START(events, txs_0, miner_account, bob_account, 1 + TESTS_DEFAULT_FEE, blk_1r);
+  MAKE_TX_LIST(events, txs_0, miner_account, alice_account, 1 + TESTS_DEFAULT_FEE, blk_1r);
   MAKE_NEXT_BLOCK_TX_LIST(events, blk_2, blk_1r, miner_account, txs_0);
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_2, bob_account, miner_account, 1, TESTS_DEFAULT_FEE, 1, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_2, bob_account, miner_account, 1, TESTS_DEFAULT_FEE, 1, sources, destinations);
 
   sources.front().outputs[(sources.front().real_output + 1) % 2].first = std::numeric_limits<uint64_t>::max();
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(bob_account.get_keys(), sources);
   builder.step3_fill_outputs(destinations);
@@ -471,13 +486,13 @@ bool gen_tx_key_image_not_derive_from_tx_key::generate(std::vector<test_event_en
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
 
-  txin_to_key& in_to_key = boost::get<txin_to_key>(builder.m_tx.vin.front());
+  txin_to_key& in_to_key = boost::get<txin_to_key>(tx_tester(builder.m_tx).vin.front());
   keypair kp = keypair::generate();
   key_image another_ki;
   crypto::generate_key_image(kp.pub, kp.sec, another_ki);
@@ -507,13 +522,13 @@ bool gen_tx_key_image_is_invalid::generate(std::vector<test_event_entry>& events
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
 
-  txin_to_key& in_to_key = boost::get<txin_to_key>(builder.m_tx.vin.front());
+  txin_to_key& in_to_key = boost::get<txin_to_key>(tx_tester(builder.m_tx).vin.front());
   crypto::public_key pub = generate_invalid_pub_key();
   memcpy(&in_to_key.k_image, &pub, sizeof(crypto::ec_point));
 
@@ -552,8 +567,8 @@ bool gen_tx_check_input_unlock_time::generate(std::vector<test_event_entry>& eve
   std::list<transaction> txs_0;
   auto make_tx_to_acc = [&](size_t acc_idx, uint64_t unlock_time)
   {
-    txs_0.push_back(make_simple_tx_with_unlock_time(events, blk_1, miner_account, accounts[acc_idx],
-      1 + TESTS_DEFAULT_FEE, unlock_time));
+    txs_0.push_back(make_simple_tx_with_unlock_time(events, blk_1r, miner_account, accounts[acc_idx],
+      1 + TESTS_DEFAULT_FEE, unlock_time, false));
     events.push_back(txs_0.back());
   };
 
@@ -569,7 +584,7 @@ bool gen_tx_check_input_unlock_time::generate(std::vector<test_event_entry>& eve
   std::list<transaction> txs_1;
   auto make_tx_from_acc = [&](size_t acc_idx, bool invalid)
   {
-    transaction tx = make_simple_tx_with_unlock_time(events, blk_2, accounts[acc_idx], miner_account, 1, 0);
+    transaction tx = make_simple_tx_with_unlock_time(events, blk_2, accounts[acc_idx], miner_account, 1, 0, true);
     if (invalid)
     {
       DO_CALLBACK(events, "mark_invalid_tx");
@@ -602,14 +617,14 @@ bool gen_tx_txout_to_key_has_invalid_key::generate(std::vector<test_event_entry>
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
   builder.step3_fill_outputs(destinations);
 
-  txout_to_key& out_to_key =  boost::get<txout_to_key>(builder.m_tx.vout.front().target);
+  txout_to_key& out_to_key =  boost::get<txout_to_key>(tx_tester(builder.m_tx).vout.front().target);
   out_to_key.key = generate_invalid_pub_key();
 
   builder.step4_calc_hash();
@@ -631,14 +646,14 @@ bool gen_tx_output_with_zero_amount::generate(std::vector<test_event_entry>& eve
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
   builder.step3_fill_outputs(destinations);
 
-  builder.m_tx.vout.front().amount = 0;
+  tx_tester(builder.m_tx).vout.front().amount = 0;
 
   builder.step4_calc_hash();
   builder.step5_sign(sources);
@@ -659,15 +674,15 @@ bool gen_tx_output_is_not_txout_to_key::generate(std::vector<test_event_entry>& 
 
   std::vector<tx_source_entry> sources;
   std::vector<tx_destination_entry> destinations;
-  fill_tx_sources_and_destinations(events, blk_0, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
+  fill_tx_sources_and_destinations_x(events, blk_0r, miner_account, miner_account, 1, TESTS_DEFAULT_FEE, 0, sources, destinations);
 
-  tx_builder builder;
+  test_tx_builder builder;
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
 
-  builder.m_tx.vout.push_back(tx_out());
-  builder.m_tx.vout.back().amount = 1;
-  builder.m_tx.vout.back().target = txout_to_script();
+  builder.m_tx.add_out(tx_out(), CP_XPB);
+  tx_tester(builder.m_tx).vout.back().amount = 1;
+  tx_tester(builder.m_tx).vout.back().target = txout_to_script();
 
   builder.step4_calc_hash();
   builder.step5_sign(sources);
@@ -678,9 +693,9 @@ bool gen_tx_output_is_not_txout_to_key::generate(std::vector<test_event_entry>& 
   builder.step1_init();
   builder.step2_fill_inputs(miner_account.get_keys(), sources);
 
-  builder.m_tx.vout.push_back(tx_out());
-  builder.m_tx.vout.back().amount = 1;
-  builder.m_tx.vout.back().target = txout_to_scripthash();
+  builder.m_tx.add_out(tx_out(), CP_XPB);
+  tx_tester(builder.m_tx).vout.back().amount = 1;
+  tx_tester(builder.m_tx).vout.back().target = txout_to_scripthash();
 
   builder.step4_calc_hash();
   builder.step5_sign(sources);
@@ -701,8 +716,8 @@ bool gen_tx_signatures_are_invalid::generate(std::vector<test_event_entry>& even
   REWIND_BLOCKS(events, blk_1r, blk_1, miner_account);
   MAKE_ACCOUNT(events, alice_account);
   MAKE_ACCOUNT(events, bob_account);
-  MAKE_TX_LIST_START(events, txs_0, miner_account, bob_account, 1 + TESTS_DEFAULT_FEE, blk_1);
-  MAKE_TX_LIST(events, txs_0, miner_account, alice_account, 1 + TESTS_DEFAULT_FEE, blk_1);
+  MAKE_TX_LIST_START(events, txs_0, miner_account, bob_account, 1 + TESTS_DEFAULT_FEE, blk_1r);
+  MAKE_TX_LIST(events, txs_0, miner_account, alice_account, 1 + TESTS_DEFAULT_FEE, blk_1r);
   MAKE_NEXT_BLOCK_TX_LIST(events, blk_2, blk_1r, miner_account, txs_0);
 
   MAKE_TX(events, tx_0, miner_account, miner_account, 6, blk_2);

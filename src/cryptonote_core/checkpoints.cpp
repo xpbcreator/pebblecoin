@@ -3,8 +3,11 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "include_base_utils.h"
-using namespace epee;
 
+#include "crypto/hash.h"
+#include "crypto/crypto_basic_impl.h"
+
+#include "nulls.h"
 #include "checkpoints.h"
 
 namespace cryptonote

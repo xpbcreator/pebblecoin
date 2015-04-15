@@ -6,7 +6,7 @@ cmake-debug:
 
 test-debug:
 	mkdir -p build/debug
-	cd build/debug && cmake -D CMAKE_BUILD_TYPE=Debug -D SMALL_BOULDERHASH=1 ../.. && $(MAKE) test
+	cd build/debug && cmake -D CMAKE_BUILD_TYPE=Debug ../.. && $(MAKE) test
 
 build-daemon-debug: cmake-debug
 	cd build/debug && $(MAKE) daemon
@@ -28,7 +28,7 @@ cmake-release:
 
 test-release:
 	mkdir -p build/debug
-	cd build/release && cmake -D CMAKE_BUILD_TYPE=Release -D STATIC=YES -D SMALL_BOULDERHASH=1 ../.. && $(MAKE) test
+	cd build/release && cmake -D CMAKE_BUILD_TYPE=Release -D STATIC=YES ../.. && $(MAKE) test
 
 build-daemon-release: cmake-release
 	cd build/release && $(MAKE) daemon

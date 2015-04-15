@@ -1,26 +1,9 @@
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Copyright (c) 2011-2014 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "walletmodel.h"
-
-#include "addresstablemodel.h"
-#include "guiconstants.h"
-#include "recentrequeststablemodel.h"
-#include "transactiontablemodel.h"
-
-#include "interface/base58.h"
-//#include "db.h"
-//#include "keystore.h"
-#include "interface/main.h"
-#include "bitcoin/sync.h"
-#include "interface/wallet.h"
-#include "bitcoin/util.h"
-//#include "walletdb.h" // for BackupWallet
-#include "interface/placeholders.h"
-
-#include "common/ui_interface.h"
-#include "cryptonote_core/cryptonote_core.h"
 
 #include <stdint.h>
 
@@ -28,18 +11,44 @@
 #include <QSet>
 #include <QTimer>
 
+#include "cryptonote_config.h"
+#include "common/ui_interface.h"
+#include "cryptonote_core/blockchain_storage.h"
+#include "cryptonote_core/cryptonote_core.h"
+#include "wallet/wallet_errors.h"
+
+#include "interface/base58.h"
+#include "interface/main.h"
+#include "interface/wallet.h"
+#include "interface/placeholders.h"
+#include "bitcoin/sync.h"
+#include "bitcoin/util.h"
+//#include "db.h"
+//#include "keystore.h"
+//#include "walletdb.h" // for BackupWallet
+#include "addresstablemodel.h"
+#include "guiconstants.h"
+#include "recentrequeststablemodel.h"
+#include "transactiontablemodel.h"
+#include "bitcoinunits.h"
+#include "optionsmodel.h"
+#include "votingtablemodel.h"
+
 WalletModel::WalletModel(CWallet *wallet, OptionsModel *optionsModel, QObject *parent) :
     QObject(parent), wallet(wallet), optionsModel(optionsModel), addressTableModel(0),
     transactionTableModel(0),
     recentRequestsTableModel(0),
+    votingTableModel(0),
     cachedBalance(0), cachedUnconfirmedBalance(0), cachedImmatureBalance(0),
     cachedNumTransactions(0),
     cachedEncryptionStatus(Unencrypted),
-    cachedNumBlocks(0)
+    cachedNumBlocks(0),
+    cachedDelegateInfo(new cryptonote::bs_delegate_info())
 {
     addressTableModel = new AddressTableModel(wallet, this);
     transactionTableModel = new TransactionTableModel(wallet, this);
     recentRequestsTableModel = new RecentRequestsTableModel(wallet, this);
+    votingTableModel = new VotingTableModel(wallet);
 
     // This timer will be fired repeatedly to update the balance
     pollTimer = new QTimer(this);
@@ -56,17 +65,22 @@ WalletModel::~WalletModel()
 
 qint64 WalletModel::getBalance(const CCoinControl *coinControl) const
 {
-    return wallet->GetWallet2()->unlocked_balance();
+    return wallet->GetWallet2()->unlocked_balance()[cryptonote::CP_XPB];
 }
 
 qint64 WalletModel::getUnconfirmedBalance() const
 {
-    return wallet->GetWallet2()->balance() - wallet->GetWallet2()->unlocked_balance();
+    return wallet->GetWallet2()->balance()[cryptonote::CP_XPB] - wallet->GetWallet2()->unlocked_balance()[cryptonote::CP_XPB];
 }
 
 qint64 WalletModel::getImmatureBalance() const
 {
     return 0; //wallet->GetWallet2()->balance() - wallet->GetWallet2()->unlocked_balance();
+}
+
+cryptonote::bs_delegate_info WalletModel::getDelegateInfo() const
+{
+    return *cachedDelegateInfo;
 }
 
 std::string WalletModel::getPublicAddress() const
@@ -124,8 +138,11 @@ void WalletModel::pollBalanceChanged()
         cachedNumBlocks = numBlocks;
         
         checkBalanceChanged();
+        checkDelegateInfoChanged();
         if (transactionTableModel)
             transactionTableModel->updateConfirmations();
+        if (votingTableModel)
+            votingTableModel->updateDelegates();
     }
 }
 
@@ -141,6 +158,24 @@ void WalletModel::checkBalanceChanged()
         cachedUnconfirmedBalance = newUnconfirmedBalance;
         cachedImmatureBalance = newImmatureBalance;
         emit balanceChanged(newBalance, newUnconfirmedBalance, newImmatureBalance);
+    }
+}
+
+void WalletModel::checkDelegateInfoChanged()
+{
+    cryptonote::bs_delegate_info inf;
+    
+    bool amDelegate = GetDelegateInfo(wallet->GetWallet2()->get_public_address(), inf);
+    
+    if (!amDelegate)
+    {
+        inf.delegate_id = 0;
+    }
+    
+    if (*cachedDelegateInfo != inf)
+    {
+        *cachedDelegateInfo = inf;
+        emit delegateInfoChanged(*cachedDelegateInfo);
     }
 }
 
@@ -179,7 +214,9 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     const QList<SendCoinsRecipient> &recipients = transaction.getRecipients();
     //std::vector<std::pair<CScript, int64_t> > vecSend;
 
-    if(recipients.empty())
+    cryptonote::delegate_id_t delegateId;
+    qint64 registrationFee;
+    if(recipients.empty() && !transaction.getRegisteringDelegate(delegateId, registrationFee))
     {
         return OK;
     }
@@ -245,10 +282,10 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     if((total + nTransactionFee) > nBalance)
     {
         transaction.setTransactionFee(nTransactionFee);
-        return SendCoinsReturn(AmountWithFeeExceedsBalance);
+        return AmountWithFeeExceedsBalance;
     }
     
-    int64_t nFeeRequired = DEFAULT_FEE;
+    int64_t nFeeRequired = nTransactionFee < DEFAULT_FEE ? DEFAULT_FEE : nTransactionFee;
     transaction.setTransactionFee(nFeeRequired);
 
     /*{
@@ -275,7 +312,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         }
     }*/
 
-    return SendCoinsReturn(OK);
+    return OK;
 }
 
 WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &transaction)
@@ -301,106 +338,128 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
         dsts.push_back(de);
     }
     
+    uint64_t unlockTime = 0;
     std::vector<uint8_t> extra;
     
-    LOG_PRINT_GREEN("Fee is " << transaction.getTransactionFee() << ", default fee is " << DEFAULT_FEE << ", nTransactionFee is " << nTransactionFee, LOG_LEVEL_0);
+    qint64 minFakeOuts, fakeOuts;
+    transaction.getFakeOuts(minFakeOuts, fakeOuts);
     
-    for (int fake_outs_count = 5; fake_outs_count >= 0; fake_outs_count--) {
-        try
+    bool registeringDelegate;
+    cryptonote::delegate_id_t delegateId;
+    qint64 registrationFee;
+    
+    registeringDelegate = transaction.getRegisteringDelegate(delegateId, registrationFee);
+    
+    if (registeringDelegate && !recipients.empty())
+        return TransactionCreationFailed;
+    
+    LOG_PRINT_GREEN("Fee is " << transaction.getTransactionFee() << ", default fee is " << DEFAULT_FEE << ", nTransactionFee is " << nTransactionFee << ", fake outs are " << minFakeOuts << "/" << fakeOuts << ", registrationFee is " << registrationFee, LOG_LEVEL_0);
+    
+    try
+    {
+        cryptonote::transaction tx;
+        if (registeringDelegate)
         {
-            cryptonote::transaction tx;
-            pwalletMain->GetWallet2()->transfer(dsts, fake_outs_count, 0, transaction.getTransactionFee(), extra, tx);
-            checkBalanceChanged();
-            return OK;
+            pwalletMain->GetWallet2()->register_delegate(delegateId, registrationFee, minFakeOuts, fakeOuts,
+                                                         wallet->GetWallet2()->get_public_address(), tx);
         }
-        catch (const tools::error::daemon_busy&)
+        else
         {
-            //fail_msg_writer() << "daemon is busy. Please try later";
-            return TransactionCommitFailed;
+            pwalletMain->GetWallet2()->transfer(dsts, minFakeOuts, fakeOuts, unlockTime, transaction.getTransactionFee(), extra, tx);
         }
-        catch (const tools::error::no_connection_to_daemon&)
-        {
-            //fail_msg_writer() << "no connection to daemon. Please, make sure daemon is running.";
-            return TransactionCommitFailed;
-        }
-        catch (const tools::error::wallet_rpc_error& e)
-        {
-            //LOG_ERROR("Unknown RPC error: " << e.to_string());
-            //fail_msg_writer() << "RPC error \"" << e.what() << '"';
-            return TransactionCommitFailed;
-        }
-        catch (const tools::error::get_random_outs_error&)
-        {
-            //fail_msg_writer() << "failed to get random outputs to mix";
-            return TransactionCreationFailed;
-        }
-        catch (const tools::error::not_enough_money& e)
-        {
-            //fail_msg_writer() << "not enough money to transfer, available only " << print_money(e.available()) << ", transaction amount " << print_money(e.tx_amount() + e.fee()) << " = " << print_money(e.tx_amount()) << " + " << print_money(e.fee()) << " (fee)";
+        checkBalanceChanged();
+        return OK;
+    }
+    catch (const tools::error::daemon_busy&)
+    {
+        //fail_msg_writer() << "daemon is busy. Please try later";
+        return TransactionCreationFailed;
+    }
+    catch (const tools::error::no_connection_to_daemon&)
+    {
+        //fail_msg_writer() << "no connection to daemon. Please, make sure daemon is running.";
+        return TransactionCreationFailed;
+    }
+    catch (const tools::error::get_random_outs_error&)
+    {
+        //fail_msg_writer() << "failed to get random outputs to mix";
+        return TransactionCreationFailed;
+    }
+    catch (const tools::error::not_enough_money& e)
+    {
+        if (e.available() + e.scanty_outs_amount() < e.tx_amount())
+            return AmountExceedsBalance;
+        
+        if (e.available() + e.scanty_outs_amount() < e.tx_amount() + e.fee())
             return AmountWithFeeExceedsBalance;
-        }
-        catch (const tools::error::not_enough_outs_to_mix& e)
+        
+        return SendCoinsReturn(NotEnoughOutsToMix, e.scanty_outs_amount());
+    }
+    catch (const tools::error::not_enough_outs_to_mix& e)
+    {
+        /*auto writer = fail_msg_writer();
+        writer << "not enough outputs for specified mixin_count = " << e.mixin_count() << ":";
+        for (const cryptonote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& outs_for_amount : e.scanty_outs())
         {
-            LOG_PRINT_L0("Can't mix with " << fake_outs_count << " outs, trying 1 less...");
-            continue;
-            /*auto writer = fail_msg_writer();
-            writer << "not enough outputs for specified mixin_count = " << e.mixin_count() << ":";
-            for (const cryptonote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& outs_for_amount : e.scanty_outs())
-            {
-                writer << "\noutput amount = " << print_money(outs_for_amount.amount) << ", fount outputs to mix = " << outs_for_amount.outs.size();
-            }*/
-            //return TransactionCreationFailed;
-        }
-        catch (const tools::error::tx_not_constructed&)
-        {
-            //fail_msg_writer() << "transaction was not constructed";
-            return TransactionCreationFailed;
-        }
-        catch (const tools::error::tx_rejected& e)
-        {
-            //fail_msg_writer() << "transaction " << get_transaction_hash(e.tx()) << " was rejected by daemon with status \"" << e.status() << '"';
-            return TransactionCommitFailed;
-        }
-        catch (const tools::error::tx_sum_overflow& e)
-        {
-            //fail_msg_writer() << e.what();
-            return InvalidAmount;
-        }
-        catch (const tools::error::tx_too_big& e)
-        {
-            //cryptonote::transaction tx = e.tx();
-            //fail_msg_writer() << "transaction " << get_transaction_hash(e.tx()) << " is too big. Transaction size: " << get_object_blobsize(e.tx()) << " bytes, transaction size limit: " << e.tx_size_limit() << " bytes";
-            return TransactionCreationFailed;
-        }
-        catch (const tools::error::zero_destination&)
-        {
-            //fail_msg_writer() << "one of destinations is zero";
-            return TransactionCreationFailed;
-        }
-        catch (const tools::error::transfer_error& e)
-        {
-            //LOG_ERROR("unknown transfer error: " << e.to_string());
-            //fail_msg_writer() << "unknown transfer error: " << e.what();
-            return TransactionCommitFailed;
-        }
-        catch (const tools::error::wallet_internal_error& e)
-        {
-            //LOG_ERROR("internal error: " << e.to_string());
-            //fail_msg_writer() << "internal error: " << e.what();
-            return TransactionCommitFailed;
-        }
-        catch (const std::exception& e)
-        {
-            //LOG_ERROR("unexpected error: " << e.what());
-            //fail_msg_writer() << "unexpected error: " << e.what();
-            return TransactionCommitFailed;
-        }
-        catch (...)
-        {
-            //LOG_ERROR("Unknown error");
-            //fail_msg_writer() << "unknown error";
-            return TransactionCommitFailed;
-        }
+            writer << "\noutput amount = " << print_money(outs_for_amount.amount) << ", fount outputs to mix = " << outs_for_amount.outs.size();
+        }*/
+        return NotEnoughOutsToMix;
+    }
+    catch (const tools::error::tx_not_constructed&)
+    {
+        //fail_msg_writer() << "transaction was not constructed";
+        return TransactionCreationFailed;
+    }
+    catch (const tools::error::tx_rejected& e)
+    {
+        //fail_msg_writer() << "transaction " << get_transaction_hash(e.tx()) << " was rejected by daemon with status \"" << e.status() << '"';
+        return TransactionCommitFailed;
+    }
+    catch (const tools::error::tx_sum_overflow& e)
+    {
+        //fail_msg_writer() << e.what();
+        return InvalidAmount;
+    }
+    catch (const tools::error::tx_too_big& e)
+    {
+        //cryptonote::transaction tx = e.tx();
+        //fail_msg_writer() << "transaction " << get_transaction_hash(e.tx()) << " is too big. Transaction size: " << get_object_blobsize(e.tx()) << " bytes, transaction size limit: " << e.tx_size_limit() << " bytes";
+        return TxTooBig;
+    }
+    catch (const tools::error::zero_destination&)
+    {
+        //fail_msg_writer() << "one of destinations is zero";
+        return TransactionCreationFailed;
+    }
+    catch (const tools::error::wallet_rpc_error& e)
+    {
+        //LOG_ERROR("Unknown RPC error: " << e.to_string());
+        //fail_msg_writer() << "RPC error \"" << e.what() << '"';
+        return TransactionCreationFailed;
+    }
+    catch (const tools::error::transfer_error& e)
+    {
+        //LOG_ERROR("unknown transfer error: " << e.to_string());
+        //fail_msg_writer() << "unknown transfer error: " << e.what();
+        return TransactionCreationFailed;
+    }
+    catch (const tools::error::wallet_internal_error& e)
+    {
+        //LOG_ERROR("internal error: " << e.to_string());
+        //fail_msg_writer() << "internal error: " << e.what();
+        return TransactionCreationFailed;
+    }
+    catch (const std::exception& e)
+    {
+        //LOG_ERROR("unexpected error: " << e.what());
+        //fail_msg_writer() << "unexpected error: " << e.what();
+        return TransactionCreationFailed;
+    }
+    catch (...)
+    {
+        //LOG_ERROR("Unknown error");
+        //fail_msg_writer() << "unknown error";
+        return TransactionCreationFailed;
     }
 
     return TransactionCreationFailed;
@@ -424,6 +483,11 @@ TransactionTableModel *WalletModel::getTransactionTableModel()
 RecentRequestsTableModel *WalletModel::getRecentRequestsTableModel()
 {
     return recentRequestsTableModel;
+}
+
+VotingTableModel *WalletModel::getVotingTableModel()
+{
+    return votingTableModel;
 }
 
 WalletModel::EncryptionStatus WalletModel::getEncryptionStatus() const
@@ -721,4 +785,56 @@ bool WalletModel::saveReceiveRequest(const std::string &sAddress, const int64_t 
     else
         return wallet->AddDestData(dest, key, sRequest);*/
     return false;
+}
+
+void WalletModel::processSendCoinsReturn(const WalletModel::SendCoinsReturn &sendCoinsReturn, const QString &msgArg)
+{
+    QPair<QString, CClientUIInterface::MessageBoxFlags> msgParams;
+    // Default to a warning message, override if error message is needed
+    msgParams.second = CClientUIInterface::MSG_WARNING;
+
+    // This comment is specific to SendCoinsDialog usage of WalletModel::SendCoinsReturn.
+    // WalletModel::TransactionCommitFailed is used only in WalletModel::sendCoins()
+    // all others are used only in WalletModel::prepareTransaction()
+    switch(sendCoinsReturn.status)
+    {
+    case WalletModel::InvalidAddress:
+        msgParams.first = tr("The recipient address is not valid, please recheck.");
+        break;
+    case WalletModel::InvalidAmount:
+        msgParams.first = tr("The amount to pay must be larger than 0.");
+        break;
+    case WalletModel::AmountExceedsBalance:
+        msgParams.first = tr("The amount exceeds your balance.");
+        break;
+    case WalletModel::AmountWithFeeExceedsBalance:
+        msgParams.first = tr("The total exceeds your balance when the %1 transaction fee is included.").arg(msgArg);
+        break;
+    case WalletModel::DuplicateAddress:
+        msgParams.first = tr("Duplicate address found, can only send to each address once per send operation.");
+        break;
+    case WalletModel::TransactionCreationFailed:
+        msgParams.first = tr("Transaction creation failed!");
+        msgParams.second = CClientUIInterface::MSG_ERROR;
+        break;
+    case WalletModel::TransactionCommitFailed:
+        msgParams.first = tr("The transaction was rejected! This might happen if some of the coins in your wallet were already spent, such as if you used a copy of wallet.dat and coins were spent in the copy but not marked as spent here.");
+        msgParams.second = CClientUIInterface::MSG_ERROR;
+        break;
+    case WalletModel::NotEnoughOutsToMix:
+        msgParams.first = tr("%1 were unusable because there aren't enough outpoints to mix your transaction with. Try decreasing the desired number of outpoints.").arg(BitcoinUnits::formatWithUnit(getOptionsModel()->getDisplayUnit(), sendCoinsReturn.outsFiltered));
+        break;
+    case WalletModel::TxTooBig:
+        msgParams.first = tr("The transaction was too big. Try sending fewer coins or increase the number of mix outpoints to avoid using dusts.");
+        break;
+    case WalletModel::NotYetImplemented:
+        msgParams.first = tr("You have attempted to use a feature that is not yet implemented.");
+        break;
+    // included to prevent a compiler warning.
+    case WalletModel::OK:
+    default:
+        return;
+    }
+
+    emit message(tr("Send Coins"), msgParams.first, msgParams.second);
 }

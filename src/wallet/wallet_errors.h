@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "cryptonote_core/cryptonote_format_utils.h"
+#include "cryptonote_core/cryptonote_basic_impl.h"
 #include "rpc/core_rpc_server_commands_defs.h"
 #include "include_base_utils.h"
 
@@ -24,6 +25,7 @@ namespace tools
     //         unexpected_txin_type
     //   std::logic_error
     //     wallet_logic_error *
+    //       invalid_read_only_operation
     //       file_exists
     //       file_not_found
     //       file_read_error
@@ -37,6 +39,9 @@ namespace tools
     //         tx_parse_error
     //       transfer_error *
     //         get_random_outs_general_error
+    //         mint_currency_exists
+    //         remint_currency_does_not_exist
+    //         remint_currency_not_remintable
     //         not_enough_money
     //         not_enough_outs_to_mix
     //         tx_not_constructed
@@ -140,6 +145,16 @@ namespace tools
 
     private:
       cryptonote::transaction m_tx;
+    };
+    //----------------------------------------------------------------------------------------------------
+    struct invalid_read_only_operation : public wallet_logic_error
+    {
+      explicit invalid_read_only_operation(std::string&& loc, const std::string& descr)
+        : wallet_logic_error(std::move(loc), "invalid read-only operation: " + descr)
+      {
+      }
+
+      std::string to_string() const { return wallet_logic_error::to_string(); }
     };
     //----------------------------------------------------------------------------------------------------
     const char* const file_error_messages[] = {
@@ -274,34 +289,109 @@ namespace tools
     //----------------------------------------------------------------------------------------------------
     typedef failed_rpc_request<transfer_error, get_random_outs_error_message_index> get_random_outs_error;
     //----------------------------------------------------------------------------------------------------
-    struct not_enough_money : public transfer_error
+    struct mint_currency_exists : public transfer_error
     {
-      not_enough_money(std::string&& loc, uint64_t availbable, uint64_t tx_amount, uint64_t fee)
-        : transfer_error(std::move(loc), "not enough money")
-        , m_available(availbable)
-        , m_tx_amount(tx_amount)
-        , m_fee(fee)
+      mint_currency_exists(std::string&& loc, uint64_t currency)
+        : transfer_error(std::move(loc), "mint currency already exists")
+        , m_currency(currency)
       {
       }
 
-      uint64_t available() const { return m_available; }
-      uint64_t tx_amount() const { return m_tx_amount; }
-      uint64_t fee() const { return m_fee; }
+      uint64_t currency() const { return m_currency; }
 
       std::string to_string() const
       {
         std::ostringstream ss;
         ss << transfer_error::to_string() <<
-          ", available = " << cryptonote::print_money(m_available) <<
-          ", tx_amount = " << cryptonote::print_money(m_tx_amount) <<
-          ", fee = " << cryptonote::print_money(m_fee);
+        ", currency = " << m_currency;
         return ss.str();
       }
 
     private:
+      uint64_t m_currency;
+    };
+    //----------------------------------------------------------------------------------------------------
+    struct remint_currency_does_not_exist : public transfer_error
+    {
+      remint_currency_does_not_exist(std::string&& loc, uint64_t currency)
+        : transfer_error(std::move(loc), "remint currency does not exist")
+        , m_currency(currency)
+      {
+      }
+
+      uint64_t currency() const { return m_currency; }
+
+      std::string to_string() const
+      {
+        std::ostringstream ss;
+        ss << transfer_error::to_string() <<
+        ", currency = " << m_currency;
+        return ss.str();
+      }
+
+    private:
+      uint64_t m_currency;
+    };
+    //----------------------------------------------------------------------------------------------------
+    struct remint_currency_not_remintable : public transfer_error
+    {
+      remint_currency_not_remintable(std::string&& loc, uint64_t currency)
+        : transfer_error(std::move(loc), "remint currency not remintable")
+        , m_currency(currency)
+      {
+      }
+
+      uint64_t currency() const { return m_currency; }
+
+      std::string to_string() const
+      {
+        std::ostringstream ss;
+        ss << transfer_error::to_string() <<
+        ", currency = " << m_currency;
+        return ss.str();
+      }
+
+    private:
+      uint64_t m_currency;
+    };
+    //----------------------------------------------------------------------------------------------------
+    struct not_enough_money : public transfer_error
+    {
+      not_enough_money(std::string&& loc, cryptonote::coin_type coin_type, uint64_t availbable, uint64_t tx_amount, uint64_t fee,
+                       uint64_t scanty_outs_amount)
+        : transfer_error(std::move(loc), "not enough money")
+        , m_coin_type(coin_type)
+        , m_available(availbable)
+        , m_tx_amount(tx_amount)
+        , m_fee(fee)
+        , m_scanty_outs_amount(scanty_outs_amount)
+      {
+      }
+
+      cryptonote::coin_type coin_type() const { return m_coin_type; }
+      uint64_t available() const { return m_available; }
+      uint64_t tx_amount() const { return m_tx_amount; }
+      uint64_t fee() const { return m_fee; }
+      uint64_t scanty_outs_amount() const { return m_scanty_outs_amount; }
+
+      std::string to_string() const
+      {
+        std::ostringstream ss;
+        ss << transfer_error::to_string() <<
+          ", coin_type = " << m_coin_type <<
+          ", available = " << cryptonote::print_money(m_available) <<
+          ", tx_amount = " << cryptonote::print_money(m_tx_amount) <<
+          ", fee = " << cryptonote::print_money(m_fee) <<
+          ", scanty_outs_amount = " << cryptonote::print_money(m_scanty_outs_amount);
+        return ss.str();
+      }
+
+    private:
+      cryptonote::coin_type m_coin_type;
       uint64_t m_available;
       uint64_t m_tx_amount;
       uint64_t m_fee;
+      uint64_t m_scanty_outs_amount;
     };
     //----------------------------------------------------------------------------------------------------
     struct not_enough_outs_to_mix : public transfer_error
@@ -360,7 +450,8 @@ namespace tools
         {
           const cryptonote::tx_source_entry& src = m_sources[i];
           ss << "\n  source " << i << ":";
-          ss << "\n    amount: " << cryptonote::print_money(src.amount);
+          ss << "\n    amount_in: " << cryptonote::print_money(src.amount_in);
+          ss << "\n    amount_out: " << cryptonote::print_money(src.amount_out);
           // It's not good, if logs will contain such much data
           //ss << "\n    real_output: " << src.real_output;
           //ss << "\n    real_output_in_tx_index: " << src.real_output_in_tx_index;
@@ -480,6 +571,14 @@ namespace tools
     {
       explicit zero_destination(std::string&& loc)
         : transfer_error(std::move(loc), "destination amount is zero")
+      {
+      }
+    };
+    //----------------------------------------------------------------------------------------------------
+    struct zero_delegate_id : public transfer_error
+    {
+      explicit zero_delegate_id(std::string&& loc)
+        : transfer_error(std::move(loc), "delegate id is zero")
       {
       }
     };

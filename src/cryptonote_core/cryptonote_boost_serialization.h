@@ -11,9 +11,12 @@
 #include <boost/serialization/map.hpp>
 #include <boost/foreach.hpp>
 #include <boost/serialization/is_bitwise_serializable.hpp>
-#include "cryptonote_basic.h"
+
 #include "common/unordered_containers_boost_serialization.h"
 #include "crypto/crypto.h"
+
+#include "cryptonote_basic.h"
+#include "keypair.h"
 
 //namespace cryptonote {
 namespace boost
@@ -31,6 +34,12 @@ namespace boost
   inline void serialize(Archive &a, crypto::secret_key &x, const boost::serialization::version_type ver)
   {
     a & reinterpret_cast<char (&)[sizeof(crypto::secret_key)]>(x);
+  }
+  template <class Archive>
+  inline void serialize(Archive &a, cryptonote::keypair &x, const boost::serialization::version_type ver)
+  {
+    a & x.pub;
+    a & x.sec;
   }
   template <class Archive>
   inline void serialize(Archive &a, crypto::key_derivation &x, const boost::serialization::version_type ver)
@@ -55,12 +64,19 @@ namespace boost
   }
 
   template <class Archive>
+  inline void serialize(Archive &a, cryptonote::coin_type &x, const boost::serialization::version_type ver)
+  {
+    a & x.currency;
+    a & x.contract_type;
+    a & x.backed_by_currency;
+  }
+
+  template <class Archive>
   inline void serialize(Archive &a, cryptonote::txout_to_script &x, const boost::serialization::version_type ver)
   {
     a & x.keys;
     a & x.script;
   }
-
 
   template <class Archive>
   inline void serialize(Archive &a, cryptonote::txout_to_key &x, const boost::serialization::version_type ver)
@@ -106,36 +122,105 @@ namespace boost
   }
 
   template <class Archive>
+  inline void serialize(Archive &a, cryptonote::txin_mint &x, const boost::serialization::version_type ver)
+  {
+    a & x.currency;
+    a & x.description;
+    a & x.decimals;
+    a & x.amount;
+    a & x.remint_key;
+  }
+    
+  template <class Archive>
+  inline void serialize(Archive &a, cryptonote::txin_remint &x, const boost::serialization::version_type ver)
+  {
+    a & x.currency;
+    a & x.amount;
+    a & x.new_remint_key;
+    a & x.sig;
+  }
+
+  template <class Archive>
+  inline void serialize(Archive &a, cryptonote::txin_create_contract &x, const boost::serialization::version_type ver)
+  {
+    a & x.contract;
+    a & x.description;
+    a & x.grading_key;
+    a & x.fee_scale;
+    a & x.expiry_block;
+    a & x.default_grade;
+  }
+
+  template <class Archive>
+  inline void serialize(Archive &a, cryptonote::txin_mint_contract &x, const boost::serialization::version_type ver)
+  {
+    a & x.contract;
+    a & x.backed_by_currency;
+    a & x.amount;
+  }
+    
+  template <class Archive>
+  inline void serialize(Archive &a, cryptonote::txin_grade_contract &x, const boost::serialization::version_type ver)
+  {
+    a & x.contract;
+    a & x.grade;
+    a & x.fee_amounts;
+    a & x.sig;
+  }
+    
+  template <class Archive>
+  inline void serialize(Archive &a, cryptonote::txin_resolve_bc_coins &x, const boost::serialization::version_type ver)
+  {
+    a & x.contract;
+    a & x.is_backing_coins;
+    a & x.backing_currency;
+    a & x.source_amount;
+    a & x.graded_amount;
+  }
+
+  template <class Archive>
+  inline void serialize(Archive &a, cryptonote::txin_fuse_bc_coins &x, const boost::serialization::version_type ver)
+  {
+    a & x.contract;
+    a & x.backing_currency;
+    a & x.amount;
+  }
+    
+  template <class Archive>
+  inline void serialize(Archive &a, cryptonote::txin_register_delegate &x, const boost::serialization::version_type ver)
+  {
+    a & x.delegate_id;
+    a & x.registration_fee;
+    a & x.delegate_address;
+  }
+    
+  template <class Archive>
+  inline void serialize(Archive &a, cryptonote::txin_vote &x, const boost::serialization::version_type ver)
+  {
+    a & x.ink;
+    a & x.seq;
+    a & x.votes;
+  }
+  
+  template <class Archive>
   inline void serialize(Archive &a, cryptonote::tx_out &x, const boost::serialization::version_type ver)
   {
     a & x.amount;
     a & x.target;
   }
 
-
   template <class Archive>
   inline void serialize(Archive &a, cryptonote::transaction &x, const boost::serialization::version_type ver)
   {
-    a & x.version;
-    a & x.unlock_time;
-    a & x.vin;
-    a & x.vout;
-    a & x.extra;
-    a & x.signatures;
+    if (!x.boost_serialize(a))
+      throw std::runtime_error("Error boost_serializing a tx");
   }
-
 
   template <class Archive>
   inline void serialize(Archive &a, cryptonote::block &b, const boost::serialization::version_type ver)
   {
-    a & b.major_version;
-    a & b.minor_version;
-    a & b.timestamp;
-    a & b.prev_id;
-    a & b.nonce;
-    //------------------
-    a & b.miner_tx;
-    a & b.tx_hashes;
+    if (!b.boost_serialize(a))
+      throw std::runtime_error("Error boost_serializing a block");
   }
 }
 }

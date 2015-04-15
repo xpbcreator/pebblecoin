@@ -4,7 +4,6 @@
 
 #pragma once
 
-#include "p2p/net_node_common.h"
 #include "cryptonote_protocol/cryptonote_protocol_defs.h"
 #include "cryptonote_core/connection_context.h"
 namespace cryptonote

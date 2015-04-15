@@ -4,12 +4,27 @@
 
 #pragma once
 
-#include "cryptonote_core/cryptonote_basic.h"
-#include "crypto/crypto.h"
 #include "serialization/keyvalue_serialization.h"
+
+#include "crypto/crypto.h"
 
 namespace cryptonote
 {
+  struct account_public_address
+  {
+    crypto::public_key m_spend_public_key;
+    crypto::public_key m_view_public_key;
+    
+    BEGIN_SERIALIZE_OBJECT()
+      FIELD(m_spend_public_key)
+      FIELD(m_view_public_key)
+    END_SERIALIZE()
+    
+    BEGIN_KV_SERIALIZE_MAP()
+      KV_SERIALIZE_VAL_POD_AS_BLOB_FORCE(m_spend_public_key)
+      KV_SERIALIZE_VAL_POD_AS_BLOB_FORCE(m_view_public_key)
+    END_KV_SERIALIZE_MAP()
+  };
 
   struct account_keys
   {
@@ -58,4 +73,33 @@ namespace cryptonote
     account_keys m_keys;
     uint64_t m_creation_timestamp;
   };
+  
+#pragma pack(push, 1)
+  struct public_address_outer_blob
+  {
+    uint8_t m_ver;
+    account_public_address m_address;
+    uint8_t check_sum;
+  };
+#pragma pack (pop)
+  
+  bool operator ==(const cryptonote::account_public_address& a, const cryptonote::account_public_address& b);
+  bool operator !=(const cryptonote::account_public_address& a, const cryptonote::account_public_address& b);
+  bool operator <(const cryptonote::account_public_address& a, const cryptonote::account_public_address& b);
+}
+
+namespace std {
+  template<>
+  struct hash<cryptonote::account_public_address> {
+    std::size_t operator()(const cryptonote::account_public_address &v) const {
+      return boost::hash<std::pair<crypto::public_key, crypto::public_key> >()(
+          std::make_pair(v.m_spend_public_key, v.m_view_public_key));
+    }
+  };
+}
+
+namespace cryptonote {
+  inline std::size_t hash_value(const cryptonote::account_public_address &v) {
+    return std::hash<cryptonote::account_public_address>()(v);
+  }
 }

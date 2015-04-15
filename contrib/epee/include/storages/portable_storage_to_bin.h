@@ -30,6 +30,7 @@
 
 #include "misc_language.h"
 #include "portable_storage_base.h"
+#include "misc_log_ex.h"
 
 namespace epee
 {

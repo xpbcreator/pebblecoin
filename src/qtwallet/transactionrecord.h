@@ -5,11 +5,13 @@
 #ifndef TRANSACTIONRECORD_H
 #define TRANSACTIONRECORD_H
 
-#include <string> 
 #include <stdint.h>
+#include <string>
 
 #include <QList>
 #include <QString>
+
+#include "wallet/wallet2.h"
 
 class CWallet;
 class CWalletTx;
@@ -80,7 +82,7 @@ public:
     };
 
     /** Number of confirmation recommended for accepting a transaction */
-    static const int RecommendedNumConfirmations = 6;
+    static const int RecommendedNumConfirmations = DEFAULT_TX_SPENDABLE_AGE;
 
     TransactionRecord():
             hash(), time(0), type(Other), address(""), debit(0), credit(0), idx(0)

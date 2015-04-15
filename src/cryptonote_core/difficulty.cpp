@@ -114,7 +114,7 @@ namespace cryptonote {
       cut_begin = (length - 1 - (DIFFICULTY_WINDOW - 2 * DIFFICULTY_CUT) + 1) / 2;
       cut_end = cut_begin + (DIFFICULTY_WINDOW - 2 * DIFFICULTY_CUT);
     }
-    assert(/*cut_begin >= 0 &&*/ cut_begin + 2 <= cut_end && cut_end <= length);
+    assert(cut_begin < cut_end && cut_end <= length);
     
     uint64_t time_span = 0;
     difficulty_type total_work = 0;
@@ -163,6 +163,7 @@ namespace cryptonote {
 
   difficulty_type next_difficulty(uint64_t height, vector<uint64_t> timestamps, vector<difficulty_type> cumulative_difficulties)
   {
-    return next_difficulty(height, std::move(timestamps), std::move(cumulative_difficulties), DIFFICULTY_TARGET);
+    return next_difficulty(height, std::move(timestamps), std::move(cumulative_difficulties),
+                           cryptonote::config::difficulty_target());
   }
 }

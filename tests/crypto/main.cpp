@@ -20,22 +20,6 @@ using namespace std;
 using namespace crypto;
 typedef crypto::hash chash;
 
-bool operator !=(const ec_scalar &a, const ec_scalar &b) {
-  return 0 != memcmp(&a, &b, sizeof(ec_scalar));
-}
-
-bool operator !=(const ec_point &a, const ec_point &b) {
-  return 0 != memcmp(&a, &b, sizeof(ec_point));
-}
-
-bool operator !=(const secret_key &a, const secret_key &b) {
-  return 0 != memcmp(&a, &b, sizeof(secret_key));
-}
-
-bool operator !=(const key_derivation &a, const key_derivation &b) {
-  return 0 != memcmp(&a, &b, sizeof(key_derivation));
-}
-
 DISABLE_GCC_WARNING(maybe-uninitialized)
 
 int main(int argc, char *argv[]) {

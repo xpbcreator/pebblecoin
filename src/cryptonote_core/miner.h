@@ -4,56 +4,62 @@
 
 #pragma once 
 
-#include "cryptonote_protocol/blobdatatype.h"
-#include "cryptonote_basic.h"
-#include "difficulty.h"
-#include "math_helper.h"
-#include "miner_opt.h"
-
-#include <boost/program_options.hpp>
-
 #include <atomic>
 
+#include <boost/program_options.hpp>
+#include <boost/thread.hpp>
+
+#include "math_helper.h"
+
+#include "cryptonote_protocol/blobdatatype.h"
+
+#include "cryptonote_basic.h"
+#include "difficulty.h"
+#include "i_miner_handler.h"
+
+namespace tools
+{
+  class wallet2;
+}
 namespace cryptonote
 {
-
-  struct i_miner_handler
-  {
-    virtual bool handle_block_found(block& b) = 0;
-    virtual bool get_block_template(block& b, const account_public_address& adr, difficulty_type& diffic, uint64_t& height, const blobdata& ex_nonce) = 0;
-  protected:
-    ~i_miner_handler(){};
-  };
-
   /************************************************************************/
   /*                                                                      */
   /************************************************************************/
   class miner
   {
   public: 
+    static void init_options(boost::program_options::options_description& desc);
+    static bool find_nonce_for_given_block(block& bl, const difficulty_type& diffic, uint64_t height, uint64_t **state);
+    
     miner(i_miner_handler* phandler);
     ~miner();
     bool init(const boost::program_options::variables_map& vm);
-    static void init_options(boost::program_options::options_description& desc);
-    bool set_block_template(const block& bl, const difficulty_type& diffic, uint64_t height);
-    bool on_block_chain_update();
-    bool start(const account_public_address& adr, size_t threads_count, const boost::thread::attributes& attrs);
-    uint64_t get_speed();
-    void send_stop_signal();
+    
+    bool clear_block_template();
+    bool set_block_template(const block& bl, const difficulty_type& diffic, uint64_t height,
+                            const cryptonote::account_public_address& signing_delegate_address);
+    
+    bool start(const account_public_address& adr, size_t threads_count);
     bool stop();
     bool is_mining();
-    bool on_idle();
-    void on_synchronized();
-    //synchronous analog (for fast calls)
-    static bool find_nonce_for_given_block(block& bl, const difficulty_type& diffic, uint64_t height, uint64_t **state);
     void pause();
     void resume();
-    void do_print_hashrate(bool do_hr);
 
+    bool on_idle();
+    void on_synchronized();
+    bool on_block_chain_update();
+    
+    uint64_t get_speed();
+    void set_print_hashrate(bool do_hr);
+    
   private:
-    bool worker_thread();
+    bool store_config();
+    bool load_config();
+    
+    void merge_hr();
     bool request_block_template();
-    void  merge_hr();
+    bool worker_thread();
     
     struct miner_config
     {
@@ -64,7 +70,6 @@ namespace cryptonote
       END_KV_SERIALIZE_MAP()
     };
 
-
     volatile uint32_t m_stop;
     epee::critical_section m_template_lock;
     block m_template;
@@ -72,10 +77,11 @@ namespace cryptonote
     std::atomic<uint32_t> m_starter_nonce;
     difficulty_type m_diffic;
     uint64_t m_height;
-    volatile uint32_t m_thread_index; 
+    cryptonote::account_public_address m_signing_delegate_address;
+    volatile uint32_t m_thread_index;
     volatile uint32_t m_threads_total;
     std::atomic<int32_t> m_pausers_count;
-    epee::critical_section m_miners_count_lock;
+    epee::critical_section m_pausers_count_lock;
 
     std::list<boost::thread> m_threads;
     epee::critical_section m_threads_lock;
@@ -94,8 +100,8 @@ namespace cryptonote
     bool m_do_print_hashrate;
     bool m_do_mining;
     bool m_dont_share_state;
+    
+    tools::wallet2 *m_pdelegate_wallet;
+    uint64_t m_dpos_block_wait_time;
   };
 }
-
-
-

@@ -8,8 +8,18 @@
 #include <iostream>
 #include <vector>
 #include <boost/foreach.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include "common/boost_serialization_helper.h"
+#include "crypto/crypto.h"
 #include "cryptonote_core/cryptonote_basic.h"
 #include "cryptonote_core/cryptonote_basic_impl.h"
+#include "cryptonote_core/account_boost_serialization.h"
+#include "cryptonote_core/cryptonote_boost_serialization.h"
+#include "cryptonote_core/cryptonote_format_utils.h"
+#include "cryptonote_core/tx_tester.h"
+#include "cryptonote_core/nulls.h"
+#include "cryptonote_core/keypair.h"
 #include "serialization/serialization.h"
 #include "serialization/binary_archive.h"
 #include "serialization/json_archive.h"
@@ -259,6 +269,156 @@ TEST(Serialization, serializes_vector_int64_as_fixed_int)
   ASSERT_EQ(57, blob.size());
 }
 
+template<typename T>
+bool blob_serialization_preserves_value(const T& cval)
+{
+  T val = cval;
+  
+  std::string blob;
+  if (!serialization::dump_binary(val, blob))
+  {
+    std::cout << "failed to dump binary" << std::endl;
+    return false;
+  }
+  
+  T parsed;
+  if (!serialization::parse_binary(blob, parsed))
+  {
+    std::cout << "failed to parse binary" << std::endl;
+    return false;
+  }
+  
+  return val == parsed;
+}
+
+template<typename T>
+bool boost_serialization_preserves_value(const T& cval)
+{
+  T val = cval;
+  
+  std::stringstream ss;
+  boost::archive::binary_oarchive o(ss);
+  o << val;
+  
+  boost::archive::binary_iarchive i(ss);
+  T loaded_val;
+  i >> loaded_val;
+  
+  return val == loaded_val;
+}
+
+template<typename T>
+bool both_serialization_preserves_value(const T& cval)
+{
+  if (!blob_serialization_preserves_value(cval))
+  {
+    std::cout << "blob failed to preserve value" << std::endl;
+    return false;
+  }
+  if (!boost_serialization_preserves_value(cval))
+  {
+    std::cout << "boost failed to preserve value" << std::endl;
+    return false;
+  }
+  return true;
+}
+
+TEST(Serialization, serialization_preserves_value__string)
+{
+  ASSERT_TRUE(both_serialization_preserves_value(std::string("One two three")));
+  ASSERT_TRUE(both_serialization_preserves_value(std::string(30, 'x')));
+}
+
+TEST(Serialization, serialization_preserves_value__crypto)
+{
+  auto h = crypto::cn_fast_hash("ABCDE", 5);
+  ASSERT_TRUE(both_serialization_preserves_value(h));
+  auto kp = cryptonote::keypair::generate();
+  ASSERT_TRUE(both_serialization_preserves_value(kp.pub));
+  ASSERT_TRUE(both_serialization_preserves_value(kp.sec));
+
+  crypto::key_derivation derivation;
+  crypto::generate_key_derivation(kp.pub, kp.sec, derivation);
+  ASSERT_TRUE(both_serialization_preserves_value(derivation));
+  
+  crypto::key_image im;
+  crypto::generate_key_image(kp.pub, kp.sec, im);
+  ASSERT_TRUE(both_serialization_preserves_value(im));
+  
+  crypto::signature sig;
+  crypto::generate_signature(h, kp.pub, kp.sec, sig);
+  ASSERT_TRUE(both_serialization_preserves_value(sig));
+
+  // vector of sigs checked in "serializes_transacion_signatures_correctly"
+}
+
+TEST(Serialization, serialization_preserves_value__map)
+{
+  std::map<uint64_t, uint64_t> m;
+  m[100] = 200;
+  ASSERT_TRUE(both_serialization_preserves_value(m));
+  m[500] = 700;
+  ASSERT_TRUE(both_serialization_preserves_value(m));
+  m[900] = 10000;
+  ASSERT_TRUE(both_serialization_preserves_value(m));
+  
+  std::unordered_map<std::string, bool> n;
+  n["goorag"] = false;
+  ASSERT_TRUE(both_serialization_preserves_value(m));
+  n["maer"] = true;
+  ASSERT_TRUE(both_serialization_preserves_value(m));
+}
+
+/*TEST(Serialization, serialization_preserves_value__variant)
+{
+}*/
+
+TEST(Serialization, serialization_preserves_value__pair)
+{
+  ASSERT_TRUE(both_serialization_preserves_value(std::make_pair(100, 200)));
+  ASSERT_TRUE(both_serialization_preserves_value(std::make_pair((uint64_t)9999, std::string("hurga"))));
+  crypto::hash h;
+  crypto::public_key k;
+  ASSERT_TRUE(both_serialization_preserves_value(std::make_pair(h, k)));
+  h = crypto::cn_fast_hash("this a str", 10);
+  ASSERT_TRUE(both_serialization_preserves_value(std::make_pair(h, k)));
+  k = cryptonote::keypair::generate().pub;
+  ASSERT_TRUE(both_serialization_preserves_value(std::make_pair(h, k)));
+}
+
+TEST(Serialization, serialization_preserves_value__vector)
+{
+  {
+    std::vector<int> v;
+    ASSERT_TRUE(both_serialization_preserves_value(v));
+    for (int i=0; i < 20; i++) {
+      v.push_back(i * 10);
+      ASSERT_TRUE(both_serialization_preserves_value(v));
+    }
+  }
+  {
+    std::vector<std::string> v;
+    ASSERT_TRUE(both_serialization_preserves_value(v));
+    for (int i=0; i < 20; i++) {
+      v.push_back("mm.... ");
+      ASSERT_TRUE(both_serialization_preserves_value(v));
+    }
+  }
+}
+
+TEST(Serialization, serialization_preserves_value__tuple)
+{
+  { auto t = std::make_tuple(); ASSERT_TRUE(both_serialization_preserves_value(t)); }
+  { auto t = std::make_tuple(1); ASSERT_TRUE(both_serialization_preserves_value(t)); }
+  { auto t = std::make_tuple(std::string("hi")); ASSERT_TRUE(both_serialization_preserves_value(t)); }
+  { auto t = std::make_tuple(9, (uint64_t)43); ASSERT_TRUE(both_serialization_preserves_value(t)); }
+  { auto t = std::make_tuple(std::string("a"), std::string("b"), std::string("c"));
+    ASSERT_TRUE(both_serialization_preserves_value(t)); }
+  { auto t = std::make_tuple(1, 2, 3, 4, 5); ASSERT_TRUE(both_serialization_preserves_value(t)); }
+  { auto t = std::make_tuple(100, 'z', std::string("cor"), std::make_pair(1, 2));
+    ASSERT_TRUE(both_serialization_preserves_value(t)); }
+}
+
 namespace
 {
   template<typename T>
@@ -293,7 +453,8 @@ TEST(Serialization, serializes_transacion_signatures_correctly)
   txin_gen txin_gen1;
   txin_gen1.height = 0;
   tx.set_null();
-  tx.vin.push_back(txin_gen1);
+  tx.version = VANILLA_TRANSACTION_VERSION;
+  tx.add_in(txin_gen1, CP_XPB);
   ASSERT_TRUE(serialization::dump_binary(tx, blob));
   ASSERT_EQ(7, blob.size()); // 5 bytes + 2 bytes vin[0] + 0 bytes extra + 0 bytes signatures
   ASSERT_TRUE(serialization::parse_binary(blob, tx1));
@@ -324,7 +485,7 @@ TEST(Serialization, serializes_transacion_signatures_correctly)
   ASSERT_FALSE(serialization::dump_binary(tx, blob));
 
   // Two txin_gen, no signatures
-  tx.vin.push_back(txin_gen1);
+  tx.add_in(txin_gen1, CP_XPB);
   tx.signatures.resize(0);
   ASSERT_TRUE(serialization::dump_binary(tx, blob));
   ASSERT_EQ(9, blob.size()); // 5 bytes + 2 * 2 bytes vins + 0 bytes extra + 0 bytes signatures
@@ -355,8 +516,8 @@ TEST(Serialization, serializes_transacion_signatures_correctly)
   ASSERT_FALSE(serialization::dump_binary(tx, blob));
 
   // A few bytes instead of signature
-  tx.vin.clear();
-  tx.vin.push_back(txin_gen1);
+  tx.clear_ins();
+  tx.add_in(txin_gen1, CP_XPB);
   tx.signatures.clear();
   ASSERT_TRUE(serialization::dump_binary(tx, blob));
   blob.append(std::string(sizeof(crypto::signature) / 2, 'x'));
@@ -369,9 +530,12 @@ TEST(Serialization, serializes_transacion_signatures_correctly)
   // Not enough signature vectors for all inputs
   txin_to_key txin_to_key1;
   txin_to_key1.key_offsets.resize(2);
-  tx.vin.clear();
-  tx.vin.push_back(txin_to_key1);
-  tx.vin.push_back(txin_to_key1);
+  txin_vote txin_vote1;
+  txin_vote1.ink.key_offsets.resize(2);
+  tx.version = DPOS_TRANSACTION_VERSION;
+  tx.clear_ins();
+  tx.add_in(txin_to_key1, CP_XPB);
+  tx.add_in(txin_vote1, CP_XPB);
   tx.signatures.resize(1);
   tx.signatures[0].resize(2);
   ASSERT_FALSE(serialization::dump_binary(tx, blob));
@@ -415,4 +579,310 @@ TEST(Serialization, serializes_transacion_signatures_correctly)
   // Blob contains one excess signature
   blob.resize(blob.size() + sizeof(crypto::signature) / 2);
   ASSERT_FALSE(serialization::parse_binary(blob, tx1));
+}
+
+bool _get_hash(const cryptonote::transaction& tx, crypto::hash& h)
+{
+  return get_transaction_hash(tx, h);
+}
+bool _get_hash(const cryptonote::block& bl, crypto::hash& h)
+{
+  return get_block_hash(bl, h);
+}
+
+crypto::hash g_ignore;
+
+template<typename T>
+bool blob_serialization_preserves_hash(const T& tx, crypto::hash& result=g_ignore)
+{
+  using namespace cryptonote;
+  
+  crypto::hash pre_hash;
+  if (!_get_hash(tx, pre_hash))
+    return false;
+  
+  // blob serialization
+  blobdata tx_blob;
+  if (!t_serializable_object_to_blob(tx, tx_blob))
+    return false;
+  
+  T loaded_from_blob;
+  if (!t_serializable_object_from_blob(tx_blob, loaded_from_blob))
+    return false;
+  
+  crypto::hash post_blob_hash;
+  if (!_get_hash(loaded_from_blob, post_blob_hash))
+    return false;
+  
+  result = pre_hash;
+  return pre_hash == post_blob_hash;
+}
+
+template<typename T>
+bool boost_serialization_preserves_hash(const T& tx, crypto::hash& result=g_ignore)
+{
+  crypto::hash pre_hash;
+  if (!_get_hash(tx, pre_hash))
+    return false;
+
+  std::stringstream ss;
+  boost::archive::binary_oarchive o(ss);
+  o << tx;
+  
+  boost::archive::binary_iarchive i(ss);
+  T loaded_from_boost;
+  i >> loaded_from_boost;
+  
+  crypto::hash post_boost_hash;
+  if (!_get_hash(loaded_from_boost, post_boost_hash))
+    return false;
+
+  result = pre_hash;
+  return pre_hash == post_boost_hash;
+}
+
+template<typename T>
+bool both_serialization_preserves_hash(const T& tx, crypto::hash& result=g_ignore)
+{
+  return blob_serialization_preserves_hash(tx, result) && boost_serialization_preserves_hash(tx, result);
+}
+
+TEST(Serialization, serialization_preserves_id_hash)
+{
+  using namespace cryptonote;
+  
+  transaction tx;
+  tx_tester txt(tx);
+  tx.set_null();
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  
+  auto keypair = keypair::generate();
+  
+  tx.version = VANILLA_TRANSACTION_VERSION;
+  tx.add_out(tx_out(999, txout_to_key(keypair.pub)), CP_XPB);
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  tx.add_in(txin_gen(), CP_XPB);
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  tx.add_in(txin_to_key(), CP_XPB);
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  
+  tx.set_null();
+  tx.version = VANILLA_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // mismatch in coin_type and vout
+  txt.vout_coin_types.push_back(coin_type(CURRENCY_XPB, NotContract, BACKED_BY_N_A));
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  txt.vin.push_back(txin_gen());
+  ASSERT_FALSE(both_serialization_preserves_hash(tx));
+  txt.vin.push_back(txin_to_key());
+  ASSERT_FALSE(both_serialization_preserves_hash(tx));
+  txt.vin_coin_types.push_back(coin_type(CURRENCY_XPB, NotContract, BACKED_BY_N_A));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx));
+  txt.vin_coin_types.push_back(coin_type(CURRENCY_XPB, NotContract, BACKED_BY_N_A));
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  
+  tx.set_null();
+  tx.version = VANILLA_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(CURRENCY_XPB + 43, NotContract, BACKED_BY_N_A));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid currency
+
+  tx.set_null();
+  tx.version = VANILLA_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(CURRENCY_XPB, NotContract, CURRENCY_XPB));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid backed_by
+
+  tx.set_null();
+  tx.version = VANILLA_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(CURRENCY_XPB, BackingCoin, BACKED_BY_N_A));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid contract_type
+
+  tx.set_null();
+  tx.version = VANILLA_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(CURRENCY_XPB, ContractCoin, BACKED_BY_N_A));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid contract_type
+/*
+  tx.set_null();
+  tx.version = CURRENCY_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(453, NotContract, 6789));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid backed_by
+  
+  tx.set_null();
+  tx.version = CURRENCY_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(453, BackingCoin, 6789));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid contract_type
+  
+  tx.set_null();
+  tx.version = CURRENCY_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(453, NotContract, BACKED_BY_N_A));
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  
+  tx.set_null();
+  tx.version = CURRENCY_TRANSACTION_VERSION;
+  
+  {
+    txin_mint in_m;
+    in_m.currency = 20;
+    in_m.description = "hoorg";
+    in_m.decimals = 4;
+    in_m.amount = 3000;
+    in_m.remint_key = keypair.pub;
+    tx.add_in(in_m, coin_type(20, NotContract, BACKED_BY_N_A));
+  }
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  
+  {
+    txin_remint re_m;
+    re_m.currency = 20;
+    re_m.amount = 4000;
+    re_m.new_remint_key = keypair.pub;
+    tx.add_in(re_m, coin_type(20, NotContract, BACKED_BY_N_A));
+  }
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  
+  tx.version = CONTRACT_TRANSACTION_VERSION;
+  {
+    txin_create_contract c;
+    c.contract = 400;
+    c.description = "A contract";
+    c.grading_key = keypair.pub;
+    c.fee_scale = 4;
+    c.expiry_block = 9000;
+    c.default_grade = 44555;
+    tx.add_in(c, coin_type(400, BackingCoin, 555));
+  }
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  
+  {
+    txin_mint_contract m;
+    m.contract = 5;
+    m.backed_by_currency = 30;
+    m.amount = 4000;
+    tx.add_in(m, coin_type(1, NotContract, 3));
+  }
+
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  {
+    txin_grade_contract g;
+    g.contract = 400;
+    g.grade = 100;
+    g.fee_amounts[20] = 400;
+    g.fee_amounts[0] = 90000;
+    tx.add_in(g, coin_type(6, ContractCoin, 10000));
+  }
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+
+  {
+    txin_resolve_bc_coins g;
+    g.contract = 400;
+    g.is_backing_coins = 1;
+    g.backing_currency = 4343;
+    g.source_amount = 10000;
+    g.graded_amount = 4;
+    tx.add_in(g, coin_type(1, BackingCoin, 20));
+  }
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+
+  {
+    txin_fuse_bc_coins g;
+    g.contract = 400;
+    g.backing_currency = 4343;
+    g.amount = 3456;
+    tx.add_in(g, coin_type(1, BackingCoin, 33345));
+  }
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));*/
+  
+  tx.set_null();
+  tx.version = VANILLA_TRANSACTION_VERSION;
+  {
+    txin_register_delegate g;
+    g.delegate_id = 400;
+    g.registration_fee = 130034;
+    tx.add_in(g, CP_XPB);
+  }
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid tx version
+  
+  tx.version = DPOS_TRANSACTION_VERSION;
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  
+  {
+    txin_vote v;
+    v.ink = txin_to_key();
+    v.seq = 33;
+    v.votes.insert(30);
+    v.votes.insert(44);
+    tx.add_in(v, CP_XPB);
+  }
+  ASSERT_TRUE(both_serialization_preserves_hash(tx));
+  
+  tx.set_null();
+  tx.version = DPOS_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(CURRENCY_XPB + 43, NotContract, BACKED_BY_N_A));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid currency
+
+  tx.set_null();
+  tx.version = DPOS_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(CURRENCY_XPB, NotContract, CURRENCY_XPB));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid backed_by
+
+  tx.set_null();
+  tx.version = DPOS_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(CURRENCY_XPB, BackingCoin, BACKED_BY_N_A));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid contract_type
+
+  tx.set_null();
+  tx.version = DPOS_TRANSACTION_VERSION;
+  txt.vout.push_back(tx_out(999, txout_to_key(keypair.pub)));
+  txt.vout_coin_types.push_back(coin_type(CURRENCY_XPB, ContractCoin, BACKED_BY_N_A));
+  ASSERT_FALSE(both_serialization_preserves_hash(tx)); // invalid contract_type
+}
+
+TEST(Serialization, dpos_block_serialization)
+{
+  using namespace cryptonote;
+  
+  block b1, b2;
+  b1.major_version = DPOS_BLOCK_MAJOR_VERSION;
+  b1.minor_version = DPOS_BLOCK_MINOR_VERSION;
+  b1.timestamp = 134455555;
+  b1.prev_id = null_hash;
+  b1.nonce = 0;
+  b1.miner_tx = transaction();
+  b1.miner_tx.set_null();
+  b1.tx_hashes.clear();
+  b1.signing_delegate_id = 444;
+  b1.dpos_sig = crypto::signature();
+  
+  crypto::hash h1, h2;
+  ASSERT_TRUE(both_serialization_preserves_hash(b1, h1));
+  
+  // nonce should not be hashed, shouldn't affect it
+  b2 = b1;
+  b2.nonce = 155;
+  ASSERT_TRUE(both_serialization_preserves_hash(b2, h2));
+  ASSERT_EQ(b1, b2);
+  ASSERT_EQ(h1, h2);
+  
+  // signingdelegate  &dpos sig should affect it
+  b2 = b1;
+  b2.signing_delegate_id += 1;
+  ASSERT_TRUE(both_serialization_preserves_hash(b2, h2));
+  ASSERT_NE(b1, b2);
+  ASSERT_NE(h1, h2);
+  
+  // signingdelegate  &dpos sig should affect it
+  b2 = b1;
+  (reinterpret_cast<char *>(&b2.dpos_sig))[0] += 1;
+  ASSERT_TRUE(both_serialization_preserves_hash(b2, h2));
+  ASSERT_NE(b1, b2);
+  ASSERT_NE(h1, h2);
 }

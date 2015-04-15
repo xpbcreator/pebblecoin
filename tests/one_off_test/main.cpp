@@ -3,35 +3,44 @@
 #include "crypto/hash.h"
 #include "crypto/hash_options.h"
 
+#include "common/ntp_time.h"
+
 #include <stdio.h>
 
 int main(int argc, char *argv[])
 {
-  epee::log_space::get_set_log_detalisation_level(true, LOG_LEVEL_2);
-  epee::log_space::log_singletone::add_logger(LOGGER_CONSOLE, NULL, NULL, LOG_LEVEL_0);
+  epee::log_space::get_set_log_detalisation_level(true, LOG_LEVEL_4);
+  epee::log_space::log_singletone::add_logger(LOGGER_CONSOLE, NULL, NULL, LOG_LEVEL_4);
   
-  hashing_opt::_do_boulderhash = true;
+  tools::ntp_time t(5);
   
-  printf("Malloccing state...\n");
-  uint64_t **state = crypto::pc_malloc_state();
+  //t.set_ntp_timeout_ms(-1);
   
-  LOG_PRINT_L0("Initializing boulderhash threadpool...");
-  boost::program_options::variables_map vm;
-  crypto::pc_init_threadpool(vm);
+  LOG_PRINT_L0("Time is " << t.get_time() << ", local is " << time(NULL));
   
-  printf("state = %p\n", state);
+  sleep(1);
   
-  printf("Version 1 boulderhashing...\n");
-  crypto::hash h;
-  h = crypto::pc_boulderhash(1, "Testing!", 8, state);
-  LOG_PRINT_L0("Result: " << epee::string_tools::pod_to_hex(h));
+  LOG_PRINT_L0("Time is " << t.get_time());
+
+  sleep(1);
   
-  printf("Version 2 boulderhashing...\n");
-  h = crypto::pc_boulderhash(2, "Testing!", 8, state);
-  LOG_PRINT_L0("Result: " << epee::string_tools::pod_to_hex(h));
+  LOG_PRINT_L0("Time is " << t.get_time());
+
+  sleep(5);
   
-  printf("Freeing state...\n");
-  crypto::pc_free_state(state);
+  LOG_PRINT_L0("Time is " << t.get_time());
+  
+  LOG_PRINT_L0("Starting timeout at 0ms, incrementing by 50ms each time...");
+  for (time_t timeout=0; timeout < 10000; timeout += 50)
+  {
+    t.set_ntp_timeout_ms(timeout);
+    
+    bool r = t.update();
+    LOG_PRINT_L0("Update " << (r ? "succeeded" : "failed"));
+    if (r) {
+      break;
+    }
+  }
   
   return 0;
 }

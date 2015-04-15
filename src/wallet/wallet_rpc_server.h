@@ -8,10 +8,12 @@
 #include <boost/program_options/variables_map.hpp>
 #include "net/http_server_impl_base.h"
 #include "wallet_rpc_server_commans_defs.h"
-#include "wallet2.h"
 #include "common/command_line.h"
+
 namespace tools
 {
+  class wallet2;
+  
   /************************************************************************/
   /*                                                                      */
   /************************************************************************/

@@ -38,6 +38,7 @@
 #include <string>
 #include <boost/asio.hpp>
 #include <boost/preprocessor/selection/min.hpp>
+#include <boost/bind.hpp>
 #include <boost/lambda/bind.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/interprocess/detail/atomic.hpp>

@@ -5,12 +5,18 @@
 #include <mutex>
 #include <thread>
 
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/bind.hpp>
+
 #include "gtest/gtest.h"
 
 #include "include_base_utils.h"
 #include "string_tools.h"
 #include "net/levin_protocol_handler_async.h"
 #include "net/net_utils_base.h"
+
+#include "cryptonote_config.h"
+
 #include "unit_tests_utils.h"
 
 namespace

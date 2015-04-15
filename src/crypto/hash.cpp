@@ -1,12 +1,8 @@
-// Copyright (c) 2014 The Pebblecoin developers
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "hash.h"
-#include "hash_options.h"
-
-#include "common/command_line.h"
-#include "cryptonote_core/miner.h"
+#include <thread>
 
 #include <boost/asio/io_service.hpp>
 #include <boost/bind.hpp>
@@ -16,7 +12,11 @@
 #include <boost/foreach.hpp>
 #include <boost/make_shared.hpp>
 
-#include <thread>
+#include "cryptonote_config.h"
+#include "common/command_line.h"
+
+#include "hash.h"
+#include "hash_options.h"
 
 namespace
 {
@@ -72,11 +72,11 @@ namespace
     f_threads_inited = false;
   }
   
-  int do_fill_states(int version, uint64_t **state, int start_i, int end_i)
+  int do_fill_states(int version, uint64_t **state, size_t start_i, size_t end_i)
   {
-    end_i = std::min(end_i, BOULDERHASH_STATES);
+    end_i = std::min(end_i, crypto::get_boulderhash_states());
     
-    for (int i=start_i; i < end_i; i++)
+    for (size_t i=start_i; i < end_i; i++)
     {
       crypto::pc_boulderhash_fill_state(version, state[i]);
     }
@@ -84,7 +84,7 @@ namespace
     return 1;
   }
   
-  boost::shared_future<int> post_fill_states_job(int version, uint64_t **state, int start_i, int end_i)
+  boost::shared_future<int> post_fill_states_job(int version, uint64_t **state, size_t start_i, size_t end_i)
   {
     if (!f_threads_inited)
       throw std::runtime_error("boulderhash threadpool not initialized");
@@ -98,9 +98,10 @@ namespace
   
   void fill_all_states(int version, uint64_t **state)
   {
+    size_t num_states = crypto::get_boulderhash_states();
     if (!f_threads_inited)
     {
-      for (int i=0; i < BOULDERHASH_STATES; i++) {
+      for (size_t i=0; i < num_states; i++) {
         crypto::pc_boulderhash_fill_state(version, state[i]);
       }
       
@@ -109,7 +110,7 @@ namespace
     
     std::list<boost::shared_future<int> > futures;
     
-    for (int i=0; i < BOULDERHASH_STATES; i += states_per_thread) {
+    for (size_t i=0; i < num_states; i += states_per_thread) {
       futures.push_back(post_fill_states_job(version, state, i, i+states_per_thread));
     }
     
@@ -128,16 +129,16 @@ namespace crypto
   
   uint64_t **pc_malloc_state()
   {
-    if (!hashing_opt::boulderhash_enabled())
+    if (!cryptonote::config::do_boulderhash)
     {
       LOG_PRINT_L0("Boulderhash disabled, not malloc'ing boulderhash state...");
       return NULL;
     }
     
-    LOG_PRINT_L0("Malloc'ing boulderhash state...");
-    uint64_t **state = (uint64_t **)malloc(sizeof(uint64_t *)*BOULDERHASH_STATES);
-    for (int i=0; i < BOULDERHASH_STATES; i++) {
-      state[i] = (uint64_t *)malloc(sizeof(uint64_t)*BOULDERHASH_STATE_SIZE);
+    LOG_PRINT_L0("Malloc'ing " << get_boulderhash_states() << " boulderhash states...");
+    uint64_t **state = (uint64_t **)malloc(sizeof(uint64_t *)*get_boulderhash_states());
+    for (size_t i=0; i < crypto::get_boulderhash_states(); i++) {
+      state[i] = (uint64_t *)malloc(sizeof(uint64_t)*crypto::get_boulderhash_state_size());
     }
     return state;
   }
@@ -146,7 +147,7 @@ namespace crypto
     if (state == NULL)
       return;
     
-    for (int i=0; i < BOULDERHASH_STATES; i++) {
+    for (size_t i=0; i < crypto::get_boulderhash_states(); i++) {
       free(state[i]);
     }
     free(state);
@@ -203,9 +204,3 @@ namespace crypto
     return h;
   }
 }
-
-
-
-
-
-
