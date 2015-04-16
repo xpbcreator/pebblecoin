@@ -28,18 +28,22 @@
 
 #ifndef _STRING_TOOLS_H_
 #define _STRING_TOOLS_H_
+
 //#include <objbase.h>
+#include <stdlib.h>
+//#include <strsafe.h>
+
 #include <locale>
+#include <cctype>
 #include <cstdlib>
 #include <iomanip>
 #include <map>
-#include <stdlib.h>
-//#include <strsafe.h>
+
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/lexical_cast.hpp>
-#include "warnings.h"
 
+#include "warnings.h"
 
 #ifndef OUT
 	#define OUT

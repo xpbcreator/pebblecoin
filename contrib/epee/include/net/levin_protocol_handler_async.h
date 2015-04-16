@@ -25,9 +25,11 @@
 // 
 
 #pragma once
+
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/interprocess/detail/atomic.hpp>
 #include <boost/smart_ptr/make_shared.hpp>
+#include <boost/asio/deadline_timer.hpp>
 
 #include <atomic>
 

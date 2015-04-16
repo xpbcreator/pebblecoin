@@ -177,6 +177,8 @@ TEST(validate_parse_amount_case, validate_parse_amount)
   ASSERT_FALSE(r);
 }
 
+#ifndef _MSC_VER // no initializer lists
+
 TEST(nth_sorted_item_after, nth_sorted_item_after_vanilla)
 {
   std::vector<int> stuff = {0, 5, 6, 15, 20, 29};
@@ -304,3 +306,5 @@ TEST(nth_sorted_item_after, nth_sorted_item_after_str)
   ASSERT_EQ(cryptonote::nth_sorted_item_after(stuff, std::string("_"), 1), "b");
   ASSERT_EQ(cryptonote::nth_sorted_item_after(stuff, std::string("_"), 2), "c");
 }
+
+#endif

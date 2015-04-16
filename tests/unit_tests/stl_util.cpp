@@ -12,6 +12,8 @@ using namespace tools;
 
 #define S std::set<int>
 
+#ifndef _MSC_VER // no initializer list support
+
 const S A = S({1, 2, 3, 4, 5});
 const S no_A = S({6, 7, 8, 9, 10});
 const S some_A = S({3, 4, 5, 6, 7});
@@ -99,6 +101,8 @@ TEST(stl_util, contains)
   ASSERT_FALSE(contains(hah, 6));
   ASSERT_FALSE(contains(hah, 7));
 }
+
+#endif
 
 TEST(stl_util, random_subset)
 {

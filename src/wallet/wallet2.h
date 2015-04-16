@@ -109,7 +109,7 @@ namespace tools
   
   class wallet2
   {
-    friend class wallet2_voting_batch;
+    friend struct wallet2_voting_batch;
     friend class wallet_tx_builder;
     
     wallet2(const wallet2&);

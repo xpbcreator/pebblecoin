@@ -36,7 +36,7 @@ VotingRecord::VotingRecord(const VotingRecord& other)
 {
 }
 
-VotingRecord::~VotingRecord() = default;
+VotingRecord::~VotingRecord() { }
 
 /*VotingRecord::VotingRecord(VotingRecord&& other) noexcept
     : info(std::move(other.info))

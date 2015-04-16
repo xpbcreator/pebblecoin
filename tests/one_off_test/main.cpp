@@ -1,11 +1,12 @@
+#include <stdio.h>
+#include <unistd.h>
+
 #include "include_base_utils.h"
 
 #include "crypto/hash.h"
 #include "crypto/hash_options.h"
 
 #include "common/ntp_time.h"
-
-#include <stdio.h>
 
 int main(int argc, char *argv[])
 {

@@ -2,14 +2,19 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/random_generator.hpp>
 #include <unordered_map>
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/random_generator.hpp>
+
 #include "include_base_utils.h"
-using namespace epee;
+#include "net/http_client.h"
+#include "storages/http_abstract_invoke.h"
+
 #include "wallet/wallet2.h"
 #include "wallet/split_strategies.h"
+
+using namespace epee;
 using namespace cryptonote;
 
 std::string generate_random_wallet_name()
@@ -53,7 +58,7 @@ bool do_send_money(tools::wallet2& w1, tools::wallet2& w2, size_t mix_in_factor,
 
   try
   {
-    w1.transfer(dsts, mix_in_factor, 0, DEFAULT_FEE, std::vector<uint8_t>(), tools::detail::null_split_strategy(), tools::tx_dust_policy(DEFAULT_FEE), tx);
+    w1.transfer(dsts, mix_in_factor, mix_in_factor, 0, DEFAULT_FEE, std::vector<uint8_t>(), tools::detail::null_split_strategy(), tools::tx_dust_policy(DEFAULT_FEE), tx);
     return true;
   }
   catch (const std::exception&)
@@ -138,7 +143,7 @@ bool transactions_flow_test(std::string& working_folder,
 
   //wait for money, until balance will have enough money
   w1.refresh(blocks_fetched, received_money, ok);
-  while(w1.unlocked_balance() < amount_to_transfer)
+  while(w1.unlocked_balance()[cryptonote::CP_XPB] < amount_to_transfer)
   {
     misc_utils::sleep_no_w(1000);
     w1.refresh(blocks_fetched, received_money, ok);
@@ -151,7 +156,7 @@ bool transactions_flow_test(std::string& working_folder,
   {
     tools::wallet2::transfer_container incoming_transfers;
     w1.get_transfers(incoming_transfers);
-    if(incoming_transfers.size() > FIRST_N_TRANSFERS && get_money_in_first_transfers(incoming_transfers, FIRST_N_TRANSFERS) < w1.unlocked_balance() )
+    if(incoming_transfers.size() > FIRST_N_TRANSFERS && get_money_in_first_transfers(incoming_transfers, FIRST_N_TRANSFERS) < w1.unlocked_balance()[cryptonote::CP_XPB] )
     {
       //lets go!
       size_t count = 0;
@@ -186,7 +191,7 @@ bool transactions_flow_test(std::string& working_folder,
   for(i = 0; i != transactions_count; i++)
   {
     uint64_t amount_to_tx = (amount_to_transfer - transfered_money) > transfer_size ? transfer_size: (amount_to_transfer - transfered_money);
-    while(w1.unlocked_balance() < amount_to_tx + DEFAULT_FEE)
+    while(w1.unlocked_balance()[cryptonote::CP_XPB] < amount_to_tx + DEFAULT_FEE)
     {
       misc_utils::sleep_no_w(1000);
       LOG_PRINT_L0("not enough money, waiting for cashback or mining");
@@ -235,7 +240,7 @@ bool transactions_flow_test(std::string& working_folder,
     misc_utils::sleep_no_w(cryptonote::config::difficulty_blocks_estimate_timespan()*1000);//wait two blocks before sync on another wallet on another daemon
   }
 
-  uint64_t money_2 = w2.balance()[CP_XPB];
+  uint64_t money_2 = w2.balance()[cryptonote::CP_XPB];
   if(money_2 == transfered_money)
   {
     LOG_PRINT_GREEN("-----------------------FINISHING TRANSACTIONS FLOW TEST OK-----------------------", LOG_LEVEL_0);

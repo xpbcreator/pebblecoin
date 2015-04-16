@@ -142,6 +142,8 @@ std::vector<uint64_t> split_amount(uint64_t amount, size_t num_elements) {
   return result;
 }
 
+#ifndef _MSC_VER // doesn't support initializer lists
+
 TEST(contract_grading, all_contract_grading_ok)
 {
   std::vector<uint64_t> grades = {
@@ -229,3 +231,4 @@ TEST(contract_grading, amount_checks)
   }
 }
 
+#endif
