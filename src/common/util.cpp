@@ -323,7 +323,7 @@ std::string get_nix_version_display_string()
 #endif
 #endif
     
-    if (cryptonote::config::testnet)
+    if (cryptonote::config::testnet || cryptonote::config::testnet_only)
     {
       config_folder += "/testnet";
     }
