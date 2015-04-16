@@ -2,29 +2,30 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-
+#include <boost/program_options.hpp>
 
 #include "include_base_utils.h"
+#include "storages/levin_abstract_invoke2.h"
+#include "storages/portable_storage_template_helper.h"
+#include "storages/http_abstract_invoke.h"
+
 #include "version.h"
 
-using namespace epee;
-#include <boost/program_options.hpp>
-#include "p2p/p2p_protocol_defs.h"
-#include "p2p/net_util.h"
+#include "cryptonote_config.h"
 #include "common/command_line.h"
+#include "crypto/crypto.h"
+#include "cryptonote_core/cryptonote_core.h"
 #include "cryptonote_core/cryptonote_core.h"
 #include "cryptonote_protocol/cryptonote_protocol_handler.h"
+#include "p2p/p2p_protocol_defs.h"
+#include "p2p/net_util.h"
 #include "net/levin_client.h"
-#include "storages/levin_abstract_invoke2.h"
-#include "cryptonote_core/cryptonote_core.h"
-#include "storages/portable_storage_template_helper.h"
-#include "crypto/crypto.h"
-#include "storages/http_abstract_invoke.h"
 #include "net/http_client.h"
 
 namespace po = boost::program_options;
 using namespace cryptonote;
 using namespace nodetool;
+using namespace epee;
 
 namespace conn_tool_opt
 {

@@ -19,7 +19,7 @@ namespace cryptonote
   bool construct_tx(const account_keys& sender_account_keys,
                     const std::vector<tx_source_entry>& sources, const std::vector<tx_destination_entry>& destinations,
                     std::vector<uint8_t> extra, transaction& tx, uint64_t unlock_time,
-                    keypair& txkey, tx_mapper_t&& mapper = tools::identity()) {
+                    keypair& txkey, tx_mapper_t&& mapper) {
     tx_builder txb;
     
     txb.init(unlock_time, extra);

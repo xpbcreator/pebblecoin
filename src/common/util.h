@@ -50,25 +50,9 @@ namespace tools
 
   private:
 #if defined(WIN32)
-    static BOOL WINAPI win_handler(DWORD type)
-    {
-      if (CTRL_C_EVENT == type || CTRL_BREAK_EVENT == type)
-      {
-        handle_signal();
-        return TRUE;
-      }
-      else
-      {
-        LOG_PRINT_RED_L0("Got control signal " << type << ". Exiting without saving...");
-        return FALSE;
-      }
-      return TRUE;
-    }
+    static BOOL WINAPI win_handler(DWORD type);
 #else
-    static void posix_handler(int /*type*/)
-    {
-      handle_signal();
-    }
+    static void posix_handler(int /*type*/);
 #endif
 
     static void handle_signal()

@@ -135,12 +135,12 @@ namespace tools
   {
     return all_apply_visitor(v, c, identity());
   }
-  template <typename Visitor, typename Collection, class Mapper>
+  template <typename Visitor, typename Collection>
   bool any_apply_visitor(Visitor& v, const Collection& c)
   {
     return any_apply_visitor(v, c, identity());
   }
-  template <typename Visitor, typename Collection, class Mapper>
+  template <typename Visitor, typename Collection>
   bool any_apply_visitor(const Visitor& v, const Collection& c)
   {
     return any_apply_visitor(v, c, identity());

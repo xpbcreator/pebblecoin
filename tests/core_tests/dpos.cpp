@@ -35,8 +35,8 @@ cryptonote::transaction make_register_delegate_tx(std::vector<test_event_entry>&
                                                   delegate_id_t delegate_id, uint64_t registration_fee,
                                                   const account_base delegate_source,
                                                   const block& head,
-                                                  const txb_call_t& txb_call=tools::identity(),
-                                                  const tx_modifier_t& mod=tools::identity())
+                                                  const txb_call_t& txb_call,
+                                                  const tx_modifier_t& mod)
 {
   cryptonote::transaction result;
   if (!make_register_delegate_tx_(events, result, delegate_id, registration_fee, delegate_source, head, txb_call, mod))
@@ -46,15 +46,22 @@ cryptonote::transaction make_register_delegate_tx(std::vector<test_event_entry>&
   // func call already pushed to events
   return result;
 }
+cryptonote::transaction make_register_delegate_tx(std::vector<test_event_entry>& events,
+                                                  delegate_id_t delegate_id, uint64_t registration_fee,
+                                                  const account_base delegate_source,
+                                                  const block& head)
+{
+  return make_register_delegate_tx(events, delegate_id, registration_fee, delegate_source, head, tools::identity(), tools::identity());
+}
 
-template <class txb_call_t=tools::identity, class tx_modifier_t=tools::identity>
+template <class txb_call_t, class tx_modifier_t>
 cryptonote::transaction make_vote_tx(std::vector<test_event_entry>& events,
                                      uint64_t amount, const delegate_votes& votes,
                                      const account_base vote_source,
                                      const block& head,
                                      uint16_t seq=0, size_t nmix=0,
-                                     const txb_call_t& txb_call=tools::identity(),
-                                     const tx_modifier_t& mod=tools::identity())
+                                     const txb_call_t& txb_call,
+                                     const tx_modifier_t& mod)
 {
   cryptonote::transaction result;
   if (!make_vote_tx_(events, result, amount, seq, votes, vote_source, head, nmix, txb_call, mod))
@@ -63,6 +70,15 @@ cryptonote::transaction make_vote_tx(std::vector<test_event_entry>& events,
   }
   // func call already pushed to events
   return result;
+}
+
+cryptonote::transaction make_vote_tx(std::vector<test_event_entry>& events,
+                                     uint64_t amount, const delegate_votes& votes,
+                                     const account_base vote_source,
+                                     const block& head,
+                                     uint16_t seq=0, size_t nmix=0)
+{
+  return make_vote_tx(events, amount, votes, vote_source, head, seq, nmix, tools::identity(), tools::identity());
 }
 
 delegate_votes make_votes(delegate_id_t delegate_id)

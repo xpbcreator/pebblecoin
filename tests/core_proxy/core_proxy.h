@@ -4,13 +4,16 @@
 
 #pragma once
 
-#include <boost/program_options/variables_map.hpp>
-
-#include "cryptonote_core/cryptonote_basic_impl.h"
-#include "cryptonote_core/verification_context.h"
 #include <unordered_map>
 
+#include <boost/program_options/variables_map.hpp>
+
 #include "common/types.h"
+#include "cryptonote_core/cryptonote_basic.h"
+#include "cryptonote_core/cryptonote_basic_impl.h"
+#include "cryptonote_core/nulls.h"
+#include "cryptonote_core/verification_context.h"
+
 
 namespace tests
 {

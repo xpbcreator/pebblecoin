@@ -366,4 +366,28 @@ std::string get_nix_version_display_string()
 #endif
     return std::error_code(code, std::system_category());
   }
+  
+#if defined(WIN32)
+  BOOL WINAPI signal_handler::win_handler(DWORD type)
+  {
+    if (CTRL_C_EVENT == type || CTRL_BREAK_EVENT == type)
+    {
+      handle_signal();
+      return TRUE;
+    }
+    else
+    {
+      LOG_PRINT_RED_L0("Got control signal " << type << ". Exiting without saving...");
+      return FALSE;
+    }
+    return TRUE;
+  }
+#else
+  void signal_handler::posix_handler(int /*type*/)
+  {
+    handle_signal();
+  }
+#endif
+  
 }
+

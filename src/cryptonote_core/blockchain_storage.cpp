@@ -349,7 +349,7 @@ bool blockchain_storage::reset_and_set_genesis_block(const block& b)
   return bvc.m_added_to_main_chain && !bvc.m_verifivation_failed;
 }
 //------------------------------------------------------------------
-namespace detail {
+namespace bs_visitor_detail {
   struct purge_transaction_visitor: tx_input_visitor_base
   {
     using tx_input_visitor_base::operator();
@@ -574,7 +574,7 @@ namespace detail {
       CHECK_AND_ASSERT_MES(inp.seq == b.m_vote_histories[inp.ink.k_image].size() - 1, false,
                            "purge_block_data_from_blockchain: inp.seq/vote_history size mismach");
         
-      const vote_instance& latest_votes_inst = b.m_vote_histories[inp.ink.k_image].back();
+      const auto& latest_votes_inst = b.m_vote_histories[inp.ink.k_image].back();
       CHECK_AND_ASSERT_MES(latest_votes_inst.expected_vote == inp.ink.amount, false,
                            "purge_block_data_from_blockchain: vote amount doesn't match recorded amount");
       
@@ -619,7 +619,7 @@ bool blockchain_storage::purge_transaction_data_from_blockchain(const transactio
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   // apply in reverse order
-  if (!tools::all_apply_visitor(detail::purge_transaction_visitor(*this), tx.ins(), tools::identity(), true))
+  if (!tools::all_apply_visitor(bs_visitor_detail::purge_transaction_visitor(*this), tx.ins(), tools::identity(), true))
   {
     if (strict_check)
     {
@@ -2209,7 +2209,7 @@ bool blockchain_storage::check_tx_out_to_key(const transaction& tx, size_t i, co
   return true;
 }
 //------------------------------------------------------------------
-namespace detail {
+namespace bs_visitor_detail {
   struct add_transaction_input_visitor: public tx_input_visitor_base
   {
     using tx_input_visitor_base::operator();
@@ -2257,7 +2257,7 @@ namespace detail {
     }
     bool operator()(const txin_mint& inp)
     {
-      currency_info ci;
+      blockchain_storage::currency_info ci;
       ci.currency = inp.currency;
       ci.description = inp.description;
       ci.decimals = inp.decimals;
@@ -2288,7 +2288,7 @@ namespace detail {
     }
     bool operator()(const txin_create_contract& inp)
     {
-      contract_info ci;
+      blockchain_storage::contract_info ci;
       ci.contract = inp.contract;
       ci.description = inp.description;
       ci.grading_key = inp.grading_key;
@@ -2351,7 +2351,7 @@ namespace detail {
       auto r = b.m_delegates.find(inp.delegate_id);
       CHECK_AND_ASSERT_MES(r == b.m_delegates.end(), false, "Registering already-used delegate id");
       
-      delegate_info di;
+      blockchain_storage::delegate_info di;
       di.delegate_id = inp.delegate_id;
       di.public_address = inp.delegate_address;
       di.address_as_string = get_account_address_as_str(di.public_address);
@@ -2381,7 +2381,7 @@ namespace detail {
       }
       
       // apply new vote
-      vote_instance vote_record;
+      blockchain_storage::vote_instance vote_record;
       CHECK_AND_ASSERT_MES(b.apply_votes(inp.ink.amount, inp.votes, vote_record), false,
                            "internal error: could not apply new votes");
       b.m_vote_histories[inp.ink.k_image].push_back(vote_record);
@@ -2407,7 +2407,7 @@ bool blockchain_storage::add_transaction_from_block(const transaction& tx, const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
-  detail::add_transaction_input_visitor visitor(tx, *this, tx_id, bl_id);
+  bs_visitor_detail::add_transaction_input_visitor visitor(tx, *this, tx_id, bl_id);
   
   if (!tools::all_apply_visitor(visitor, tx.ins()))
   {
@@ -2490,7 +2490,7 @@ bool blockchain_storage::get_tx_outputs_gindexs(const crypto::hash& tx_id, std::
   return true;
 }
 //------------------------------------------------------------------
-namespace detail {
+namespace bs_visitor_detail {
   struct check_tx_input_visitor: public tx_input_visitor_base
   {
     using tx_input_visitor_base::operator();
@@ -2556,7 +2556,7 @@ bool blockchain_storage::check_tx_inputs(const transaction& tx, uint64_t* pmax_u
   if(pmax_used_block_height)
     *pmax_used_block_height = 0;
   
-  detail::check_tx_input_visitor visitor(*this, tx, get_transaction_prefix_hash(tx), pmax_used_block_height);
+  bs_visitor_detail::check_tx_input_visitor visitor(*this, tx, get_transaction_prefix_hash(tx), pmax_used_block_height);
   return tools::all_apply_visitor(visitor, tx.ins());
 }
 //------------------------------------------------------------------

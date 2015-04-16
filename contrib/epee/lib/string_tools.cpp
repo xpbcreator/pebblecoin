@@ -96,7 +96,11 @@ namespace string_tools
     uint64_t result;
     
     errno = 0;
+#if defined(_MSC_VER)
+    result = _strtoui64(cstr, &end, 16);
+#else
     result = strtoull(cstr, &end, 16);
+#endif
     if (result == 0 && end == cstr) // not a number
       return false;
     if (result == ULLONG_MAX && errno) // overflow

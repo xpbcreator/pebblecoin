@@ -57,8 +57,8 @@ bool make_register_delegate_tx_(std::vector<test_event_entry>& events, transacti
                                delegate_id_t delegate_id, uint64_t registration_fee,
                                const account_base delegate_source,
                                const block& head,
-                               const txb_call_t& txb_call=tools::identity(),
-                               const tx_modifier_t& mod=tools::identity())
+                               const txb_call_t& txb_call,
+                               const tx_modifier_t& mod)
 {
   transaction tx_register_delegate;
   tx_builder txb;
@@ -95,8 +95,8 @@ bool make_vote_tx_(std::vector<test_event_entry>& events, transaction& tx,
                   uint64_t amount, uint16_t seq, const delegate_votes& votes,
                   const account_base vote_source,
                   const block& head, size_t nmix,
-                  const txb_call_t& txb_call=tools::identity(),
-                  const tx_modifier_t& mod=tools::identity())
+                  const txb_call_t& txb_call,
+                  const tx_modifier_t& mod)
 {
   tx_builder txb;
   txb.init();

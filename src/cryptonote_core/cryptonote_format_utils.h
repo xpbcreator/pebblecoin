@@ -256,7 +256,7 @@ namespace cryptonote
   //   nth_sorted_item_after(14, 2) -> 10
   
   template <class list_t, class item_t, class extract_f_t>
-  item_t nth_sorted_item_after(const list_t& l, const item_t& start, size_t n, const extract_f_t& extract_f=tools::identity())
+  item_t nth_sorted_item_after(const list_t& l, const item_t& start, size_t n, const extract_f_t& extract_f)
   {
     if (l.empty())
       throw std::runtime_error("nth_sorted_item_after given empty container");
@@ -279,5 +279,10 @@ namespace cryptonote
     size_t start_index = start_it - items.begin();
     return items[(start_index + n) % items.size()];
   }
+  
+  template <class list_t, class item_t>
+  item_t nth_sorted_item_after(const list_t& l, const item_t& start, size_t n)
+  {
+    return nth_sorted_item_after(l, start, n, tools::identity());
+  }
 }
-

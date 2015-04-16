@@ -367,7 +367,7 @@ bool construct_tx_to_key(const std::vector<test_event_entry>& events, cryptonote
                          const cryptonote::block& blk_head, const cryptonote::account_base& from,
                          const cryptonote::account_base& to,
                          uint64_t amount, uint64_t fee, size_t nmix, cryptonote::coin_type cp,
-                         tx_mapper_t&& mod = tools::identity()) {
+                         tx_mapper_t&& mod) {
   std::vector<cryptonote::tx_source_entry> sources;
   std::vector<cryptonote::tx_destination_entry> destinations;
   if (!fill_tx_sources_and_destinations(events, blk_head, from, to, amount, fee, nmix, sources, destinations, cp))
@@ -387,6 +387,12 @@ bool construct_tx_to_key(const std::vector<test_event_entry>& events, cryptonote
   return construct_tx(from.get_keys(), sources, destinations, std::vector<uint8_t>(), tx, 0, txkey, mod);
 }
 
+bool construct_tx_to_key(const std::vector<test_event_entry>& events, cryptonote::transaction& tx,
+                         const cryptonote::block& blk_head, const cryptonote::account_base& from,
+                         const cryptonote::account_base& to,
+                         uint64_t amount, uint64_t fee, size_t nmix, cryptonote::coin_type cp) {
+  return construct_tx_to_key(events, tx, blk_head, from,m to, amount, fee, nmix, cp, tools::identity());
+}
 cryptonote::transaction construct_tx_with_fee(std::vector<test_event_entry>& events, const cryptonote::block& blk_head,
                                             const cryptonote::account_base& acc_from, const cryptonote::account_base& acc_to,
                                             uint64_t amount, uint64_t fee);

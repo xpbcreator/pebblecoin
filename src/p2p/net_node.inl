@@ -5,23 +5,26 @@
 #pragma once
 
 #include <algorithm>
-
-#include "version.h"
-#include "string_tools.h"
-#include "common/util.h"
-#include "p2p/net_util.h"
-#include "net/net_helper.h"
-#include "math_helper.h"
-#include "p2p_protocol_defs.h"
-#include "net_peerlist_boost_serialization.h"
-#include "net/local_ip.h"
-#include "crypto/crypto.h"
-#include "storages/levin_abstract_invoke2.h"
-#include <miniupnpc/miniupnpc.h>
-#include <miniupnpc/upnpcommands.h>
 #include <string>
 
+#include <miniupnpc/miniupnpc.h>
+#include <miniupnpc/upnpcommands.h>
+
+#include "string_tools.h"
+#include "math_helper.h"
+#include "storages/levin_abstract_invoke2.h"
+
+#include "version.h"
+
+#include "common/util.h"
 #include "common/ui_interface.h"
+#include "cryptonote_config.h"
+#include "crypto/crypto.h"
+#include "net/net_helper.h"
+#include "net/local_ip.h"
+#include "p2p/net_util.h"
+#include "p2p_protocol_defs.h"
+#include "net_peerlist_boost_serialization.h"
 
 #define NET_MAKE_IP(b1,b2,b3,b4)  ((LPARAM)(((DWORD)(b1)<<24)+((DWORD)(b2)<<16)+((DWORD)(b3)<<8)+((DWORD)(b4))))
 
