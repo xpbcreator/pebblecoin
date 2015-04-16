@@ -117,7 +117,7 @@ VotingTableModel::VotingTableModel(CWallet *wallet) :
     priv->refreshDelegates();
 }
 
-VotingTableModel::~VotingTableModel() = default;
+VotingTableModel::~VotingTableModel() { };
 
 int VotingTableModel::rowCount(const QModelIndex &parent) const
 {

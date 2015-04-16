@@ -2,6 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#ifndef _MSC_VER // no initializer list support
+
 #include <list>
 
 #include "gtest/gtest.h"
@@ -11,8 +13,6 @@
 using namespace tools;
 
 #define S std::set<int>
-
-#ifndef _MSC_VER // no initializer list support
 
 const S A = S({1, 2, 3, 4, 5});
 const S no_A = S({6, 7, 8, 9, 10});
@@ -102,8 +102,6 @@ TEST(stl_util, contains)
   ASSERT_FALSE(contains(hah, 7));
 }
 
-#endif
-
 TEST(stl_util, random_subset)
 {
   ASSERT_EQ(random_subset(A, 10), A);
@@ -132,3 +130,5 @@ TEST(stl_util, random_subset)
   ASSERT_EQ(random_subset(empty, 10), empty);
   ASSERT_EQ(random_subset(empty, 20), empty);
 }
+
+#endif

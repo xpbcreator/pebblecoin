@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <unistd.h>
 
 #include "include_base_utils.h"
 
@@ -10,7 +9,7 @@
 
 int main(int argc, char *argv[])
 {
-  epee::log_space::get_set_log_detalisation_level(true, LOG_LEVEL_4);
+  /*epee::log_space::get_set_log_detalisation_level(true, LOG_LEVEL_4);
   epee::log_space::log_singletone::add_logger(LOGGER_CONSOLE, NULL, NULL, LOG_LEVEL_4);
   
   tools::ntp_time t(5);
@@ -43,5 +42,5 @@ int main(int argc, char *argv[])
     }
   }
   
-  return 0;
+  return 0;*/
 }

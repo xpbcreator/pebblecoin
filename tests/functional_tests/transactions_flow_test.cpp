@@ -11,6 +11,8 @@
 #include "net/http_client.h"
 #include "storages/http_abstract_invoke.h"
 
+#include "crypto/crypto_basic_impl.h"
+
 #include "wallet/wallet2.h"
 #include "wallet/split_strategies.h"
 
