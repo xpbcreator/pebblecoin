@@ -254,7 +254,7 @@ namespace nodetool
 
     bool res = handle_command_line(vm);
     CHECK_AND_ASSERT_MES(res, false, "Failed to handle command line");
-    m_config_folder = command_line::get_arg(vm, command_line::arg_data_dir);
+    m_config_folder = command_line::get_data_dir(vm);
 
     res = init_config();
     CHECK_AND_ASSERT_MES(res, false, "Failed to init config.");

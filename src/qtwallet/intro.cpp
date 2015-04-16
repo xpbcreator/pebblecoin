@@ -6,19 +6,21 @@
 #include "ui_intro.h"
 
 #ifndef Q_MOC_RUN
-#include "guiutil.h"
-#include "daemon/daemon_options.h"
-#include "qt_options.h"
-
-#include "bitcoin/util.h"
-
-#include "common/util.h"
-
-#include <boost/filesystem.hpp>
-
 #include <QFileDialog>
 #include <QSettings>
 #include <QMessageBox>
+
+#include <boost/filesystem.hpp>
+
+#include "include_base_utils.h"
+
+#include "daemon/daemon_options.h"
+#include "common/util.h"
+
+#include "bitcoin/util.h"
+#include "guiutil.h"
+#include "qt_options.h"
+
 #endif
 
 /* Minimum free space (in bytes) needed for data directory */

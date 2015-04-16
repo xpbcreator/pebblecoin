@@ -375,7 +375,7 @@ bool HasArg(const command_line::arg_descriptor<T, required>& arg)
 template<typename T, bool required>
 bool ProvidedArg(const command_line::arg_descriptor<T, required>& arg)
 {
-    return !command_line::has_defaulted_arg(vmapArgs, arg);
+    return command_line::has_arg(vmapArgs, arg) && !command_line::has_defaulted_arg(vmapArgs, arg);
 }
 
 /**

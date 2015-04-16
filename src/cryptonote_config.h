@@ -95,6 +95,7 @@ namespace cryptonote {
     
     void enable_testnet();
     
+    extern uint64_t dpos_registration_start_block;
     extern uint64_t dpos_switch_block;
     extern uint64_t dpos_num_delegates;
     

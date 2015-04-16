@@ -11,13 +11,14 @@
 #endif
 
 #include <cstdio>
+#include <sstream>
 
 #include <boost/filesystem.hpp>
 
 #include "include_base_utils.h"
 
 #include "cryptonote_config.h"
-
+#include "version.h"
 #include "util.h"
 #include "ui_interface.h"
 
@@ -323,7 +324,7 @@ std::string get_nix_version_display_string()
 #endif
 #endif
     
-    if (cryptonote::config::testnet || cryptonote::config::testnet_only)
+    if (cryptonote::config::testnet)
     {
       config_folder += "/testnet";
     }
@@ -374,6 +375,19 @@ std::string get_nix_version_display_string()
     return std::error_code(code, std::system_category());
   }
   
+  std::string get_project_description(const std::string& module)
+  {
+    std::stringstream ss;
+    
+    ss << CRYPTONOTE_NAME;
+    if (!module.empty())
+      ss << " " << module;
+    
+    ss << " v" << PROJECT_VERSION_LONG << (cryptonote::config::testnet ? " (testnet)" : "");
+    
+    return ss.str();
+  }
+  
 #if defined(WIN32)
   BOOL WINAPI signal_handler::win_handler(DWORD type)
   {
@@ -395,6 +409,5 @@ std::string get_nix_version_display_string()
     handle_signal();
   }
 #endif
-  
 }
 

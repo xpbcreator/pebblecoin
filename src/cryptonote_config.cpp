@@ -2,6 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "include_base_utils.h"
+
 #include "cryptonote_config.h"
 
 #include "crypto/hash.h"
@@ -26,9 +28,10 @@ namespace cryptonote {
     bool use_signed_hashes = true;
     bool do_boulderhash = false;
     
-    const bool testnet_only = true;
+    const bool testnet_only = false;
     
-    uint64_t dpos_switch_block = 999999999;
+    uint64_t dpos_registration_start_block = 82400;  // Monday, April 20th, ~20:00 UTC
+    uint64_t dpos_switch_block = 85300;              // Friday, April 24th, ~20:00 UTC
     uint64_t dpos_num_delegates = 100;
     
     void enable_testnet()
@@ -38,6 +41,7 @@ namespace cryptonote {
       crypto::g_hash_ops_small_boulderhash = true;
       use_signed_hashes = false;
       do_boulderhash = true;
+      dpos_registration_start_block = 0;
       dpos_switch_block = 1200;
     }
     

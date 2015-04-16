@@ -55,8 +55,7 @@ int main(int argc, char* argv[])
   command_line::add_arg(desc_cmd_only, command_line::arg_help);
   command_line::add_arg(desc_cmd_only, command_line::arg_version);
   command_line::add_arg(desc_cmd_only, arg_os_version);
-  // tools::get_default_data_dir() can't be called during static initialization
-  command_line::add_arg(desc_cmd_only, command_line::arg_data_dir, tools::get_default_data_dir());
+  command_line::add_arg(desc_cmd_only, command_line::arg_data_dir);
   command_line::add_arg(desc_cmd_only, arg_config_file);
 
   command_line::add_arg(desc_cmd_sett, arg_log_file);
@@ -78,14 +77,19 @@ int main(int argc, char* argv[])
   {
     po::store(po::parse_command_line(argc, argv, desc_options), vm);
 
+    if (command_line::get_arg(vm, arg_testnet_on) || cryptonote::config::testnet_only)
+    {
+      cryptonote::config::enable_testnet();
+    }
+    
     if (command_line::get_arg(vm, command_line::arg_help))
     {
-      std::cout << CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG << ENDL << ENDL;
+      std::cout << tools::get_project_description("daemon") << ENDL << ENDL;
       std::cout << desc_options << std::endl;
       return false;
     }
 
-    std::string data_dir = command_line::get_arg(vm, command_line::arg_data_dir);
+    std::string data_dir = command_line::get_data_dir(vm);
     std::string config = command_line::get_arg(vm, arg_config_file);
 
     boost::filesystem::path data_dir_path(data_dir);
@@ -100,17 +104,19 @@ int main(int argc, char* argv[])
     {
       po::store(po::parse_config_file<char>(config_path.string<std::string>().c_str(), desc_cmd_sett), vm);
     }
+
+    // see if there's testnet in the config file
+    if (command_line::get_arg(vm, arg_testnet_on) || cryptonote::config::testnet_only)
+    {
+      cryptonote::config::enable_testnet();
+    }
+    
     po::notify(vm);
 
     return true;
   });
   if (!r)
     return 1;
-  
-  if (command_line::get_arg(vm, arg_testnet_on) || cryptonote::config::testnet_only)
-  {
-    cryptonote::config::enable_testnet();
-  }
   
   //set up logging options
   boost::filesystem::path log_file_path(command_line::get_arg(vm, arg_log_file));
@@ -120,7 +126,7 @@ int main(int argc, char* argv[])
   log_dir = log_file_path.has_parent_path() ? log_file_path.parent_path().string() : log_space::log_singletone::get_default_log_folder();
 
   log_space::log_singletone::add_logger(LOGGER_FILE, log_file_path.filename().string().c_str(), log_dir.c_str());
-  LOG_PRINT_L0(CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG << (cryptonote::config::testnet ? " (testnet)" : ""));
+  LOG_PRINT_L0(tools::get_project_description("daemon"));
 
   if (command_line_preprocessor(vm))
   {
@@ -142,7 +148,7 @@ int main(int argc, char* argv[])
 
   //create objects and link them
   LOG_PRINT_L0("Initializing global hash cache...");
-  res = crypto::g_hash_cache.init(command_line::get_arg(vm, command_line::arg_data_dir));
+  res = crypto::g_hash_cache.init(command_line::get_data_dir(vm));
   CHECK_AND_ASSERT_MES(res, 1, "Failed to initialize global hash cache.");
   LOG_PRINT_L0("Global hash cache initialized OK...");
   
@@ -244,7 +250,7 @@ bool command_line_preprocessor(const boost::program_options::variables_map& vm)
   
   if (command_line::get_arg(vm, command_line::arg_version))
   {
-    std::cout << CRYPTONOTE_NAME  << " v" << PROJECT_VERSION_LONG << ENDL;
+    std::cout << tools::get_project_description("daemon") << ENDL;
     exit = true;
   }
   if (command_line::get_arg(vm, arg_os_version))

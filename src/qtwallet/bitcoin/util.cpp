@@ -878,9 +878,9 @@ const boost::filesystem::path &GetDataDir(bool fNetSpecific)
         return path;
 
     if (ProvidedArg(command_line::arg_data_dir)) {
-        path = fs::system_complete(GetArg(command_line::arg_data_dir));
+        path = fs::system_complete(command_line::get_data_dir(vmapArgs));
         if (!fs::is_directory(path)) {
-            return path;
+            return path; // will throw an error with the path
         }
     } else {
         path = tools::get_default_data_dir();

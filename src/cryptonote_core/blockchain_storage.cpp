@@ -2140,6 +2140,11 @@ bool blockchain_storage::check_tx_in_fuse_bc_coins(const transaction& tx, size_t
 //------------------------------------------------------------------
 bool blockchain_storage::check_tx_in_register_delegate(const transaction& tx, size_t i, const txin_register_delegate& inp)
 {
+  CHECK_AND_ASSERT_MES(get_current_blockchain_height() >= cryptonote::config::dpos_registration_start_block, false,
+                       "check_tx_in_register_delegate: can't register delegates at height "
+                       << get_current_blockchain_height() << ", must wait until height "
+                       << cryptonote::config::dpos_registration_start_block);
+  
   CHECK_AND_ASSERT_MES(inp.delegate_id != 0, false, "check_tx_in_register_delegate: can't register delegate 0");
   CHECK_AND_ASSERT_MES(m_delegates.find(inp.delegate_id) == m_delegates.end(), false,
                        "check_tx_in_register_delegate: Registering already-used delegate id");
@@ -2170,6 +2175,11 @@ bool blockchain_storage::check_tx_in_register_delegate(const transaction& tx, si
 bool blockchain_storage::check_tx_in_vote(const transaction& tx, size_t i, const txin_vote& inp,
                                           const crypto::hash& tx_prefix_hash_, uint64_t* pmax_related_block_height)
 {
+  CHECK_AND_ASSERT_MES(get_current_blockchain_height() >= cryptonote::config::dpos_registration_start_block, false,
+                       "check_tx_in_vote: can't vote for delegates at height "
+                       << get_current_blockchain_height() << ", must wait until height "
+                       << cryptonote::config::dpos_registration_start_block);
+  
   // check voting with XPBs
   CHECK_AND_ASSERT_MES(tx.in_cp(i) == CP_XPB, false, "check_tx_in_vote: voting with non-xpbs");
   

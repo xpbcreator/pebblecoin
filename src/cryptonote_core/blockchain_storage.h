@@ -143,7 +143,6 @@ namespace cryptonote
     blockchain_storage(tx_memory_pool& tx_pool, tools::ntp_time& ntp_time_in):m_tx_pool(tx_pool), m_current_block_cumul_sz_limit(0), m_is_in_checkpoint_zone(false), m_is_blockchain_storing(false), m_pcatchup_thread(NULL), m_stop_catchup(false), m_ntp_time(ntp_time_in), m_popping_block(false)
     {};
 
-    bool init() { return init(tools::get_default_data_dir()); }
     bool init(const std::string& config_folder);
     bool deinit();
 

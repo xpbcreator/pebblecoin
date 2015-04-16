@@ -59,7 +59,7 @@ namespace cryptonote
   //-----------------------------------------------------------------------------------------------
   bool core::handle_command_line(const boost::program_options::variables_map& vm)
   {
-    m_config_folder = command_line::get_arg(vm, command_line::arg_data_dir);
+    m_config_folder = command_line::get_data_dir(vm);
     return true;
   }
   //-----------------------------------------------------------------------------------------------

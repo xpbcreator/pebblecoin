@@ -492,8 +492,7 @@ static po::options_description InitParameters()
     command_line::add_arg(desc_cmd_only, command_line::arg_help);
     command_line::add_arg(desc_cmd_only, command_line::arg_version);
     command_line::add_arg(desc_cmd_only, daemon_opt::arg_os_version);
-    // tools::get_default_data_dir() can't be called during static initialization
-    command_line::add_arg(desc_cmd_only, command_line::arg_data_dir, tools::get_default_data_dir());
+    command_line::add_arg(desc_cmd_only, command_line::arg_data_dir);
     command_line::add_arg(desc_cmd_only, daemon_opt::arg_config_file);
     command_line::add_arg(desc_cmd_only, qt_opt::arg_wallet_file);
 
@@ -546,6 +545,12 @@ int main(int argc, char *argv[])
         return 1;
     }
     
+    /// Enable testnet from command line if necessary
+    if (GetArg(daemon_opt::arg_testnet_on) || cryptonote::config::testnet_only)
+    {
+        cryptonote::config::enable_testnet();
+    }
+    
     // Do not refer to data directory yet, this can be overridden by Intro::pickDataDirectory
 
     /// 2. Basic Qt initialization (not dependent on parameters or configuration)
@@ -574,7 +579,7 @@ int main(int argc, char *argv[])
     // as it is used to locate QSettings
     QApplication::setOrganizationName(QAPP_ORG_NAME);
     QApplication::setOrganizationDomain(QAPP_ORG_DOMAIN);
-    QApplication::setApplicationName(QAPP_APP_NAME_DEFAULT);
+    QApplication::setApplicationName(cryptonote::config::testnet ? QAPP_APP_NAME_TESTNET : QAPP_APP_NAME_DEFAULT);
 
     /// 4. Initialization of translations, so that intro dialog is in user's language
     // Now that QSettings are accessible, initialize translations
@@ -610,13 +615,14 @@ int main(int argc, char *argv[])
         return 1;
     }
     
-    /// Enable testnet if necessary
+    /// Enable testnet from config file if necessary
     if (GetArg(daemon_opt::arg_testnet_on) || cryptonote::config::testnet_only)
     {
         cryptonote::config::enable_testnet();
     }
-
-    bool isaTestNet = cryptonote::config::testnet;
+    
+    // set app name for testnet settings from now on
+    QApplication::setApplicationName(cryptonote::config::testnet ? QAPP_APP_NAME_TESTNET : QAPP_APP_NAME_DEFAULT);
     
     if (!cryptonote_opt::handle_command_line(vmapArgs))
     {
@@ -671,7 +677,7 @@ int main(int argc, char *argv[])
             return 1;
         }
         
-        bool enable_boulder = GetArg(hashing_opt::arg_enable_boulderhash) || isaTestNet;
+        bool enable_boulder = GetArg(hashing_opt::arg_enable_boulderhash) || cryptonote::config::testnet;
         if (enable_boulder)
         {
             SoftSetArg(miner_opt::arg_start_mining, cryptonote::get_account_address_as_str(w.get_public_address()));
@@ -693,11 +699,7 @@ int main(int argc, char *argv[])
     if (!PaymentServer::ipcParseCommandLine(argc, argv))
         exit(0);
 #endif*/
-    // Allow for separate UI settings for testnets
-    if (isaTestNet)
-        QApplication::setApplicationName(QAPP_APP_NAME_TESTNET);
-    else
-        QApplication::setApplicationName(QAPP_APP_NAME_DEFAULT);
+    
     // Re-initialize translations after changing application name (language in network-specific settings can be different)
     initTranslations(qtTranslatorBase, qtTranslator, translatorBase, translator);
 
@@ -749,11 +751,11 @@ int main(int argc, char *argv[])
     uiInterface.InitMessage.connect(InitMessage);
 
     if (!GetArg(qt_opt::arg_no_splash) && !GetArg(qt_opt::arg_min))
-        app.createSplashScreen(isaTestNet);
+        app.createSplashScreen(cryptonote::config::testnet);
 
     try
     {
-        app.createWindow(isaTestNet);
+        app.createWindow(cryptonote::config::testnet);
         app.requestInitialize();
 #if defined(Q_OS_WIN) && QT_VERSION >= 0x050000
         WinShutdownMonitor::registerShutdownBlockReason(QObject::tr("Pebblecoin Qt didn't yet exit safely..."), (HWND)app.getMainWinId());

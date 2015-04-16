@@ -1222,9 +1222,17 @@ cryptonote::transaction make_tx_send(std::vector<test_event_entry>& events,
 void set_dpos_switch_block(std::vector<test_event_entry>& events, uint64_t block)
 {
   // set event so it switches during replay
-  events.push_back(set_dpos_switch_block_struct(block));
+  events.push_back(set_dpos_switch_block_struct(block, -1));
   // change global so block's are generated properly
   cryptonote::config::dpos_switch_block = block;
+}
+
+void set_dpos_registration_start_block(std::vector<test_event_entry>& events, uint64_t block)
+{
+  // set event so it switches during replay
+  events.push_back(set_dpos_switch_block_struct(-1, block));
+  // change global so block's are generated properly
+  cryptonote::config::dpos_registration_start_block = block;
 }
 
 void do_callback(std::vector<test_event_entry>& events, const std::string& cb_name)

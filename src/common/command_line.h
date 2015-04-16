@@ -191,4 +191,6 @@ namespace command_line
   extern const arg_descriptor<bool> arg_help;
   extern const arg_descriptor<bool> arg_version;
   extern const arg_descriptor<std::string> arg_data_dir;
+  
+  std::string get_data_dir(const boost::program_options::variables_map& vm);
 }

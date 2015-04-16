@@ -125,13 +125,16 @@ private:
 
 struct set_dpos_switch_block_struct
 {
-  uint64_t block;
+  int64_t block;
+  int64_t registration_block;
   BEGIN_SERIALIZE_OBJECT()
     FIELD(block);
+    FIELD(registration_block);
   END_SERIALIZE()
   
   set_dpos_switch_block_struct() { }
-  set_dpos_switch_block_struct(uint64_t block_in) : block(block_in) { }
+  set_dpos_switch_block_struct(int64_t block_in, int64_t registration_block_in)
+      : block(block_in), registration_block(registration_block_in) { }
   
 private:
   friend class boost::serialization::access;
@@ -632,7 +635,14 @@ public:
   bool operator()(const set_dpos_switch_block_struct& sdsb) const
   {
     log_event(std::string("set_dpos_switch_block"));
-    cryptonote::config::dpos_switch_block = sdsb.block;
+    if (sdsb.block != -1)
+    {
+      cryptonote::config::dpos_switch_block = sdsb.block;
+    }
+    if (sdsb.registration_block != -1)
+    {
+      cryptonote::config::dpos_registration_start_block = sdsb.registration_block;
+    }
     return true;
   }
   
@@ -757,7 +767,8 @@ inline bool do_replay_events(std::vector<test_event_entry>& events)
   }
   t_test_class validator;
   // reset switch block
-  cryptonote::config::dpos_switch_block = 999999999;
+  cryptonote::config::dpos_switch_block = 82400;
+  cryptonote::config::dpos_registration_start_block = 85300;
   return replay_events_through_core<t_test_class>(c, events, validator);
 }
 //--------------------------------------------------------------------------
@@ -897,7 +908,8 @@ inline bool do_replay_file(const std::string& filename)
     { \
         std::vector<test_event_entry> events; \
         genclass g; \
-        cryptonote::config::dpos_switch_block = 999999999; /*reset switch block*/ \
+        cryptonote::config::dpos_switch_block = 82400; /*reset switch block*/ \
+        cryptonote::config::dpos_registration_start_block = 85300; /*reset switch block*/ \
         g.generate(events); \
         if (!tools::serialize_obj_to_file(events, filename)) \
         { \
@@ -923,7 +935,8 @@ inline bool do_replay_file(const std::string& filename)
     {                                                                                                      \
       std::cout << concolor::green << "#TEST# started " << #genclass << concolor::normal << '\n';          \
       genclass g;                                                                                          \
-      cryptonote::config::dpos_switch_block = 999999999; /*reset switch block*/                            \
+      cryptonote::config::dpos_switch_block = 82400; /*reset switch block*/                            \
+      cryptonote::config::dpos_registration_start_block = 85300; /*reset switch block*/                            \
       generated = g.generate(events);;                                                                     \
     }                                                                                                      \
     catch (const std::exception& ex)                                                                       \
@@ -1022,6 +1035,7 @@ cryptonote::transaction make_tx_send(std::vector<test_event_entry>& events,
                                      uint64_t fee=TESTS_DEFAULT_FEE, const cryptonote::coin_type& cp=cryptonote::CP_XPB,
                                      uint64_t nmix=0);
 void set_dpos_switch_block(std::vector<test_event_entry>& events, uint64_t block);
+void set_dpos_registration_start_block(std::vector<test_event_entry>& events, uint64_t block);
 void do_callback(std::vector<test_event_entry>& events, const std::string& cb_name);
 void do_callback_func(std::vector<test_event_entry>& events, const verify_callback_func& cb);
 void do_debug_mark(std::vector<test_event_entry>& events, const std::string& msg);

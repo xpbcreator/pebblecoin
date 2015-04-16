@@ -95,6 +95,7 @@ int main(int argc, char* argv[])
 #else
     
     GENERATE_AND_PLAY(gen_dpos_register);
+    GENERATE_AND_PLAY(gen_dpos_register_too_soon);
     GENERATE_AND_PLAY(gen_dpos_register_invalid_id);
     GENERATE_AND_PLAY(gen_dpos_register_invalid_id_2);
     GENERATE_AND_PLAY(gen_dpos_register_invalid_address);
@@ -102,6 +103,7 @@ int main(int argc, char* argv[])
     GENERATE_AND_PLAY(gen_dpos_register_low_fee_2);
     
     GENERATE_AND_PLAY(gen_dpos_vote);
+    GENERATE_AND_PLAY(gen_dpos_vote_too_soon);
     
     GENERATE_AND_PLAY(gen_dpos_switch_to_dpos);
     GENERATE_AND_PLAY(gen_dpos_altchain_voting);

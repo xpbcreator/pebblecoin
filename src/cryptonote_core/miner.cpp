@@ -67,6 +67,7 @@ namespace cryptonote
   miner::miner(i_miner_handler* phandler)
       : m_stop(1)
       , m_template(AUTO_VAL_INIT(m_template))
+      , m_mine_address(AUTO_VAL_INIT(m_mine_address))
       , m_template_no(0)
       , m_diffic(0)
       , m_thread_index(0)
@@ -149,6 +150,10 @@ namespace cryptonote
         return false;
       }
       
+      if (m_threads_total == 0)
+      {
+        m_threads_total = 1;
+      }
       m_do_mining = true;
     }
     
@@ -363,6 +368,15 @@ namespace cryptonote
       return false;
     }
     
+    account_public_address mine_address = is_dpos ? m_pdelegate_wallet->get_public_address() : m_mine_address;
+    
+    if (mine_address == null_public_address)
+    {
+      LOG_PRINT_L1("No mining address");
+      clear_block_template();
+      return true;
+    }
+    
     if (is_dpos)
     {
       if (m_pdelegate_wallet->get_public_address() == null_public_address)
@@ -407,7 +421,7 @@ namespace cryptonote
       extra_nonce = m_extra_messages[m_config.current_extra_message_index];
     }
 
-    if (!m_phandler->get_block_template(bl, m_mine_address, di, height, extra_nonce, is_dpos))
+    if (!m_phandler->get_block_template(bl, mine_address, di, height, extra_nonce, is_dpos))
     {
       LOG_ERROR("Failed to get_block_template()");
       clear_block_template();

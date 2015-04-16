@@ -1,33 +1,31 @@
-#include "include_base_utils.h"
-#include "version.h"
-
-using namespace epee;
-
-#include "init.h"
-#include "../bitcoin/util.h"
-#include "wallet.h"
-#include "main.h"
+#include <atomic>
+#include <string>
 
 #include <boost/thread.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/thread.hpp>
-#include <string>
-
-#include "version.h"
-#include "common/types.h"
-#include "common/ntp_time.h"
-#include "daemon/daemon_options.h"
-#include "common/util.h"
-#include "crypto/hash.h"
-#include "console_handler.h"
-#include "cryptonote_core/checkpoints_create.h"
-#include "daemon/daemon_commands_handler.h"
-#include "rpc/core_rpc_server.h"
-#include "cryptonote_core/miner.h"
 
 #include <QMessageBox>
 
-#include <atomic>
+#include "include_base_utils.h"
+#include "version.h"
+#include "console_handler.h"
+
+#include "common/types.h"
+#include "common/ntp_time.h"
+#include "common/util.h"
+#include "crypto/hash.h"
+#include "cryptonote_core/checkpoints_create.h"
+#include "cryptonote_core/miner.h"
+#include "rpc/core_rpc_server.h"
+#include "daemon/daemon_options.h"
+#include "daemon/daemon_commands_handler.h"
+
+#include "bitcoin/util.h"
+#include "init.h"
+#include "wallet.h"
+#include "main.h"
+
+using namespace epee;
 
 std::atomic<bool> fRequestShutdown(false);
 
@@ -116,8 +114,9 @@ bool DaemonThreadInit(node_server_t &p2psrv, protocol_handler_t &cprotocol,
     bool res = true;
     
     //initialize objects
-    LOG_PRINT_L0("Initializing global hash cache...");
-    res = crypto::g_hash_cache.init(command_line::get_arg(vmapArgs, command_line::arg_data_dir));
+    LOG_PRINT_L0("Initializing global hash cache, testnet=" << ((int)cryptonote::config::testnet)
+                 << ", data dir=" << command_line::get_data_dir(vmapArgs) << "...");
+    res = crypto::g_hash_cache.init(command_line::get_data_dir(vmapArgs));
     CHECK_AND_ASSERT_MES(res, 1, "Failed to initialize global hash cache.");
     LOG_PRINT_L0("Global hash cache initialized OK...");
     
@@ -353,7 +352,7 @@ bool CommandLinePreprocessor()
     bool fExit = false;
     if (GetArg(command_line::arg_version))
     {
-        std::cout << CRYPTONOTE_NAME  << " v" << PROJECT_VERSION_LONG << ENDL;
+        std::cout << tools::get_project_description("Qt") << ENDL;
         fExit = true;
     }
     if (GetArg(daemon_opt::arg_os_version))
@@ -407,7 +406,7 @@ bool AppInit2(boost::thread_group& threadGroup, QString& error)
     log_dir = log_file_path.has_parent_path() ? log_file_path.parent_path().string() : log_space::log_singletone::get_default_log_folder();
     
     log_space::log_singletone::add_logger(LOGGER_FILE, log_file_path.filename().string().c_str(), log_dir.c_str());
-    LOG_PRINT_L0(CRYPTONOTE_NAME << " v" << PROJECT_VERSION_LONG);
+    LOG_PRINT_L0(tools::get_project_description("Qt"));
     
     LOG_PRINT_L0("Running command line preprocessor...");
     if (CommandLinePreprocessor())

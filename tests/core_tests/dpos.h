@@ -145,19 +145,22 @@ bool make_vote_tx_(std::vector<test_event_entry>& events, transaction& tx,
   GENERATE_ACCOUNT(dave); \
   GENERATE_ACCOUNT(emily); \
   MAKE_STARTING_BLOCKS(events, blk_0, miner_account, 1338224400); \
-  REWIND_BLOCKS(events, blk_0r, blk_0, miner_account);
+  REWIND_BLOCKS(events, blk_0r, blk_0, miner_account); \
+  set_dpos_registration_start_block(events, 1);
 
 #define INIT_DPOS_TEST2() \
   INIT_DPOS_TEST(); \
   
 
 DEFINE_TEST(gen_dpos_register, dpos_base);
+DEFINE_TEST(gen_dpos_register_too_soon, dpos_base);
 DEFINE_TEST(gen_dpos_register_invalid_id, dpos_base);
 DEFINE_TEST(gen_dpos_register_invalid_id_2, dpos_base);
 DEFINE_TEST(gen_dpos_register_invalid_address, dpos_base);
 DEFINE_TEST(gen_dpos_register_low_fee, dpos_base);
 DEFINE_TEST(gen_dpos_register_low_fee_2, dpos_base);
 DEFINE_TEST(gen_dpos_vote, dpos_base);
+DEFINE_TEST(gen_dpos_vote_too_soon, dpos_base);
 DEFINE_TEST(gen_dpos_switch_to_dpos, dpos_base);
 DEFINE_TEST(gen_dpos_altchain_voting, dpos_base);
 DEFINE_TEST(gen_dpos_altchain_voting_invalid, dpos_base);

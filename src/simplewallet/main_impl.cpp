@@ -373,23 +373,29 @@ bool simple_wallet::parse_command_line(int argc, char* argv[], po::variables_map
   
   return command_line::handle_error_helper(desc_all, [&]()
   {
-    po::store(command_line::parse_command_line(argc, argv, desc_general, true), vm);
+    po::store(command_line::parse_command_line(argc, argv, desc_all, true), vm);
 
+    if (command_line::get_arg(vm, arg_testnet_on) || cryptonote::config::testnet_only)
+    {
+      cryptonote::config::enable_testnet();
+    }
+    
     if (command_line::get_arg(vm, command_line::arg_help))
     {
       cryptonote::simple_wallet w;
-      success_msg_writer() << CRYPTONOTE_NAME << " wallet v" << PROJECT_VERSION_LONG;
+      success_msg_writer() << tools::get_project_description("wallet");
       success_msg_writer() << "Usage: simplewallet [--wallet-file=<file>|--generate-new-wallet=<file>] [--daemon-address=<host>:<port>] [<COMMAND>]";
       success_msg_writer() << desc_all << '\n' << w.get_commands_str();
       return false;
     }
     else if (command_line::get_arg(vm, command_line::arg_version))
     {
-      success_msg_writer() << CRYPTONOTE_NAME << " wallet v" << PROJECT_VERSION_LONG;
+      success_msg_writer() << tools::get_project_description("wallet");
       return false;
     }
 
-    auto parser = po::command_line_parser(argc, argv).options(desc_params).positional(positional_options);
+    // parse positional options
+    auto parser = po::command_line_parser(argc, argv).options(desc_all).positional(positional_options);
     po::store(parser.run(), vm);
     po::notify(vm);
     return true;
@@ -403,10 +409,6 @@ void simple_wallet::handle_command_line(const boost::program_options::variables_
   m_daemon_address = command_line::get_arg(vm, arg_daemon_address);
   m_daemon_host    = command_line::get_arg(vm, arg_daemon_host);
   m_daemon_port    = command_line::get_arg(vm, arg_daemon_port);
-  if (command_line::get_arg(vm, arg_testnet_on) || cryptonote::config::testnet_only)
-  {
-    cryptonote::config::enable_testnet();
-  }
 }
 //----------------------------------------------------------------------------------------------------
 void simple_wallet::setup_logging(po::variables_map& vm)
@@ -418,7 +420,7 @@ void simple_wallet::setup_logging(po::variables_map& vm)
     log_space::log_singletone::get_default_log_file().c_str(),
     log_space::log_singletone::get_default_log_folder().c_str(), LOG_LEVEL_4);
   
-  message_writer(log_space::console_color_white, true) << CRYPTONOTE_NAME << " wallet v" << PROJECT_VERSION_LONG << (cryptonote::config::testnet ? " (testnet)" : "");
+  message_writer(log_space::console_color_white, true) << tools::get_project_description("wallet");
   message_writer(log_space::console_color_white, true) << "Logging to file " << log_space::log_singletone::get_default_log_file() << " in folder " << log_space::log_singletone::get_default_log_folder();
   
   if(command_line::has_arg(vm, arg_log_level))
@@ -458,11 +460,6 @@ int main(int argc, char* argv[])
   po::variables_map vm;
   if (!simple_wallet::parse_command_line(argc, argv, vm))
     return 1;
-  
-  if (command_line::get_arg(vm, arg_testnet_on) || cryptonote::config::testnet_only)
-  {
-    cryptonote::config::enable_testnet();
-  }
   
   simple_wallet::setup_logging(vm);
   

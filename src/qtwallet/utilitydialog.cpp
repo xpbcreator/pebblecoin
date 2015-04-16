@@ -68,7 +68,7 @@ HelpMessageDialog::HelpMessageDialog(boost::program_options::options_description
     ui->setupUi(this);
     GUIUtil::restoreWindowGeometry("nHelpMessageDialogWindow", this->size(), this);
 
-    header = QString() + CRYPTONOTE_NAME + " v" + PROJECT_VERSION_LONG + "\n";
+    header = QString() + QString::fromStdString(tools::get_project_description("Qt"));
   
     std::ostringstream stream;
     stream << descOptions;

@@ -133,6 +133,8 @@ block setup_full_dpos_test(test_generator& generator, std::vector<test_event_ent
   auto blk_0 = make_genesis_block(generator, events, miner, g_ntp_time.get_time() - cryptonote::config::difficulty_blocks_estimate_timespan()*32);
   auto blk_0r = rewind_blocks(generator, events, blk_0, miners, 28);
   
+  set_dpos_registration_start_block(events, 1);
+  
   std::list<transaction> tx_first_sends;
   BOOST_FOREACH(const auto& acc_to, with_money)
   {
@@ -173,6 +175,25 @@ bool gen_dpos_register::generate(std::vector<test_event_entry>& events) const
   MAKE_NEXT_BLOCK_TX1(events, blk_2, blk_1, miner_account, tx_reg);
   CREATE_REGISTER_DELEGATE_TX(events, tx_reg2, 0xb0b2, MK_COINS(5), bob, blk_2);
   MAKE_NEXT_BLOCK_TX1(events, blk_3, blk_2, miner_account, tx_reg2);
+  
+  return true;
+}
+
+bool gen_dpos_register_too_soon::generate(std::vector<test_event_entry>& events) const
+{
+  INIT_DPOS_TEST();
+  
+  MAKE_TX(events, tx_send, miner_account, alice, MK_COINS(100), blk_0r);
+  MAKE_NEXT_BLOCK_TX1(events, blk_1a, blk_0r, miner_account, tx_send);
+  MAKE_TX(events, tx_send2, miner_account, bob, MK_COINS(100), blk_1a);
+  MAKE_NEXT_BLOCK_TX1(events, blk_1, blk_1a, miner_account, tx_send2);
+  
+  set_dpos_registration_start_block(events, 100);
+  
+  DO_CALLBACK(events, "mark_invalid_tx");
+  CREATE_REGISTER_DELEGATE_TX(events, tx_reg, 0xb0b, MK_COINS(5), alice, blk_1);
+  DO_CALLBACK(events, "mark_invalid_tx");
+  CREATE_REGISTER_DELEGATE_TX(events, tx_reg2, 0xb0b2, MK_COINS(5), bob, blk_1);
   
   return true;
 }
@@ -336,6 +357,24 @@ bool gen_dpos_vote::generate(std::vector<test_event_entry>& events) const
   
   CREATE_VOTE_TX_1(events, tx_vote, MK_COINS(5), bob, blk_2, 0xa1c);
   MAKE_NEXT_BLOCK_TX1(events, blk_3, blk_2, miner_account, tx_vote);
+  
+  return true;
+}
+
+bool gen_dpos_vote_too_soon::generate(std::vector<test_event_entry>& events) const
+{
+  INIT_DPOS_TEST();
+  
+  MAKE_TX(events, tx_send, miner_account, alice, MK_COINS(100), blk_0r);
+  MAKE_NEXT_BLOCK_TX1(events, blk_1a, blk_0r, miner_account, tx_send);
+  MAKE_TX(events, tx_send2, miner_account, bob, MK_COINS(5), blk_1a); // 100 would be too much, 4800 coins total at this pt
+  MAKE_NEXT_BLOCK_TX1(events, blk_1, blk_1a, miner_account, tx_send2);
+  
+  set_dpos_registration_start_block(events, 100);
+  
+  DO_CALLBACK(events, "mark_invalid_tx");
+  make_vote_tx(events, MK_COINS(10), make_votes({}),
+               alice, blk_1);
   
   return true;
 }
