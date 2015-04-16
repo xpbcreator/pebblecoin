@@ -2,24 +2,26 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include <cstdio>
-
-#include "include_base_utils.h"
-using namespace epee;
-
-#include <boost/filesystem.hpp>
-
-#include "util.h"
-
 #ifdef WIN32
 #include <windows.h>
 #include <shlobj.h>
 #include <strsafe.h>
-#else 
+#else
 #include <sys/utsname.h>
 #endif
 
+#include <cstdio>
+
+#include <boost/filesystem.hpp>
+
+#include "include_base_utils.h"
+
+#include "cryptonote_config.h"
+
+#include "util.h"
 #include "ui_interface.h"
+
+using namespace epee;
 
 CClientUIInterface uiInterface;
 extern const char *CRYPTONOTE_NAME;
@@ -320,6 +322,11 @@ std::string get_nix_version_display_string()
     config_folder = (pathRet + "/." + CRYPTONOTE_NAME);
 #endif
 #endif
+    
+    if (cryptonote::config::testnet)
+    {
+      config_folder += "/testnet";
+    }
 
     return config_folder;
   }

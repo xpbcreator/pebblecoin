@@ -591,6 +591,12 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    /// Enable testnet if necessary
+    if (GetArg(daemon_opt::arg_testnet_on) || cryptonote::config::testnet_only)
+    {
+        cryptonote::config::enable_testnet();
+    }
+    
     /// 5. Now that settings and translations are available, ask user for data directory
     // User language is set up: pick a data directory
     Intro::pickDataDirectory();
@@ -610,12 +616,6 @@ int main(int argc, char *argv[])
         return 1;
     }
     
-    /// Enable testnet if necessary
-    if (GetArg(daemon_opt::arg_testnet_on) || cryptonote::config::testnet_only)
-    {
-        cryptonote::config::enable_testnet();
-    }
-
     bool isaTestNet = cryptonote::config::testnet;
     
     if (!cryptonote_opt::handle_command_line(vmapArgs))
