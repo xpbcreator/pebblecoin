@@ -7,6 +7,7 @@
 #include "common/command_line.h"
 #include "transaction_tests.h"
 #include "../test_genesis_config.h"
+#include "crypto/hash.h"
 #include "crypto/hash_options.h"
 
 namespace po = boost::program_options;
@@ -63,7 +64,7 @@ int main(int argc, char* argv[])
   }
 
   // testing params
-  g_hash_ops_small_boulderhash = true;
+  crypto::g_hash_ops_small_boulderhash = true;
   cryptonote::config::do_boulderhash = true;
   cryptonote::config::no_reward_ramp = true;
   cryptonote::config::test_serialize_unserialize_block = true;
@@ -86,6 +87,12 @@ int main(int argc, char* argv[])
   else if (command_line::get_arg(vm, arg_generate_and_play_test_data))
   {
     bool stop_on_fail = command_line::get_arg(vm, arg_stop_on_fail);
+    
+#ifdef _MSC_VER
+    
+    LOG_ERROR("MSVC does not support initializer lists, can't run DPOS tests");
+    
+#else
     
     GENERATE_AND_PLAY(gen_dpos_register);
     GENERATE_AND_PLAY(gen_dpos_register_invalid_id);
@@ -113,6 +120,8 @@ int main(int argc, char* argv[])
     GENERATE_AND_PLAY(gen_dpos_altchain_voting_2);
     GENERATE_AND_PLAY(gen_dpos_altchain_voting_3);
     GENERATE_AND_PLAY(gen_dpos_altchain_voting_4);
+    
+#endif
     
     /*// Contract chain-switch
     GENERATE_AND_PLAY(gen_chainswitch_txin_to_key);

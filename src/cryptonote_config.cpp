@@ -4,9 +4,8 @@
 
 #include "cryptonote_config.h"
 
+#include "crypto/hash.h"
 #include "crypto/hash_options.h"
-
-extern bool g_hash_ops_small_boulderhash;
 
 const bool ALLOW_DEBUG_COMMANDS = true;
 const char *CRYPTONOTE_NAME                         = "pebblecoin";
@@ -36,7 +35,7 @@ namespace cryptonote {
     {
       testnet = true;
       no_reward_ramp = true;
-      g_hash_ops_small_boulderhash = true;
+      crypto::g_hash_ops_small_boulderhash = true;
       use_signed_hashes = false;
       do_boulderhash = true;
       dpos_switch_block = 1200;

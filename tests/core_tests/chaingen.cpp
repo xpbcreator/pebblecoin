@@ -1199,7 +1199,9 @@ cryptonote::block rewind_blocks(test_generator& generator, std::vector<test_even
                                 const cryptonote::account_base& miner_account,
                                 size_t n)
 {
-  return rewind_blocks(generator, events, block_prev, {miner_account, miner_account}, n);
+  std::vector<cryptonote::account_base> no_initializer_lists;
+  no_initializer_lists.push_back(miner_account);
+  return rewind_blocks(generator, events, block_prev, no_initializer_lists, n);
 }
 
 cryptonote::transaction make_tx_send(std::vector<test_event_entry>& events,

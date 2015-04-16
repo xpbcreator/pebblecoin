@@ -1,3 +1,9 @@
+#ifdef _MSC_VER
+
+  // Visual Studio 11 does not support initialiezr lists
+
+#else
+
 // Copyright (c) 2015 The Pebblecoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -59,7 +65,7 @@ cryptonote::transaction make_vote_tx(std::vector<test_event_entry>& events,
                                      uint64_t amount, const delegate_votes& votes,
                                      const account_base vote_source,
                                      const block& head,
-                                     uint16_t seq=0, size_t nmix=0,
+                                     uint16_t seq, size_t nmix,
                                      const txb_call_t& txb_call,
                                      const tx_modifier_t& mod)
 {
@@ -1438,3 +1444,5 @@ bool gen_dpos_altchain_voting_4::generate(std::vector<test_event_entry>& events)
   
   TEST_NEW_END();
 }
+
+#endif
