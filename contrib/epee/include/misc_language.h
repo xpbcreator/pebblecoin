@@ -29,6 +29,11 @@
 #pragma once
 
 #include <limits>
+#include <vector>
+#include <exception>
+#include <functional>
+#include <algorithm>
+
 #include <boost/utility/value_init.hpp>
 #include <boost/shared_ptr.hpp>
 

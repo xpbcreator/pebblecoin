@@ -324,8 +324,7 @@ namespace cryptonote
     return true;
   }
   
-  bool process_txin_amounts(const transaction& tx, size_t i, currency_map& amounts)
-  {
+  namespace {
     struct add_txin_amount_visitor : public tx_input_visitor_base
     {
       using tx_input_visitor_base::operator();
@@ -334,7 +333,7 @@ namespace cryptonote
       size_t index;
       currency_map& amounts;
       add_txin_amount_visitor(const transaction& tx_in, size_t index_in, currency_map& amounts_in)
-          : tx(tx_in), index(index_in), amounts(amounts_in) { }
+      : tx(tx_in), index(index_in), amounts(amounts_in) { }
       
       bool operator()(const txin_to_key& inp) { return add_amount(amounts[tx.in_cp(index)], inp.amount); }
       bool operator()(const txin_mint& inp) { return add_amount(amounts[tx.in_cp(index)], inp.amount); }
@@ -413,7 +412,10 @@ namespace cryptonote
         return true;
       }
     };
-
+  }
+  
+  bool process_txin_amounts(const transaction& tx, size_t i, currency_map& amounts)
+  {
     CHECK_AND_ASSERT_MES(i < tx.ins().size(), false, "add_txin_amounts() asking for vin of out of range index");
     add_txin_amount_visitor visitor(tx, i, amounts);
     CHECK_AND_ASSERT(boost::apply_visitor(visitor, tx.ins()[i]), false);
@@ -517,8 +519,7 @@ namespace cryptonote
     return coinbase_in.height;
   }
   //---------------------------------------------------------------
-  bool check_inputs_types_supported(const transaction& tx)
-  {
+  namespace {
     struct input_type_supported_visitor: tx_input_visitor_base
     {
       using tx_input_visitor_base::operator();
@@ -537,12 +538,13 @@ namespace cryptonote
       bool operator()(const txin_register_delegate& inp) const { return true; }
       bool operator()(const txin_vote& inp) const { return true; }
     };
-    
+  }
+  bool check_inputs_types_supported(const transaction& tx)
+  {
     return tools::all_apply_visitor(input_type_supported_visitor(), tx.ins());
   }
   //---------------------------------------------------------------
-  bool check_outputs_types_supported(const transaction& tx)
-  {
+  namespace {
     struct output_type_supported_visitor: tx_output_visitor_base
     {
       using tx_output_visitor_base::operator();
@@ -550,11 +552,13 @@ namespace cryptonote
       bool operator()(const txout_to_key& inp) const { return true; }
     };
     
+  }
+  bool check_outputs_types_supported(const transaction& tx)
+  {
     return tools::all_apply_visitor(output_type_supported_visitor(), tx.outs(), out_getter());
   }
   //-----------------------------------------------------------------------------------------------
-  bool check_outs_valid(const transaction& tx)
-  {
+  namespace {
     struct check_outs_valid_visitor: tx_output_visitor_base
     {
       using tx_output_visitor_base::operator();
@@ -565,6 +569,9 @@ namespace cryptonote
       }
     };
     
+  }
+  bool check_outs_valid(const transaction& tx)
+  {
     check_outs_valid_visitor v;
     for (size_t i=0; i < tx.outs().size(); i++) {
       if (tx.outs()[i].amount <= 0)

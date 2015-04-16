@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "include_base_utils.h"
+
 #include "cryptonote_basic.h"
 
 #include <boost/variant/static_visitor.hpp>

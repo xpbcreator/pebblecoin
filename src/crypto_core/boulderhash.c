@@ -81,13 +81,13 @@ void pc_boulderhash_calc_result(int version, uint64_t *result, uint64_t extra, u
 {
   static const int result_size_m1 = HASH_SIZE / sizeof(uint64_t) - 1;
   size_t states_m1, state_size_m1;
+  int iterations, k, c;
   
   states_m1 = get_boulderhash_states() - 1;
   state_size_m1 = get_boulderhash_state_size() - 1;
   
-  int iterations = version == BOULDERHASH_VERSION_REGULAR_1 ? BOULDERHASH_ITERATIONS : BOULDERHASH2_ITERATIONS;
+  iterations = version == BOULDERHASH_VERSION_REGULAR_1 ? BOULDERHASH_ITERATIONS : BOULDERHASH2_ITERATIONS;
   
-  int k, c;
   // gen result
   for (k=0, c=0; k < iterations; k++, c=(c+1)&result_size_m1) {
     result[c] = extra ^ state[(result[c]>>32) & states_m1][result[c] & state_size_m1];

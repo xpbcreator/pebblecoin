@@ -6,7 +6,7 @@ namespace cryptonote
   class core;
   template<class t_core> class t_cryptonote_protocol_handler;
   class core_rpc_server;
-  class account_public_address;
+  struct account_public_address;
 }
 
 namespace nodetool

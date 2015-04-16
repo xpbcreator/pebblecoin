@@ -46,19 +46,19 @@ namespace cryptonote
       out.target = tk;
       return true;
     }
+    
+    struct get_k_image_visitor: tx_input_visitor_base
+    {
+      using tx_input_visitor_base::operator();
+      
+      crypto::key_image &dst;
+      get_k_image_visitor(crypto::key_image& dst_in) : dst(dst_in) { }
+      
+      bool operator()(const txin_to_key& inp) const { dst = inp.k_image; return true; }
+      bool operator()(const txin_vote& inp) const { dst = inp.ink.k_image; return true; }
+    };
     bool get_txin_k_image(const txin_v& inv, crypto::key_image& k_image)
     {
-      struct get_k_image_visitor: tx_input_visitor_base
-      {
-        using tx_input_visitor_base::operator();
-        
-        crypto::key_image &dst;
-        get_k_image_visitor(crypto::key_image& dst_in) : dst(dst_in) { }
-        
-        bool operator()(const txin_to_key& inp) const { dst = inp.k_image; return true; }
-        bool operator()(const txin_vote& inp) const { dst = inp.ink.k_image; return true; }
-      };
-      
       return boost::apply_visitor(get_k_image_visitor(k_image), inv);
     }
     crypto::key_image get_txin_k_image(const txin_v& inv)

@@ -15,7 +15,7 @@
 
 namespace cryptonote
 {
-  template <class tx_mapper_t = tools::identity>
+  template <class tx_mapper_t>
   bool construct_tx(const account_keys& sender_account_keys,
                     const std::vector<tx_source_entry>& sources, const std::vector<tx_destination_entry>& destinations,
                     std::vector<uint8_t> extra, transaction& tx, uint64_t unlock_time,

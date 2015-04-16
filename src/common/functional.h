@@ -13,7 +13,7 @@ namespace tools
   struct identity
   {
     template<typename U>
-    constexpr auto operator()(U&& v) const noexcept
+    auto operator()(U&& v) const /* noexcept */
         -> decltype(std::forward<U>(v))
     {
         return std::forward<U>(v);
@@ -30,8 +30,8 @@ namespace tools
   {
   }
   
-  template <typename Visitor, typename Collection, class Mapper = identity>
-  bool all_apply_visitor(Visitor& v, const Collection& c, Mapper&& m = Mapper(), bool reverse=false)
+  template <typename Visitor, typename Collection, class Mapper>
+  bool all_apply_visitor(Visitor& v, const Collection& c, Mapper&& m = identity(), bool reverse=false)
   {
     if (reverse)
     {
@@ -58,8 +58,8 @@ namespace tools
     return true;
   }
   
-  template <typename Visitor, typename Collection, class Mapper = identity>
-  bool all_apply_visitor(const Visitor& v, const Collection& c, Mapper&& m = Mapper(), bool reverse=false)
+  template <typename Visitor, typename Collection, class Mapper>
+  bool all_apply_visitor(const Visitor& v, const Collection& c, Mapper&& m = identity(), bool reverse=false)
   {
     if (reverse)
     {
@@ -80,8 +80,8 @@ namespace tools
     return true;
   }
   
-  template <typename Visitor, typename Collection, class Mapper = identity>
-  bool any_apply_visitor(Visitor& v, const Collection& c, Mapper&& m = Mapper())
+  template <typename Visitor, typename Collection, class Mapper>
+  bool any_apply_visitor(Visitor& v, const Collection& c, Mapper&& m = identity())
   {
     int i = 0;
     BOOST_FOREACH(const auto& element, c)
@@ -94,8 +94,8 @@ namespace tools
     return false;
   }
   
-  template <typename Visitor, typename Collection, class Mapper = identity>
-  bool any_apply_visitor(const Visitor& v, const Collection& c, Mapper&& m = Mapper())
+  template <typename Visitor, typename Collection, class Mapper>
+  bool any_apply_visitor(const Visitor& v, const Collection& c, Mapper&& m = identity())
   {
     BOOST_FOREACH(const auto& element, c)
     {
@@ -105,7 +105,7 @@ namespace tools
     return false;
   }
 
-  template <class Container, class MapF=identity>
+  template <class Container, class MapF>
   std::string str_join(const Container& c, const MapF& f=identity())
   {
     std::stringstream ss;

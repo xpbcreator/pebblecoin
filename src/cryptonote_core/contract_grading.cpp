@@ -34,8 +34,8 @@ namespace cryptonote
     assert(fee <= graded_amount);
     
     boost::multiprecision::uint128_t amount_left = graded_amount - fee;
-    assert(amount_left == (uint64_t)amount_left);
-    return (uint64_t)amount_left;
+    assert(amount_left == amount_left.convert_to<uint64_t>());
+    return amount_left.convert_to<uint64_t>();
   }
   
   uint64_t grade_contract_amount(uint64_t contract_amount, uint32_t grade, uint32_t fee_scale)
@@ -60,8 +60,8 @@ namespace cryptonote
     boost::multiprecision::uint128_t fee = total_contract_coins;
     fee *= fee_scale;
     fee /= GRADE_SCALE_MAX;
-    assert(fee == (uint64_t)fee);
+    assert(fee == fee.convert_to<uint64_t>());
     
-    return (uint64_t)fee;
+    return fee.convert_to<uint64_t>();
   }
 }

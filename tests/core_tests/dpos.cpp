@@ -30,7 +30,7 @@ namespace {
   }
 }
 
-template <class txb_call_t=tools::identity, class tx_modifier_t=tools::identity>
+template <class txb_call_t, class tx_modifier_t>
 cryptonote::transaction make_register_delegate_tx(std::vector<test_event_entry>& events,
                                                   delegate_id_t delegate_id, uint64_t registration_fee,
                                                   const account_base delegate_source,

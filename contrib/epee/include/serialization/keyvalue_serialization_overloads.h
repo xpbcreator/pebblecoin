@@ -26,6 +26,12 @@
 
 #pragma once
 
+#include <vector>
+#include <string>
+#include <utility>
+#include <list>
+#include <type_traits>
+
 namespace epee
 {
   namespace serialization

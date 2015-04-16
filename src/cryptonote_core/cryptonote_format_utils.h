@@ -255,7 +255,7 @@ namespace cryptonote
   //   nth_sorted_item_after(14, 1) -> 4
   //   nth_sorted_item_after(14, 2) -> 10
   
-  template <class list_t, class item_t, class extract_f_t=tools::identity>
+  template <class list_t, class item_t, class extract_f_t>
   item_t nth_sorted_item_after(const list_t& l, const item_t& start, size_t n, const extract_f_t& extract_f=tools::identity())
   {
     if (l.empty())

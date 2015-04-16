@@ -14,8 +14,8 @@
 
 namespace cryptonote
 {
-  class block;
-  class account_public_address;
+  struct block;
+  struct account_public_address;
   struct i_miner_handler
   {
     virtual bool handle_block_found(block& b) = 0;

@@ -349,9 +349,7 @@ bool blockchain_storage::reset_and_set_genesis_block(const block& b)
   return bvc.m_added_to_main_chain && !bvc.m_verifivation_failed;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::purge_transaction_data_from_blockchain(const transaction& tx, bool strict_check)
-{
-  CRITICAL_REGION_LOCAL(m_blockchain_lock);
+namespace {
   struct purge_transaction_visitor: tx_input_visitor_base
   {
     using tx_input_visitor_base::operator();
@@ -616,7 +614,10 @@ bool blockchain_storage::purge_transaction_data_from_blockchain(const transactio
       return true;
     }
   };
-  
+}
+bool blockchain_storage::purge_transaction_data_from_blockchain(const transaction& tx, bool strict_check)
+{
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   // apply in reverse order
   if (!tools::all_apply_visitor(purge_transaction_visitor(*this), tx.ins(), tools::identity(), true))
   {
@@ -2208,10 +2209,7 @@ bool blockchain_storage::check_tx_out_to_key(const transaction& tx, size_t i, co
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::add_transaction_from_block(const transaction& tx, const crypto::hash& tx_id, const crypto::hash& bl_id, uint64_t bl_height)
-{
-  CRITICAL_REGION_LOCAL(m_blockchain_lock);
-  
+namespace {
   struct add_transaction_input_visitor: public tx_input_visitor_base
   {
     using tx_input_visitor_base::operator();
@@ -2404,6 +2402,10 @@ bool blockchain_storage::add_transaction_from_block(const transaction& tx, const
       return true;
     }
   };
+}
+bool blockchain_storage::add_transaction_from_block(const transaction& tx, const crypto::hash& tx_id, const crypto::hash& bl_id, uint64_t bl_height)
+{
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
   add_transaction_input_visitor visitor(tx, *this, tx_id, bl_id);
   
@@ -2488,8 +2490,7 @@ bool blockchain_storage::get_tx_outputs_gindexs(const crypto::hash& tx_id, std::
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_inputs(const transaction& tx, uint64_t* pmax_used_block_height)
-{
+namespace {
   struct check_tx_input_visitor: public tx_input_visitor_base
   {
     using tx_input_visitor_base::operator();
@@ -2502,7 +2503,7 @@ bool blockchain_storage::check_tx_inputs(const transaction& tx, uint64_t* pmax_u
     check_tx_input_visitor(blockchain_storage& b_in, const transaction& tx_in,
                            const crypto::hash& tx_prefix_hash_in,
                            uint64_t* pmax_used_block_height_in)
-        : b(b_in), tx(tx_in), tx_prefix_hash(tx_prefix_hash_in), pmax_used_block_height(pmax_used_block_height_in) {}
+    : b(b_in), tx(tx_in), tx_prefix_hash(tx_prefix_hash_in), pmax_used_block_height(pmax_used_block_height_in) {}
     
     bool operator()(const txin_to_key& inp)
     {
@@ -2549,7 +2550,9 @@ bool blockchain_storage::check_tx_inputs(const transaction& tx, uint64_t* pmax_u
       return b.check_tx_in_vote(tx, visitor_index, inp, tx_prefix_hash, pmax_used_block_height);
     }
   };
-  
+}
+bool blockchain_storage::check_tx_inputs(const transaction& tx, uint64_t* pmax_used_block_height)
+{
   if(pmax_used_block_height)
     *pmax_used_block_height = 0;
   
@@ -2557,8 +2560,7 @@ bool blockchain_storage::check_tx_inputs(const transaction& tx, uint64_t* pmax_u
   return tools::all_apply_visitor(visitor, tx.ins());
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_outputs(const transaction& tx)
-{
+namespace {
   struct check_tx_output_visitor: public tx_output_visitor_base
   {
     using tx_output_visitor_base::operator();
@@ -2567,14 +2569,16 @@ bool blockchain_storage::check_tx_outputs(const transaction& tx)
     const transaction& tx;
     
     check_tx_output_visitor(blockchain_storage& b_in, const transaction& tx_in)
-        : b(b_in), tx(tx_in) {}
+    : b(b_in), tx(tx_in) {}
     
     bool operator()(const txout_to_key& inp)
     {
       return b.check_tx_out_to_key(tx, visitor_index, inp);
     }
   };
-
+}
+bool blockchain_storage::check_tx_outputs(const transaction& tx)
+{
   check_tx_output_visitor visitor(*this, tx);
   return tools::all_apply_visitor(visitor, tx.outs(), out_getter());
 }

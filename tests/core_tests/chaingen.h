@@ -362,7 +362,7 @@ bool construct_miner_tx_manually(size_t height, uint64_t already_generated_coins
                                  const cryptonote::account_public_address& miner_address, cryptonote::transaction& tx,
                                  uint64_t fee, cryptonote::keypair* p_txkey = 0);
 
-template <class tx_mapper_t = tools::identity>
+template <class tx_mapper_t>
 bool construct_tx_to_key(const std::vector<test_event_entry>& events, cryptonote::transaction& tx,
                          const cryptonote::block& blk_head, const cryptonote::account_base& from,
                          const cryptonote::account_base& to,
