@@ -5,11 +5,14 @@
 
 #pragma once 
 
-#include <mutex>
-#include <system_error>
-#if !defined(WIN32)
+#if defined(WIN32)
+#include <windows.h>
+#else
 #include <signal.h>
 #endif
+
+#include <mutex>
+#include <system_error>
 
 #include "misc_language.h"
 

@@ -13,7 +13,7 @@ namespace tools
   struct identity
   {
     template<typename U>
-    auto operator()(U&& v) const /* noexcept */
+    /* constexpr */ auto operator()(U&& v) const /* noexcept */
         -> decltype(std::forward<U>(v))
     {
         return std::forward<U>(v);
@@ -31,7 +31,7 @@ namespace tools
   }
   
   template <typename Visitor, typename Collection, class Mapper>
-  bool all_apply_visitor(Visitor& v, const Collection& c, Mapper&& m = identity(), bool reverse=false)
+  bool all_apply_visitor(Visitor& v, const Collection& c, Mapper&& m, bool reverse=false)
   {
     if (reverse)
     {
@@ -59,7 +59,7 @@ namespace tools
   }
   
   template <typename Visitor, typename Collection, class Mapper>
-  bool all_apply_visitor(const Visitor& v, const Collection& c, Mapper&& m = identity(), bool reverse=false)
+  bool all_apply_visitor(const Visitor& v, const Collection& c, Mapper&& m, bool reverse=false)
   {
     if (reverse)
     {
@@ -81,7 +81,7 @@ namespace tools
   }
   
   template <typename Visitor, typename Collection, class Mapper>
-  bool any_apply_visitor(Visitor& v, const Collection& c, Mapper&& m = identity())
+  bool any_apply_visitor(Visitor& v, const Collection& c, Mapper&& m)
   {
     int i = 0;
     BOOST_FOREACH(const auto& element, c)
@@ -95,7 +95,7 @@ namespace tools
   }
   
   template <typename Visitor, typename Collection, class Mapper>
-  bool any_apply_visitor(const Visitor& v, const Collection& c, Mapper&& m = identity())
+  bool any_apply_visitor(const Visitor& v, const Collection& c, Mapper&& m)
   {
     BOOST_FOREACH(const auto& element, c)
     {
@@ -106,7 +106,7 @@ namespace tools
   }
 
   template <class Container, class MapF>
-  std::string str_join(const Container& c, const MapF& f=identity())
+  std::string str_join(const Container& c, const MapF& f)
   {
     std::stringstream ss;
     
@@ -123,5 +123,31 @@ namespace tools
     
     return ss.str();
   }
-
+  
+  // MSVC 2012 prevents using default template args on functions, so:
+  template <typename Visitor, typename Collection>
+  bool all_apply_visitor(Visitor& v, const Collection& c)
+  {
+    return all_apply_visitor(v, c, identity());
+  }
+  template <typename Visitor, typename Collection>
+  bool all_apply_visitor(const Visitor& v, const Collection& c)
+  {
+    return all_apply_visitor(v, c, identity());
+  }
+  template <typename Visitor, typename Collection, class Mapper>
+  bool any_apply_visitor(Visitor& v, const Collection& c)
+  {
+    return any_apply_visitor(v, c, identity());
+  }
+  template <typename Visitor, typename Collection, class Mapper>
+  bool any_apply_visitor(const Visitor& v, const Collection& c)
+  {
+    return any_apply_visitor(v, c, identity());
+  }
+  template <class Container>
+  std::string str_join(const Container& c)
+  {
+    return str_join(c, identity());
+  }
 }

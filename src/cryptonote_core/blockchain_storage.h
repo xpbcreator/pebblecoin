@@ -71,12 +71,21 @@ namespace cryptonote
     return !(a == b);
   }
   
+  namespace detail {
+    struct purge_transaction_visitor;
+    struct add_transaction_input_visitor;
+    struct check_tx_input_visitor;
+  }
+  
   /************************************************************************/
   /*                                                                      */
   /************************************************************************/
   class blockchain_storage
   {
     friend class core_tester;
+    friend class detail::purge_transaction_visitor;
+    friend class detail::add_transaction_input_visitor;
+    friend class detail::check_tx_input_visitor;
     
   public:
     struct transaction_chain_entry

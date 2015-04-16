@@ -283,7 +283,7 @@ namespace cryptonote
   bool construct_tx(const account_keys& sender_account_keys, const std::vector<tx_source_entry>& sources, const std::vector<tx_destination_entry>& destinations, std::vector<uint8_t> extra, transaction& tx, uint64_t unlock_time)
   {
     keypair txkey;
-    return construct_tx(sender_account_keys, sources, destinations, extra, tx, unlock_time, txkey);
+    return construct_tx(sender_account_keys, sources, destinations, extra, tx, unlock_time, txkey, tools::identity());
   }
   //---------------------------------------------------------------
   bool add_amount_would_overflow(const uint64_t amount1, const uint64_t amount2)

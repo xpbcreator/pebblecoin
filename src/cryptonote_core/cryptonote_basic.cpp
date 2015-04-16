@@ -6,33 +6,33 @@
 #include "cryptonote_basic_impl.h"
 #include "visitors.h"
 
-namespace {
-  struct input_type_version_visitor: tx_input_visitor_base_opt<size_t, 666>
-  {
-    using tx_input_visitor_base_opt<size_t, 666>::operator();
-    
-    size_t operator()(const txin_gen& inp) const { return VANILLA_TRANSACTION_VERSION; }
-    size_t operator()(const txin_to_key& inp) const { return VANILLA_TRANSACTION_VERSION; }
-    size_t operator()(const txin_mint& inp) const { return CURRENCY_TRANSACTION_VERSION; }
-    size_t operator()(const txin_remint& inp) const { return CURRENCY_TRANSACTION_VERSION; }
-    size_t operator()(const txin_create_contract& inp) const { return CONTRACT_TRANSACTION_VERSION; }
-    size_t operator()(const txin_mint_contract& inp) const { return CONTRACT_TRANSACTION_VERSION; }
-    size_t operator()(const txin_grade_contract& inp) const { return CONTRACT_TRANSACTION_VERSION; }
-    size_t operator()(const txin_resolve_bc_coins& inp) const { return CONTRACT_TRANSACTION_VERSION; }
-    size_t operator()(const txin_fuse_bc_coins& inp) const { return CONTRACT_TRANSACTION_VERSION; }
-    size_t operator()(const txin_register_delegate& inp) const { return DPOS_TRANSACTION_VERSION; }
-    size_t operator()(const txin_vote& inp) const { return DPOS_TRANSACTION_VERSION; }
-  };
-  
-  struct output_type_version_visitor: tx_output_visitor_base_opt<size_t, 666>
-  {
-    using tx_output_visitor_base_opt<size_t, 666>::operator();
-    
-    size_t operator()(const txout_to_key& inp) const { return VANILLA_TRANSACTION_VERSION; }
-  };
-}
-
 namespace cryptonote {
+  namespace {
+    struct input_type_version_visitor: tx_input_visitor_base_opt<size_t, 666>
+    {
+      using tx_input_visitor_base_opt<size_t, 666>::operator();
+      
+      size_t operator()(const txin_gen& inp) const { return VANILLA_TRANSACTION_VERSION; }
+      size_t operator()(const txin_to_key& inp) const { return VANILLA_TRANSACTION_VERSION; }
+      size_t operator()(const txin_mint& inp) const { return CURRENCY_TRANSACTION_VERSION; }
+      size_t operator()(const txin_remint& inp) const { return CURRENCY_TRANSACTION_VERSION; }
+      size_t operator()(const txin_create_contract& inp) const { return CONTRACT_TRANSACTION_VERSION; }
+      size_t operator()(const txin_mint_contract& inp) const { return CONTRACT_TRANSACTION_VERSION; }
+      size_t operator()(const txin_grade_contract& inp) const { return CONTRACT_TRANSACTION_VERSION; }
+      size_t operator()(const txin_resolve_bc_coins& inp) const { return CONTRACT_TRANSACTION_VERSION; }
+      size_t operator()(const txin_fuse_bc_coins& inp) const { return CONTRACT_TRANSACTION_VERSION; }
+      size_t operator()(const txin_register_delegate& inp) const { return DPOS_TRANSACTION_VERSION; }
+      size_t operator()(const txin_vote& inp) const { return DPOS_TRANSACTION_VERSION; }
+    };
+    
+    struct output_type_version_visitor: tx_output_visitor_base_opt<size_t, 666>
+    {
+      using tx_output_visitor_base_opt<size_t, 666>::operator();
+      
+      size_t operator()(const txout_to_key& inp) const { return VANILLA_TRANSACTION_VERSION; }
+    };
+  }
+
   size_t inp_minimum_tx_version(const txin_v& inp)
   {
     return boost::apply_visitor(input_type_version_visitor(), inp);

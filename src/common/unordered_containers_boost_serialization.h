@@ -12,7 +12,7 @@ namespace boost
 {
   namespace serialization
   {
-    template <class Archive, class h_key, class hval, class Hash = std::hash<h_key> >
+    template <class Archive, class h_key, class hval, class Hash>
     inline void save(Archive &a, const std::unordered_map<h_key, hval, Hash> &x, const boost::serialization::version_type ver)
     {
       size_t s = x.size();
@@ -24,7 +24,7 @@ namespace boost
       }
     }
 
-    template <class Archive, class h_key, class hval, class Hash = std::hash<h_key> >
+    template <class Archive, class h_key, class hval, class Hash>
     inline void load(Archive &a, std::unordered_map<h_key, hval, Hash> &x, const boost::serialization::version_type ver)
     {
       x.clear();
@@ -41,7 +41,7 @@ namespace boost
     }
 
 
-    template <class Archive, class h_key, class hval, class Hash = std::hash<h_key> >
+    template <class Archive, class h_key, class hval, class Hash>
     inline void save(Archive &a, const std::unordered_multimap<h_key, hval, Hash> &x, const boost::serialization::version_type ver)
     {
       size_t s = x.size();
@@ -53,7 +53,7 @@ namespace boost
       }
     }
 
-    template <class Archive, class h_key, class hval, class Hash = std::hash<h_key> >
+    template <class Archive, class h_key, class hval, class Hash>
     inline void load(Archive &a, std::unordered_multimap<h_key, hval, Hash> &x, const boost::serialization::version_type ver)
     {
       x.clear();
@@ -70,7 +70,7 @@ namespace boost
     }
 
 
-    template <class Archive, class hval, class Hash = std::hash<hval> >
+    template <class Archive, class hval, class Hash>
     inline void save(Archive &a, const std::unordered_set<hval, Hash> &x, const boost::serialization::version_type ver)
     {
       size_t s = x.size();
@@ -81,7 +81,7 @@ namespace boost
       }
     }
 
-    template <class Archive, class hval, class Hash = std::hash<hval> >
+    template <class Archive, class hval, class Hash>
     inline void load(Archive &a, std::unordered_set<hval, Hash> &x, const boost::serialization::version_type ver)
     {
       x.clear();
@@ -96,7 +96,7 @@ namespace boost
     }
     
     
-    template <class Archive, class hval, class Compare = std::less<hval> >
+    template <class Archive, class hval, class Compare>
     inline void save(Archive &a, const std::set<hval, Compare> &x, const boost::serialization::version_type ver)
     {
       size_t s = x.size();
@@ -107,7 +107,7 @@ namespace boost
       }
     }
 
-    template <class Archive, class hval, class Compare = std::less<hval> >
+    template <class Archive, class hval, class Compare>
     inline void load(Archive &a, std::set<hval, Compare> &x, const boost::serialization::version_type ver)
     {
       x.clear();
@@ -122,25 +122,25 @@ namespace boost
     }
     
 
-    template <class Archive, class h_key, class hval, class Hash = std::hash<h_key> >
+    template <class Archive, class h_key, class hval, class Hash>
     inline void serialize(Archive &a, std::unordered_map<h_key, hval, Hash> &x, const boost::serialization::version_type ver)
     {
       split_free(a, x, ver);
     }
 
-    template <class Archive, class h_key, class hval, class Hash = std::hash<h_key> >
+    template <class Archive, class h_key, class hval, class Hash>
     inline void serialize(Archive &a, std::unordered_multimap<h_key, hval, Hash> &x, const boost::serialization::version_type ver)
     {
       split_free(a, x, ver);
     }
 
-    template <class Archive, class hval, class Hash = std::hash<hval> >
+    template <class Archive, class hval, class Hash>
     inline void serialize(Archive &a, std::unordered_set<hval, Hash> &x, const boost::serialization::version_type ver)
     {
       split_free(a, x, ver);
     }
 
-    template <class Archive, class hval, class Compare = std::less<hval> >
+    template <class Archive, class hval, class Compare>
     inline void serialize(Archive &a, std::set<hval, Compare> &x, const boost::serialization::version_type ver)
     {
       split_free(a, x, ver);
