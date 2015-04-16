@@ -110,7 +110,8 @@ public:
 
 VotingTableModel::VotingTableModel(CWallet *wallet) :
         QAbstractTableModel(NULL),
-        priv(new VotingTablePriv(wallet, this))
+        priv(new VotingTablePriv(wallet, this)),
+        cachedNumDelegates(0)
 {
     columns << QString() << tr("Votes") << tr("ID") << tr("Address") << tr("Score");
 
@@ -271,9 +272,12 @@ QModelIndex VotingTableModel::index(int row, int column, const QModelIndex &pare
 
 void VotingTableModel::updateDelegates()
 {
+    beginResetModel();
     priv->refreshDelegates();
+    endResetModel();
     
-    emit dataChanged(index(0, 0), index(priv->size() - 1, columns.length() - 1));
+    cachedNumDelegates = priv->cachedDelegates.size();
+    //emit dataChanged(index(0, 0), index(priv->size() - 1, columns.length() - 1));
     emit amountUnvotedChanged();
 }
 

@@ -63,6 +63,8 @@ public:
 private:
     QStringList columns;
     std::unique_ptr<VotingTablePriv> priv;
+    
+    size_t cachedNumDelegates;
 
     QString formatTooltip(const VotingRecord *rec) const;
     
