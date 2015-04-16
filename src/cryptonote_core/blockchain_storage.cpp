@@ -2216,8 +2216,8 @@ namespace bs_visitor_detail {
     
     const transaction& tx;
     blockchain_storage& b;
-    const crypto::hash& m_tx_id;
-    const crypto::hash& m_bl_id;
+    crypto::hash m_tx_id;
+    crypto::hash m_bl_id;
     crypto::hash tx_prefix_hash;
     
     // for printing summary:
@@ -2497,7 +2497,7 @@ namespace bs_visitor_detail {
     
     blockchain_storage& b;
     const transaction& tx;
-    const crypto::hash& tx_prefix_hash;
+    crypto::hash tx_prefix_hash;
     uint64_t* pmax_used_block_height;
     
     check_tx_input_visitor(blockchain_storage& b_in, const transaction& tx_in,
