@@ -28,7 +28,7 @@ namespace cryptonote {
     bool use_signed_hashes = true;
     bool do_boulderhash = false;
     
-    const bool testnet_only = true;
+    const bool testnet_only = false;
     
     uint64_t dpos_registration_start_block = 82400;  // Monday, April 20th, ~20:00 UTC
     uint64_t dpos_switch_block = 85300;              // Friday, April 24th, ~20:00 UTC
@@ -73,5 +73,13 @@ namespace cryptonote {
     {
       return testnet ? 0x101e : 0x5484; // testnet start with "TT", main net start with "PB"
     }
+  }
+}
+
+namespace serialization
+{
+  namespace detail
+  {
+    bool compat_old_map_pair_serialize = false; // declared in serialization/serialization.h
   }
 }

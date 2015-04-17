@@ -206,13 +206,7 @@ namespace cryptonote
   //-----------------------------------------------------------------------------------------------------
   bool miner::start(const account_public_address& adr, size_t threads_count)
   {
-    if (!cryptonote::config::do_boulderhash)
-    {
-      LOG_ERROR("Starting miner but boulderhash isn't enabled");
-      return false;
-    }
-    
-    m_mine_address = adr;
+    m_mine_address = adr; // will be null if doing pos-only
     m_threads_total = static_cast<uint32_t>(threads_count);
     m_starter_nonce = crypto::rand<uint32_t>();
     CRITICAL_REGION_LOCAL(m_threads_lock);

@@ -32,10 +32,7 @@ struct serializer
     return true;
   }
   static bool serialize(Archive &ar, T &v, boost::false_type, boost::false_type) {
-    //serialize_custom(ar, v, typename has_free_serializer<T>::type());
     return v.do_serialize(ar);
-  }
-  static void serialize_custom(Archive &ar, T &v, boost::true_type) {
   }
 };
 
@@ -106,6 +103,8 @@ inline bool do_serialize(Archive &ar, T &v)
 namespace serialization {
   namespace detail
   {
+    extern bool compat_old_map_pair_serialize; // set in cryptonote_config.cpp
+    
     template <typename T>
     void prepare_custom_vector_serialization(size_t size, std::vector<T>& vec, const boost::mpl::bool_<true>& /*is_saving*/)
     {

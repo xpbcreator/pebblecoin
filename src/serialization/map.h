@@ -12,7 +12,50 @@
 
 namespace {
   template <template <bool> class Archive, class Map>
-  inline bool _do_serialize_impl(Archive<false> &ar, Map &m)
+  inline bool _do_serialize_map_impl_old(Archive<false> &ar, Map &m)
+  {
+	typedef typename Map::key_type K;
+	typedef typename Map::mapped_type V;
+    
+    uint64_t size;
+    if (!::do_serialize(ar, size))
+      return false;
+    
+    m.clear();
+    std::pair<K, V> item;
+    for (uint64_t i=0; i < size; i++)
+    {
+      if (!::do_serialize(ar, item))
+        return false;
+      
+      m.insert(item);
+    }
+    
+    return true;
+  }
+
+  template <template <bool> class Archive, class Map>
+  inline  bool _do_serialize_map_impl_old(Archive<true> &ar, Map &m)
+  {
+    typedef typename Map::key_type K;
+	typedef typename Map::mapped_type V;
+    
+    uint64_t size = m.size();
+    if (!::do_serialize(ar, size))
+      return false;
+    
+    for (auto it = m.begin(); it != m.end(); ++it)
+    {
+      std::pair<K, V> item = *it;
+      if (!::do_serialize(ar, item))
+        return false;
+    }
+    
+    return true;
+  }
+  
+  template <template <bool> class Archive, class Map>
+  inline bool _do_serialize_map_impl_new(Archive<false> &ar, Map &m)
   {
     typedef typename Map::key_type K;
     typedef typename Map::mapped_type V;
@@ -27,7 +70,7 @@ namespace {
   }
 
   template <template <bool> class Archive, class Map>
-  inline bool _do_serialize_impl(Archive<true> &ar, Map &m)
+  inline bool _do_serialize_map_impl_new(Archive<true> &ar, Map &m)
   {
     typedef typename Map::key_type K;
     typedef typename Map::mapped_type V;
@@ -40,11 +83,25 @@ namespace {
 template <class Archive, class K, class V, class Compare, class Alloc>
 bool do_serialize(Archive &ar, std::map<K, V, Compare, Alloc> &m)
 {
-  return _do_serialize_impl(ar, m);
+  if (::serialization::detail::compat_old_map_pair_serialize)
+  {
+    return _do_serialize_map_impl_old(ar, m);
+  }
+  else
+  {
+    return _do_serialize_map_impl_new(ar, m);
+  }
 }
 
 template <class Archive, class K, class V, class Hash, class Pred, class Alloc>
 bool do_serialize(Archive &ar, std::unordered_map<K, V, Hash, Pred, Alloc> &m)
 {
-  return _do_serialize_impl(ar, m);
+  if (::serialization::detail::compat_old_map_pair_serialize)
+  {
+    return _do_serialize_map_impl_old(ar, m);
+  }
+  else
+  {
+    return _do_serialize_map_impl_new(ar, m);
+  }
 }

@@ -4,17 +4,35 @@
 
 #include <sstream>
 
+#include "include_base_utils.h"
+
 #include "serialization.h"
 #include "binary_archive.h"
 
 namespace serialization {
 
 template <class T>
-bool parse_binary(const std::string &blob, T &v)
+bool _parse_binary(const std::string &blob, T &v)
 {
   std::istringstream istr(blob);
   binary_archive<false> iar(istr);
   return ::serialization::serialize(iar, v);
+}
+
+template <class T>
+bool parse_binary(const std::string &blob, T &v)
+{
+  if (_parse_binary(blob, v))
+    return true;
+  
+  LOG_ERROR("Failed to parse binary, trying compatibility approach...");
+  ::serialization::detail::compat_old_map_pair_serialize = true;
+  bool r = _parse_binary(blob, v);
+  ::serialization::detail::compat_old_map_pair_serialize = false;
+  if (r) {
+    LOG_PRINT_GREEN("Compatibility loading succeeded", LOG_LEVEL_0);
+  }
+  return r;
 }
 
 template<class T>

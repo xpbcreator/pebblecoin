@@ -9,7 +9,13 @@
 #include <utility>
 
 template <class Archive, class K, class V>
-bool do_serialize(Archive &ar, std::pair<K, V> &p)
+bool _do_serialize_pair_impl_old(Archive &ar, std::pair<K, V> &p)
+{
+  return ::do_serialize(ar, p.first) && ::do_serialize(ar, p.second);
+}
+
+template <class Archive, class K, class V>
+bool _do_serialize_pair_impl_new(Archive &ar, std::pair<K, V> &p)
 {
   size_t s = 2;
   ar.begin_array(s);
@@ -27,4 +33,17 @@ bool do_serialize(Archive &ar, std::pair<K, V> &p)
   ar.end_array();
   
   return true;
+}
+
+template <class Archive, class K, class V>
+bool do_serialize(Archive &ar, std::pair<K, V> &p)
+{
+  if (::serialization::detail::compat_old_map_pair_serialize)
+  {
+    return _do_serialize_pair_impl_old(ar, p);
+  }
+  else
+  {
+    return _do_serialize_pair_impl_new(ar, p);
+  }
 }
