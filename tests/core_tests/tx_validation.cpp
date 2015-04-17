@@ -762,3 +762,33 @@ bool gen_tx_signatures_are_invalid::generate(std::vector<test_event_entry>& even
 
   return true;
 }
+
+bool gen_tx_low_fee_no_relay::generate(std::vector<test_event_entry>& events) const
+{
+  uint64_t ts_start = 1338224400;
+  
+  GENERATE_ACCOUNT(miner_account);
+  MAKE_STARTING_BLOCKS(events, blk_0, miner_account, ts_start);
+  MAKE_NEXT_BLOCK(events, blk_1, blk_0, miner_account);
+  REWIND_BLOCKS_N(events, blk_1r, blk_1, miner_account, CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW + 10);
+  MAKE_ACCOUNT(events, alice_account);
+  MAKE_ACCOUNT(events, bob_account);
+
+  // invalid low fee tx
+  set_default_fee(events, COIN / 10);
+  
+  // tx not invalid, but it is not added, so block with it will be invalid
+  DO_CALLBACK(events, "mark_tx_not_added");
+  MAKE_TX_MIX_CP_FEE(events, tx_0, miner_account, miner_account, 100, 0, blk_1r, cryptonote::CP_XPB,
+                     0);
+  DO_CALLBACK(events, "mark_invalid_block");
+  MAKE_NEXT_BLOCK_TX1(events, blk_2_invalid, blk_1r, miner_account, tx_0);
+  
+  // same tx keeped by block is ok
+  SET_EVENT_VISITOR_SETT(events, event_visitor_settings::set_txs_keeped_by_block, true);
+  MAKE_TX_MIX_CP_FEE(events, tx_1, miner_account, miner_account, 100, 0, blk_1r, cryptonote::CP_XPB,
+                     0);
+  MAKE_NEXT_BLOCK_TX1(events, blk_2, blk_1r, miner_account, tx_1);
+  
+  return true;
+}

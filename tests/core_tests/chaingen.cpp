@@ -1219,6 +1219,13 @@ cryptonote::transaction make_tx_send(std::vector<test_event_entry>& events,
   return result;
 }
 
+void do_callback_func(std::vector<test_event_entry>& events, const verify_callback_func& cb)
+{
+  callback_entry_func c;
+  c.cb = cb;
+  events.push_back(c);
+}
+
 void set_dpos_switch_block(std::vector<test_event_entry>& events, uint64_t block)
 {
   // set event so it switches during replay
@@ -1235,17 +1242,19 @@ void set_dpos_registration_start_block(std::vector<test_event_entry>& events, ui
   cryptonote::config::dpos_registration_start_block = block;
 }
 
+void set_default_fee(std::vector<test_event_entry>& events, uint64_t default_fee)
+{
+  DEFAULT_FEE = default_fee;
+  do_callback_func(events, [=](core_t& c, size_t ev_index) {
+    DEFAULT_FEE = default_fee;
+    return true;
+  });
+}
+
 void do_callback(std::vector<test_event_entry>& events, const std::string& cb_name)
 {
   callback_entry c;
   c.callback_name = cb_name;
-  events.push_back(c);
-}
-
-void do_callback_func(std::vector<test_event_entry>& events, const verify_callback_func& cb)
-{
-  callback_entry_func c;
-  c.cb = cb;
   events.push_back(c);
 }
 
@@ -1263,4 +1272,16 @@ void do_register_delegate_account(std::vector<test_event_entry>& events, crypton
   rda.delegate_id = delegate_id;
   rda.acct = acct;
   events.push_back(rda);
+}
+
+void reset_test_defaults()
+{
+  cryptonote::config::dpos_switch_block = 82400;
+  cryptonote::config::dpos_registration_start_block = 85300;
+  crypto::g_hash_ops_small_boulderhash = true;
+  cryptonote::config::do_boulderhash = true;
+  cryptonote::config::no_reward_ramp = true;
+  cryptonote::config::test_serialize_unserialize_block = true;
+  cryptonote::config::dpos_num_delegates = 5;
+  DEFAULT_FEE = 0; // add no-fee txs, lot of tests use them
 }

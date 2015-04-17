@@ -72,6 +72,7 @@ namespace concolor
 }
 
 extern tools::ntp_time g_ntp_time;
+void reset_test_defaults();
 
 typedef boost::function<bool (core_t& c, size_t ev_index)> verify_callback_func;
 
@@ -766,9 +767,7 @@ inline bool do_replay_events(std::vector<test_event_entry>& events)
     return false;
   }
   t_test_class validator;
-  // reset switch block
-  cryptonote::config::dpos_switch_block = 82400;
-  cryptonote::config::dpos_registration_start_block = 85300;
+  reset_test_defaults();
   return replay_events_through_core<t_test_class>(c, events, validator);
 }
 //--------------------------------------------------------------------------
@@ -908,8 +907,7 @@ inline bool do_replay_file(const std::string& filename)
     { \
         std::vector<test_event_entry> events; \
         genclass g; \
-        cryptonote::config::dpos_switch_block = 82400; /*reset switch block*/ \
-        cryptonote::config::dpos_registration_start_block = 85300; /*reset switch block*/ \
+        reset_test_defaults(); \
         g.generate(events); \
         if (!tools::serialize_obj_to_file(events, filename)) \
         { \
@@ -927,17 +925,20 @@ inline bool do_replay_file(const std::string& filename)
     }
 
 #define GENERATE_AND_PLAY(genclass)                                                                        \
-  {                                                                                                        \
+{                                                                                                        \
+  if (!only_test.empty() && #genclass != only_test)   { \
+    std::cout << concolor::yellow << "#TEST# skipped " << #genclass << concolor::normal << '\n'; \
+  }  \
+  else { \
     std::vector<test_event_entry> events;                                                                  \
     ++tests_count;                                                                                         \
     bool generated = false;                                                                                \
     try                                                                                                    \
     {                                                                                                      \
-      std::cout << concolor::green << "#TEST# started " << #genclass << concolor::normal << '\n';          \
-      genclass g;                                                                                          \
-      cryptonote::config::dpos_switch_block = 82400; /*reset switch block*/                            \
-      cryptonote::config::dpos_registration_start_block = 85300; /*reset switch block*/                            \
-      generated = g.generate(events);;                                                                     \
+       std::cout << concolor::green << "#TEST# started " << #genclass << concolor::normal << '\n';          \
+       genclass g;                                                                                          \
+       reset_test_defaults(); \
+       generated = g.generate(events);                                                                     \
     }                                                                                                      \
     catch (const std::exception& ex)                                                                       \
     {                                                                                                      \
@@ -958,7 +959,8 @@ inline bool do_replay_file(const std::string& filename)
       if (stop_on_fail) throw std::runtime_error("Breaking early from test failure");                      \
     }                                                                                                      \
     std::cout << std::endl;                                                                                \
-  }
+  }   \
+}
 
 #define CALL_TEST(test_name, function)                                                                     \
   {                                                                                                        \
@@ -1041,6 +1043,7 @@ void do_callback_func(std::vector<test_event_entry>& events, const verify_callba
 void do_debug_mark(std::vector<test_event_entry>& events, const std::string& msg);
 void do_register_delegate_account(std::vector<test_event_entry>& events, cryptonote::delegate_id_t delegate_id,
                                   const cryptonote::account_base& acct);
+void set_default_fee(std::vector<test_event_entry>& events, uint64_t default_fee);
 
 #define TEST_NEW_BEGIN() try {
 

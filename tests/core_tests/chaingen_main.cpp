@@ -20,6 +20,7 @@ namespace
   const command_line::arg_descriptor<bool>        arg_generate_and_play_test_data = {"generate_and_play_test_data", ""};
   const command_line::arg_descriptor<bool>        arg_test_transactions           = {"test_transactions", ""};
   const command_line::arg_descriptor<bool>        arg_stop_on_fail                = {"stop_on_fail", ""};
+  const command_line::arg_descriptor<std::string> arg_only_test                   = {"only_test", "", ""};
 }
 
 int main(int argc, char* argv[])
@@ -46,6 +47,7 @@ int main(int argc, char* argv[])
   command_line::add_arg(desc_options, arg_generate_and_play_test_data);
   command_line::add_arg(desc_options, arg_test_transactions);
   command_line::add_arg(desc_options, arg_stop_on_fail);
+  command_line::add_arg(desc_options, arg_only_test);
 
   po::variables_map vm;
   bool r = command_line::handle_error_helper(desc_options, [&]()
@@ -64,12 +66,7 @@ int main(int argc, char* argv[])
   }
 
   // testing params
-  crypto::g_hash_ops_small_boulderhash = true;
-  cryptonote::config::do_boulderhash = true;
-  cryptonote::config::no_reward_ramp = true;
-  cryptonote::config::test_serialize_unserialize_block = true;
-  cryptonote::config::dpos_num_delegates = 5;
-  DEFAULT_FEE = 0; // add no-fee txs, lot of tests use them
+  reset_test_defaults();
   
   crypto::g_boulderhash_state = crypto::pc_malloc_state();
   
@@ -87,6 +84,8 @@ int main(int argc, char* argv[])
   else if (command_line::get_arg(vm, arg_generate_and_play_test_data))
   {
     bool stop_on_fail = command_line::get_arg(vm, arg_stop_on_fail);
+    std::string only_test = command_line::get_arg(vm, arg_only_test);
+    LOG_PRINT_L0("Only test: " << only_test);
     
 #ifdef _MSC_VER
     
@@ -265,6 +264,7 @@ int main(int argc, char* argv[])
     GENERATE_AND_PLAY(gen_tx_output_with_zero_amount);
     GENERATE_AND_PLAY(gen_tx_output_is_not_txout_to_key);
     GENERATE_AND_PLAY(gen_tx_signatures_are_invalid);
+    GENERATE_AND_PLAY(gen_tx_low_fee_no_relay);
 
     // Double spend
     GENERATE_AND_PLAY(gen_double_spend_in_tx<false>);

@@ -10,13 +10,18 @@ struct get_tx_validation_base : public test_chain_unit_base
   get_tx_validation_base()
     : m_invalid_tx_index(0)
     , m_invalid_block_index(0)
+    , m_tx_not_added(0)
   {
     REGISTER_CALLBACK_METHOD(get_tx_validation_base, mark_invalid_tx);
     REGISTER_CALLBACK_METHOD(get_tx_validation_base, mark_invalid_block);
+    REGISTER_CALLBACK_METHOD(get_tx_validation_base, mark_tx_not_added);
   }
 
   bool check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t event_idx, const cryptonote::transaction& /*tx*/)
   {
+    if (m_tx_not_added == event_idx)
+      return !tvc.m_verifivation_failed && !tx_added;
+    
     if (m_invalid_tx_index == event_idx)
       return tvc.m_verifivation_failed;
     else
@@ -42,10 +47,17 @@ struct get_tx_validation_base : public test_chain_unit_base
     m_invalid_tx_index = ev_index + 1;
     return true;
   }
+  
+  bool mark_tx_not_added(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events)
+  {
+    m_tx_not_added = ev_index + 1;
+    return true;
+  }
 
 private:
   size_t m_invalid_tx_index;
   size_t m_invalid_block_index;
+  size_t m_tx_not_added;
 };
 
 struct gen_tx_big_version : public get_tx_validation_base
@@ -134,6 +146,11 @@ struct gen_tx_output_is_not_txout_to_key : public get_tx_validation_base
 };
 
 struct gen_tx_signatures_are_invalid : public get_tx_validation_base
+{
+  bool generate(std::vector<test_event_entry>& events) const;
+};
+
+struct gen_tx_low_fee_no_relay : public get_tx_validation_base
 {
   bool generate(std::vector<test_event_entry>& events) const;
 };
