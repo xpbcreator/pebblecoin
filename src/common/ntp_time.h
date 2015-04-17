@@ -4,11 +4,12 @@
 
 #pragma once
 
-#include "syncobj.h"
-
 #include <ctime>
 #include <string>
 #include <vector>
+#include <memory>
+
+#include "syncobj.h"
 
 namespace tools {
   bool get_ntp_time(const std::string ntp_server, uint64_t ntp_port, time_t& ntp_time, time_t timeout_ms);
@@ -18,6 +19,7 @@ namespace tools {
   public:
     ntp_time(const std::vector<std::string>& ntp_servers, time_t refresh_time, time_t ntp_timeout_ms=5000);
     ntp_time(time_t refresh_time, time_t ntp_timeout_ms=5000);
+    ~ntp_time();
     
     time_t get_time();
     
@@ -26,18 +28,7 @@ namespace tools {
     bool update();
     
   private:
-    bool should_update();
-    
-    std::vector<std::string> m_ntp_servers;
-    time_t m_refresh_time;
-    time_t m_last_refresh;
-    
-    time_t m_ntp_minus_local;
-    time_t m_manual_delta;
-    size_t m_which_server;
-    
-    time_t m_ntp_timeout_ms;
-    
-    epee::critical_section m_time_lock;
+    class impl;
+    std::unique_ptr<impl> m_pimpl;
   };
 }

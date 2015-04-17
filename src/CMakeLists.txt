@@ -46,6 +46,7 @@ target_link_libraries(daemon wallet rpc cryptonote_core wallet crypto common cry
 target_link_libraries(connectivity_tool cryptonote_core crypto common crypto_core epee ${Boost_LIBRARIES})
 target_link_libraries(simpleminer cryptonote_core crypto common crypto_core epee ${Boost_LIBRARIES})
 target_link_libraries(simplewallet wallet rpc cryptonote_core wallet crypto common crypto_core epee upnpc-static ${Boost_LIBRARIES})
+add_dependencies(common version)
 add_dependencies(daemon version)
 add_dependencies(rpc version)
 add_dependencies(simplewallet version)

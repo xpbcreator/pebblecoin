@@ -2,14 +2,20 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "ntp_time.h"
-#include "misc_log_ex.h"
-#include "blocking_udp_client.h"
+#include <cassert>
+#include <algorithm>
+#include <atomic>
+#include <thread>
+#include <chrono>
 
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
-#include <cassert>
-#include <algorithm>
+
+#include "misc_log_ex.h"
+#include "misc_language.h"
+
+#include "blocking_udp_client.h"
+#include "ntp_time.h"
 
 using boost::asio::ip::udp;
 
@@ -92,86 +98,131 @@ namespace tools
     }
   }
   
-  ntp_time::ntp_time(const std::vector<std::string>& ntp_servers, time_t refresh_time, time_t ntp_timeout_ms)
-      : m_ntp_servers(ntp_servers), m_refresh_time(refresh_time), m_last_refresh(0)
-      , m_ntp_minus_local(0), m_manual_delta(0), m_which_server(0), m_ntp_timeout_ms(ntp_timeout_ms)
-  {
-    if (m_ntp_servers.empty())
+  class ntp_time::impl {
+  public:
+    impl(const std::vector<std::string>& ntp_servers, time_t refresh_time, time_t ntp_timeout_ms)
+        : m_ntp_servers(ntp_servers), m_refresh_time(refresh_time), m_last_refresh(0)
+        , m_ntp_minus_local(0), m_manual_delta(0), m_which_server(0)
+        , m_ntp_timeout_ms(ntp_timeout_ms)
+        , m_run(true)
+        , m_check_update_thread(boost::bind(&impl::check_update_thread, this))
     {
-      throw std::runtime_error("Must provide at least one ntp server");
+      if (m_ntp_servers.empty())
+      {
+        throw std::runtime_error("Must provide at least one ntp server");
+      }
+      std::srand(time(NULL));
+      std::random_shuffle(m_ntp_servers.begin(), m_ntp_servers.end());
     }
-    std::srand(time(NULL));
-    std::random_shuffle(m_ntp_servers.begin(), m_ntp_servers.end());
+    
+    ~impl()
+    {
+      m_run = false;
+      m_check_update_thread.join();
+    }
+    
+    bool should_update()
+    {
+      CRITICAL_REGION_LOCAL(m_time_lock);
+      return time(NULL) - m_last_refresh >= m_refresh_time;
+    }
+    
+    void check_update_thread()
+    {
+      auto last = std::chrono::high_resolution_clock::now();
+      while (m_run)
+      {
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        auto now = std::chrono::high_resolution_clock::now();
+        
+        if (now < last || now - last > std::chrono::milliseconds(300))
+        {
+          LOG_PRINT_YELLOW("System clock change detected, will update ntp time", LOG_LEVEL_0);
+          CRITICAL_REGION_LOCAL(m_time_lock);
+          m_last_refresh = 0;
+        }
+        last = now;
+      }
+      LOG_PRINT_L0("check_update_thread() finished");
+    }
+    
+    std::vector<std::string> m_ntp_servers;
+    time_t m_refresh_time;
+    time_t m_last_refresh;
+    
+    time_t m_ntp_minus_local;
+    time_t m_manual_delta;
+    size_t m_which_server;
+    
+    time_t m_ntp_timeout_ms;
+    
+    epee::critical_section m_time_lock;
+    
+    std::thread m_check_update_thread;
+    std::atomic<bool> m_run;
+  };
+  
+  ntp_time::ntp_time(const std::vector<std::string>& ntp_servers, time_t refresh_time, time_t ntp_timeout_ms)
+      : m_pimpl(new impl(ntp_servers, refresh_time, ntp_timeout_ms))
+  {
   }
   
   ntp_time::ntp_time(time_t refresh_time, time_t ntp_timeout_ms)
-      : m_refresh_time(refresh_time), m_last_refresh(0)
-      , m_ntp_minus_local(0), m_manual_delta(0), m_which_server(0), m_ntp_timeout_ms(ntp_timeout_ms)
+      : m_pimpl(new impl(std::vector<std::string>(DEFAULT_NTP_SERVERS, DEFAULT_NTP_SERVERS + N_DEFAULT_SERVERS),
+                         refresh_time, ntp_timeout_ms))
   {
-    for (size_t i=0; i < N_DEFAULT_SERVERS; ++i)
-    {
-      m_ntp_servers.push_back(DEFAULT_NTP_SERVERS[i]);
-    }
-    
-    if (m_ntp_servers.empty())
-    {
-      throw std::runtime_error("Must provide at least one ntp server");
-    }
-    std::srand(time(NULL));
-    std::random_shuffle(m_ntp_servers.begin(), m_ntp_servers.end());
   }
   
-  bool ntp_time::should_update()
+  ntp_time::~ntp_time()
   {
-    CRITICAL_REGION_LOCAL(m_time_lock);
-    return time(NULL) - m_last_refresh >= m_refresh_time;
   }
   
   bool ntp_time::update()
   {
-    CRITICAL_REGION_LOCAL(m_time_lock);
-    LOG_PRINT_L2("Updating time from " << m_ntp_servers[m_which_server] << "...");
+    CRITICAL_REGION_LOCAL(m_pimpl->m_time_lock);
+    LOG_PRINT_L2("Updating time from " << m_pimpl->m_ntp_servers[m_pimpl->m_which_server] << "...");
     
     time_t ntp_time;
     
-    if (!get_ntp_time(m_ntp_servers[m_which_server], 123, ntp_time, m_ntp_timeout_ms))
+    if (!get_ntp_time(m_pimpl->m_ntp_servers[m_pimpl->m_which_server], 123, ntp_time, m_pimpl->m_ntp_timeout_ms))
     {
-      LOG_ERROR("Failed to get ntp time from " << m_ntp_servers[m_which_server] << ", rotating to next one");
-      m_which_server = (m_which_server + 1) % m_ntp_servers.size();
+      LOG_ERROR("Failed to get ntp time from " << m_pimpl->m_ntp_servers[m_pimpl->m_which_server] << ", rotating to next one");
+      m_pimpl->m_which_server = (m_pimpl->m_which_server + 1) % m_pimpl->m_ntp_servers.size();
       return false;
     }
 
     time_t now = time(NULL);
-    m_ntp_minus_local = ntp_time - now;
+    m_pimpl->m_ntp_minus_local = ntp_time - now;
     // don't affect manual delta
-    m_last_refresh = now;
+    m_pimpl->m_last_refresh = now;
     
-    LOG_PRINT_L2("Local time is " << m_ntp_minus_local << "s behind, plus manual delta of " << m_manual_delta << "s");
+    LOG_PRINT_L2("Local time is " << m_pimpl->m_ntp_minus_local << "s behind, plus manual delta of "
+                 << m_pimpl->m_manual_delta << "s");
     return true;
   }
   
   void ntp_time::apply_manual_delta(time_t delta)
   {
-    CRITICAL_REGION_LOCAL(m_time_lock);
-    m_manual_delta += delta;
-    LOG_PRINT_L2("Applying manual delta of " << delta << "s, total manual delta is now " << m_manual_delta << "s");
+    CRITICAL_REGION_LOCAL(m_pimpl->m_time_lock);
+    m_pimpl->m_manual_delta += delta;
+    LOG_PRINT_L2("Applying manual delta of " << delta << "s, total manual delta is now " << m_pimpl->m_manual_delta << "s");
   }
   
   void ntp_time::set_ntp_timeout_ms(time_t timeout_ms)
   {
-    CRITICAL_REGION_LOCAL(m_time_lock);
-    m_ntp_timeout_ms = timeout_ms;
+    CRITICAL_REGION_LOCAL(m_pimpl->m_time_lock);
+    m_pimpl->m_ntp_timeout_ms = timeout_ms;
     LOG_PRINT_L2("Timeout for getting NTP time is now " << timeout_ms << "ms");
   }
 
   time_t ntp_time::get_time()
   {
-    CRITICAL_REGION_LOCAL(m_time_lock);
-    if (should_update())
+    CRITICAL_REGION_LOCAL(m_pimpl->m_time_lock);
+    if (m_pimpl->should_update())
     {
       update();
     }
     
-    return m_ntp_minus_local + time(NULL) + m_manual_delta;
+    return m_pimpl->m_ntp_minus_local + time(NULL) + m_pimpl->m_manual_delta;
   }
 }
