@@ -11,7 +11,7 @@
 #include <boost/asio.hpp>
 #include <boost/lexical_cast.hpp>
 
-#include "misc_log_ex.h"
+#include "include_base_utils.h"
 #include "misc_language.h"
 
 #include "blocking_udp_client.h"
@@ -158,8 +158,8 @@ namespace tools
     
     epee::critical_section m_time_lock;
     
-    std::thread m_check_update_thread;
     std::atomic<bool> m_run;
+    std::thread m_check_update_thread;
   };
   
   ntp_time::ntp_time(const std::vector<std::string>& ntp_servers, time_t refresh_time, time_t ntp_timeout_ms)

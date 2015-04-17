@@ -12,8 +12,8 @@ int main(int argc, char *argv[])
 {
   epee::log_space::get_set_log_detalisation_level(true, LOG_LEVEL_4);
   epee::log_space::log_singletone::add_logger(LOGGER_CONSOLE, NULL, NULL, LOG_LEVEL_4);
-  
-  tools::ntp_time t(5);
+
+  tools::ntp_time t(60);
   
   //t.set_ntp_timeout_ms(-1);
   
