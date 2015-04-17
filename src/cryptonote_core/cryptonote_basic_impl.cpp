@@ -122,7 +122,7 @@ namespace cryptonote {
     div128_32(product_hi, product_lo, static_cast<uint32_t>(median_size), &reward_hi, &reward_lo);
     div128_32(reward_hi, reward_lo, static_cast<uint32_t>(median_size), &reward_hi, &reward_lo);
     assert(0 == reward_hi);
-    assert(reward_lo < base_reward);
+    assert(reward_lo < base_reward || base_reward == 0);
     
     reward = reward_lo;
     return true;

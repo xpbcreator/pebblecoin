@@ -931,12 +931,15 @@ namespace nodetool
   }
   //-----------------------------------------------------------------------------------
   template<class t_payload_net_handler>
-  bool node_server<t_payload_net_handler>::relay_notify_to_all(int command, const std::string& data_buff, const epee::net_utils::connection_context_base& context)
+  bool node_server<t_payload_net_handler>::relay_notify_to_all(int command, const std::string& data_buff, const epee::net_utils::connection_context_base& exclude_context, bool only_if_state, typename t_payload_net_handler::connection_context::state s)
   {
     std::list<boost::uuids::uuid> connections;
     m_net_server.get_config_object().foreach_connection([&](const p2p_connection_context& cntxt)
     {
-      if(cntxt.peer_id && context.m_connection_id != cntxt.m_connection_id)
+      if (only_if_state && cntxt.m_state != s)
+        return true;
+      
+      if(cntxt.peer_id && exclude_context.m_connection_id != cntxt.m_connection_id)
         connections.push_back(cntxt.m_connection_id);
       return true;
     });

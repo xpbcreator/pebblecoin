@@ -634,6 +634,6 @@ namespace cryptonote
   template<class t_core> 
   bool t_cryptonote_protocol_handler<t_core>::relay_signed_hash(NOTIFY_NEW_SIGNED_HASH::request& arg, cryptonote_connection_context& exclude_context)
   {
-    return relay_post_notify<NOTIFY_NEW_SIGNED_HASH>(arg, exclude_context);
+    return relay_post_notify<NOTIFY_NEW_SIGNED_HASH>(arg, exclude_context, true);
   }
 }

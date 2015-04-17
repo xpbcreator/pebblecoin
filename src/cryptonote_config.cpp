@@ -28,7 +28,7 @@ namespace cryptonote {
     bool use_signed_hashes = true;
     bool do_boulderhash = false;
     
-    const bool testnet_only = false;
+    const bool testnet_only = true;
     
     uint64_t dpos_registration_start_block = 82400;  // Monday, April 20th, ~20:00 UTC
     uint64_t dpos_switch_block = 85300;              // Friday, April 24th, ~20:00 UTC

@@ -93,12 +93,14 @@ namespace cryptonote
       }
 
       template<class t_parametr>
-      bool relay_post_notify(typename t_parametr::request& arg, cryptonote_connection_context& exlude_context)
+      bool relay_post_notify(typename t_parametr::request& arg, cryptonote_connection_context& exlude_context,
+                             bool only_if_synchronized=false)
       {
         LOG_PRINT_L2("[" << epee::net_utils::print_connection_context_short(exlude_context) << "] post relay " << typeid(t_parametr).name() << " -->");
         std::string arg_buff;
         epee::serialization::store_t_to_binary(arg, arg_buff);
-        return m_p2p->relay_notify_to_all(t_parametr::ID, arg_buff, exlude_context);
+        return m_p2p->relay_notify_to_all(t_parametr::ID, arg_buff, exlude_context,
+                                          only_if_synchronized, cryptonote_connection_context::state_normal);
       }
   };
 }
