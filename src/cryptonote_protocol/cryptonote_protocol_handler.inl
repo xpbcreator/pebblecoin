@@ -115,9 +115,9 @@ namespace cryptonote
       // still request any missing signed hashes, don't mark connection as unsync'ed if they are missing
       if (context.m_needed_signed_hashes.empty())
       {
-        // ask for them in order
+        // ask for them in order - don't ask for dpos signed hashes
         auto height = m_core.get_current_blockchain_height();
-        for (decltype(height) i=0; i < height; i++) {
+        for (decltype(height) i=0; i < height && i < cryptonote::config::dpos_switch_block; i++) {
           context.m_needed_signed_hashes.push_back(m_core.get_block_id_by_height(i));
         }
       }
@@ -478,7 +478,32 @@ namespace cryptonote
     return 1;
   }
   //------------------------------------------------------------------------------------------------------------------------
-  template<class t_core> 
+  template<class t_core>
+  bool need_block(t_core& core, const crypto::hash& bl_id)
+  {
+    return !core.have_block(bl_id);
+  }
+  
+  template<class t_core>
+  bool need_signed_hash(t_core& core, const crypto::hash& bl_id)
+  {
+    if (cryptonote::config::testnet)
+      return false;
+    
+    if (crypto::g_hash_cache.have_signed_longhash_for(bl_id))
+      return false;
+    
+    block bl;
+    if (!core.get_block_by_hash(bl_id, bl))
+    {
+      LOG_ERROR("core couldn't get block by hash");
+      return false;
+    }
+    
+    return get_block_height(bl) < cryptonote::config::dpos_switch_block;
+  }
+  
+  template<class t_core>
   bool t_cryptonote_protocol_handler<t_core>::request_missing_objects(cryptonote_connection_context& context, bool check_having_blocks)
   {
     if(context.m_needed_objects.size() || context.m_needed_signed_hashes.size())
@@ -493,7 +518,7 @@ namespace cryptonote
         auto it = context.m_needed_objects.begin();
         while(it != context.m_needed_objects.end() && count < BLOCKS_SYNCHRONIZING_DEFAULT_COUNT)
         {
-          if( !(check_having_blocks && m_core.have_block(*it)))
+          if( !check_having_blocks || need_block(m_core, *it))
           {
             req.blocks.push_back(*it);
             ++count;
@@ -508,7 +533,7 @@ namespace cryptonote
         auto it = context.m_needed_signed_hashes.begin();
         while(it != context.m_needed_signed_hashes.end() && count < SIGNED_HASHES_SYNCHRONIZING_DEFAULT_COUNT)
         {
-          if( !check_having_blocks || !crypto::g_hash_cache.have_signed_longhash_for(*it))
+          if( !check_having_blocks || need_signed_hash(m_core, *it))
           {
             req.signed_hashes.push_back(*it);
             ++count;
@@ -611,7 +636,7 @@ namespace cryptonote
     {
       if(!m_core.have_block(bl_id))
         context.m_needed_objects.push_back(bl_id); // implies a request for the signed hashes
-      else if (!crypto::g_hash_cache.have_signed_longhash_for(bl_id))
+      else if (need_signed_hash(m_core, bl_id))
         context.m_needed_signed_hashes.push_back(bl_id); // if have the block, but not the hash, ask for it
     }
 
