@@ -277,7 +277,6 @@ void VotingTableModel::updateDelegates()
     endResetModel();
     
     cachedNumDelegates = priv->cachedDelegates.size();
-    //emit dataChanged(index(0, 0), index(priv->size() - 1, columns.length() - 1));
     emit amountUnvotedChanged();
 }
 

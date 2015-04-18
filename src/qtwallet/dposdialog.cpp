@@ -23,7 +23,8 @@ DposDialog::DposDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::DposDialog),
     model(0),
-    proxyModel(NULL)
+    proxyModel(NULL),
+    cachedDelegateId(0)
 {
     ui->setupUi(this);
   
@@ -120,33 +121,55 @@ void DposDialog::amountUnvotedChanged()
     int unit = model->getOptionsModel()->getDisplayUnit();
     
     ui->labelUnvoted->setText(BitcoinUnits::formatWithUnit(unit, model->getVotingTableModel()->amountUnvoted()));
+    
+    // always fired on each block update, so just cheat and update here
+    if (model->getCachedNumBlocks() < cryptonote::config::dpos_registration_start_block)
+    {
+        ui->labelDelegateId->setText(tr("Delegate registration starts in %1 blocks").arg(
+            cryptonote::config::dpos_registration_start_block - model->getCachedNumBlocks()));
+        ui->registerButton->setVisible(false);
+    }
+    else {
+        if (cachedDelegateId == 0) {
+            ui->labelDelegateId->setText(tr("Not a delegate - register below"));
+            ui->registerButton->setVisible(true);
+        }
+        else {
+            ui->labelDelegateId->setText(QString::number(cachedDelegateId));
+            ui->registerButton->setVisible(false);
+        }
+    }
 }
 
 void DposDialog::setDelegateInfo(const cryptonote::bs_delegate_info& info)
 {
     int unit = model->getOptionsModel()->getDisplayUnit();
     
+    cachedDelegateId = info.delegate_id;
+    
     if (info.delegate_id == 0)
     {
         ui->labelDelegateId->setText(tr("Not a delegate - register below"));
+        ui->registerButton->setVisible(true);
+        
         ui->labelTotalVotes->setText(tr("N/A"));
         ui->labelBlocksProcessed->setText(tr("N/A"));
         ui->labelBlocksMissed->setText(tr("N/A"));
         ui->labelFeesReceived->setText(tr("N/A"));
         ui->labelVoteRank->setText(tr("N/A"));
         ui->labelAutoselectRank->setText(tr("N/A"));
-        ui->registerButton->setVisible(true);
     }
     else
     {
         ui->labelDelegateId->setText(QString::number(info.delegate_id));
+        ui->registerButton->setVisible(false);
+        
         ui->labelTotalVotes->setText(BitcoinUnits::formatWithUnit(unit, info.total_votes));
         ui->labelBlocksProcessed->setText(QString::number(info.processed_blocks));
         ui->labelBlocksMissed->setText(QString::number(info.missed_blocks));
         ui->labelFeesReceived->setText(BitcoinUnits::formatWithUnit(unit, info.fees_received));
         ui->labelVoteRank->setText(QString::number(info.cached_vote_rank + 1));
         ui->labelAutoselectRank->setText(QString::number(info.cached_autoselect_rank + 1));
-        ui->registerButton->setVisible(false);
     }
 }
 
