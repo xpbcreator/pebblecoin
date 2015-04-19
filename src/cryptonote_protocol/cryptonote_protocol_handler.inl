@@ -539,7 +539,10 @@ namespace cryptonote
       }
     }
     
-    if(context.m_needed_objects.size() || context.m_needed_signed_hashes.size())
+    bool need_objects = !context.m_needed_objects.empty();
+    bool need_signed_hashes = !context.m_needed_signed_hashes.empty();
+    
+    if(need_objects || need_signed_hashes)
     {
       //we know objects that we need, request this objects
       NOTIFY_REQUEST_GET_OBJECTS::request req;
@@ -574,7 +577,7 @@ namespace cryptonote
     }
     
     // if only need signed hashes, ask for more objects, or we may be synchronized
-    if (!context.m_needed_objects.size())
+    if (!need_objects)
     {
       if(context.m_last_response_height < context.m_remote_blockchain_height-1)
       {//we have to fetch more objects ids, request blockchain entry
