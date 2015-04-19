@@ -1276,8 +1276,8 @@ void do_register_delegate_account(std::vector<test_event_entry>& events, crypton
 
 void reset_test_defaults()
 {
-  cryptonote::config::dpos_switch_block = 82400;
-  cryptonote::config::dpos_registration_start_block = 85300;
+  cryptonote::config::dpos_registration_start_block = 83120;
+  cryptonote::config::dpos_switch_block = 85300;
   crypto::g_hash_ops_small_boulderhash = true;
   cryptonote::config::do_boulderhash = true;
   cryptonote::config::no_reward_ramp = true;

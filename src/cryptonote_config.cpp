@@ -30,7 +30,7 @@ namespace cryptonote {
     
     const bool testnet_only = false;
     
-    uint64_t dpos_registration_start_block = 82400;  // Monday, April 20th, ~20:00 UTC
+    uint64_t dpos_registration_start_block = 83120;  // Tuesday, April 21st, ~20:00 UTC
     uint64_t dpos_switch_block = 85300;              // Friday, April 24th, ~20:00 UTC
     uint64_t dpos_num_delegates = 100;
     
