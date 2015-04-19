@@ -118,7 +118,10 @@ namespace cryptonote
         // ask for them in order - don't ask for dpos signed hashes
         auto height = m_core.get_current_blockchain_height();
         for (decltype(height) i=0; i < height && i < cryptonote::config::dpos_switch_block; i++) {
-          context.m_needed_signed_hashes.push_back(m_core.get_block_id_by_height(i));
+          if (!m_core.is_in_checkpoint_zone(i))
+          {
+            context.m_needed_signed_hashes.push_back(m_core.get_block_id_by_height(i));
+          }
         }
       }
       request_missing_objects(context, true); // this func will filter and remove signed hashes we don't need
@@ -493,6 +496,9 @@ namespace cryptonote
     if (crypto::g_hash_cache.have_signed_longhash_for(bl_id))
       return false;
     
+    if (!core.have_block(bl_id))
+      return false; // ask for block itself which will imply sending the hash as well
+      
     block bl;
     if (!core.get_block_by_hash(bl_id, bl))
     {
@@ -500,12 +506,39 @@ namespace cryptonote
       return false;
     }
     
-    return get_block_height(bl) < cryptonote::config::dpos_switch_block;
+    uint64_t height = get_block_height(bl);
+    return height < cryptonote::config::dpos_switch_block && !core.is_in_checkpoint_zone(height);
   }
   
   template<class t_core>
   bool t_cryptonote_protocol_handler<t_core>::request_missing_objects(cryptonote_connection_context& context, bool check_having_blocks)
   {
+    // filter needed objects first
+    if (check_having_blocks)
+    {
+      {
+        auto it = context.m_needed_objects.begin();
+        while (it != context.m_needed_objects.end())
+        {
+          if (!need_block(m_core, *it))
+            it = context.m_needed_objects.erase(it);
+          else
+            it++;
+        }
+      }
+      
+      {
+        auto it = context.m_needed_signed_hashes.begin();
+        while (it != context.m_needed_signed_hashes.end())
+        {
+          if (!need_signed_hash(m_core, *it))
+            it = context.m_needed_signed_hashes.erase(it);
+          else
+            it++;
+        }
+      }
+    }
+    
     if(context.m_needed_objects.size() || context.m_needed_signed_hashes.size())
     {
       //we know objects that we need, request this objects
@@ -518,12 +551,9 @@ namespace cryptonote
         auto it = context.m_needed_objects.begin();
         while(it != context.m_needed_objects.end() && count < BLOCKS_SYNCHRONIZING_DEFAULT_COUNT)
         {
-          if( !check_having_blocks || need_block(m_core, *it))
-          {
-            req.blocks.push_back(*it);
-            ++count;
-            context.m_requested_objects.insert(*it);
-          }
+          req.blocks.push_back(*it);
+          ++count;
+          context.m_requested_objects.insert(*it);
           context.m_needed_objects.erase(it++);
         }
       }
@@ -533,39 +563,43 @@ namespace cryptonote
         auto it = context.m_needed_signed_hashes.begin();
         while(it != context.m_needed_signed_hashes.end() && count < SIGNED_HASHES_SYNCHRONIZING_DEFAULT_COUNT)
         {
-          if( !check_having_blocks || need_signed_hash(m_core, *it))
-          {
-            req.signed_hashes.push_back(*it);
-            ++count;
-          }
+          req.signed_hashes.push_back(*it);
+          ++count;
           context.m_needed_signed_hashes.erase(it++);
         }
       }
       
       LOG_PRINT_CCONTEXT_L2("-->>NOTIFY_REQUEST_GET_OBJECTS: blocks.size()=" << req.blocks.size() << ", txs.size()=" << req.txs.size() << ", signed_hashes.size()=" << req.signed_hashes.size() << ", require_signed_hashes=" << req.require_signed_hashes);
       post_notify<NOTIFY_REQUEST_GET_OBJECTS>(req, context);    
-    }else if(context.m_last_response_height < context.m_remote_blockchain_height-1)
-    {//we have to fetch more objects ids, request blockchain entry
-     
-      NOTIFY_REQUEST_CHAIN::request r = boost::value_initialized<NOTIFY_REQUEST_CHAIN::request>();
-      m_core.get_short_chain_history(r.block_ids);
-      LOG_PRINT_CCONTEXT_L2("-->>NOTIFY_REQUEST_CHAIN: m_block_ids.size()=" << r.block_ids.size() );
-      post_notify<NOTIFY_REQUEST_CHAIN>(r, context);
-    }else
-    { 
-      CHECK_AND_ASSERT_MES(context.m_last_response_height == context.m_remote_blockchain_height-1 
-                           && !context.m_needed_objects.size() 
-                           && !context.m_requested_objects.size(), false, "request_missing_blocks final condition failed!" 
-                           << "\r\nm_last_response_height=" << context.m_last_response_height
-                           << "\r\nm_remote_blockchain_height=" << context.m_remote_blockchain_height
-                           << "\r\nm_needed_objects.size()=" << context.m_needed_objects.size()
-                           << "\r\nm_needed_signed_hashes.size()=" << context.m_needed_signed_hashes.size()
-                           << "\r\nm_requested_objects.size()=" << context.m_requested_objects.size()
-                           << "\r\non connection [" << epee::net_utils::print_connection_context_short(context)<< "]");
-      
-      context.m_state = cryptonote_connection_context::state_normal;
-      LOG_PRINT_CCONTEXT_GREEN(" SYNCHRONIZED OK", LOG_LEVEL_0);
-      on_connection_synchronized();
+    }
+    
+    // if only need signed hashes, ask for more objects, or we may be synchronized
+    if (!context.m_needed_objects.size())
+    {
+      if(context.m_last_response_height < context.m_remote_blockchain_height-1)
+      {//we have to fetch more objects ids, request blockchain entry
+        
+        NOTIFY_REQUEST_CHAIN::request r = boost::value_initialized<NOTIFY_REQUEST_CHAIN::request>();
+        m_core.get_short_chain_history(r.block_ids);
+        LOG_PRINT_CCONTEXT_L2("-->>NOTIFY_REQUEST_CHAIN: m_block_ids.size()=" << r.block_ids.size() );
+        post_notify<NOTIFY_REQUEST_CHAIN>(r, context);
+      }
+      else
+      {
+        CHECK_AND_ASSERT_MES(context.m_last_response_height == context.m_remote_blockchain_height-1
+                             && !context.m_needed_objects.size()
+                             && !context.m_requested_objects.size(), false, "request_missing_blocks final condition failed!"
+                             << "\r\nm_last_response_height=" << context.m_last_response_height
+                             << "\r\nm_remote_blockchain_height=" << context.m_remote_blockchain_height
+                             << "\r\nm_needed_objects.size()=" << context.m_needed_objects.size()
+                             << "\r\nm_needed_signed_hashes.size()=" << context.m_needed_signed_hashes.size()
+                             << "\r\nm_requested_objects.size()=" << context.m_requested_objects.size()
+                             << "\r\non connection [" << epee::net_utils::print_connection_context_short(context)<< "]");
+        
+        context.m_state = cryptonote_connection_context::state_normal;
+        LOG_PRINT_CCONTEXT_GREEN(" SYNCHRONIZED OK", LOG_LEVEL_0);
+        on_connection_synchronized();
+      }
     }
     return true;
   }
@@ -635,7 +669,7 @@ namespace cryptonote
     BOOST_FOREACH(auto& bl_id, arg.m_block_ids)
     {
       if(!m_core.have_block(bl_id))
-        context.m_needed_objects.push_back(bl_id); // implies a request for the signed hashes
+        context.m_needed_objects.push_back(bl_id); // implies a request for the signed hash
       else if (need_signed_hash(m_core, bl_id))
         context.m_needed_signed_hashes.push_back(bl_id); // if have the block, but not the hash, ask for it
     }

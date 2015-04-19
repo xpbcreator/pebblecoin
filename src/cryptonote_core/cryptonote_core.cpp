@@ -53,6 +53,11 @@ namespace cryptonote
     m_blockchain_storage.set_checkpoints(std::move(chk_pts));
   }
   //-----------------------------------------------------------------------------------
+  bool core::is_in_checkpoint_zone(uint64_t height)
+  {
+    return m_blockchain_storage.is_in_checkpoint_zone(height);
+  }
+  //-----------------------------------------------------------------------------------
   void core::init_options(boost::program_options::options_description& /*desc*/)
   {
   }

@@ -3307,7 +3307,7 @@ bool blockchain_storage::recalculate_top_delegates()
   for (i=0; i < config::dpos_num_delegates && i < m_delegates.size(); i++)
   {
     m_top_delegates.insert(delegate_ids[i]);
-    LOG_PRINT_L2("Top delegate: " << delegate_ids[i] << " with "
+    LOG_PRINT_L3("Top delegate: " << delegate_ids[i] << " with "
                  << print_money(m_delegates[delegate_ids[i]].total_votes)
                  << "/" << print_money(max_vote) << " votes");
   }
@@ -3351,7 +3351,7 @@ bool blockchain_storage::recalculate_top_delegates()
   for (i=0; i < config::dpos_num_delegates && i < m_delegates.size(); i++)
   {
     m_autovote_delegates.insert(delegate_ids[i]);
-    LOG_PRINT_L2("Autovote delegate: " << delegate_ids[i] << " with rank " << get_delegate_rank(m_delegates[delegate_ids[i]]));
+    LOG_PRINT_L3("Autovote delegate: " << delegate_ids[i] << " with rank " << get_delegate_rank(m_delegates[delegate_ids[i]]));
   }
   
   delete delegate_ids;

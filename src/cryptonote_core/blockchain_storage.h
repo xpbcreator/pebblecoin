@@ -147,6 +147,7 @@ namespace cryptonote
     bool deinit();
 
     void set_checkpoints(checkpoints&& chk_pts) { m_checkpoints = chk_pts; }
+    bool is_in_checkpoint_zone(uint64_t height) { return m_checkpoints.is_in_checkpoint_zone(height); }
 
     bool get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks, std::list<transaction>& txs);
     bool get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks);

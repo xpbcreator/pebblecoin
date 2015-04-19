@@ -73,6 +73,7 @@ namespace cryptonote
 
      void set_cryptonote_protocol(i_cryptonote_protocol* pprotocol);
      void set_checkpoints(checkpoints&& chk_pts);
+     bool is_in_checkpoint_zone(uint64_t height);
 
      bool get_pool_transactions(std::list<transaction>& txs);
      size_t get_pool_transactions_count();
