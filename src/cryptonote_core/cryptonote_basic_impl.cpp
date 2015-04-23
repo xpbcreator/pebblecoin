@@ -111,8 +111,8 @@ namespace cryptonote {
       return false;
     }
     
-    assert(median_size < std::numeric_limits<uint32_t>::max());
-    assert(current_block_size < std::numeric_limits<uint32_t>::max());
+    CHECK_AND_ASSERT(median_size < std::numeric_limits<uint32_t>::max(), false);
+    CHECK_AND_ASSERT(current_block_size < std::numeric_limits<uint32_t>::max(), false);
     
     uint64_t product_hi;
     uint64_t product_lo = mul128(base_reward, current_block_size * (2 * median_size - current_block_size), &product_hi);
@@ -121,8 +121,8 @@ namespace cryptonote {
     uint64_t reward_lo;
     div128_32(product_hi, product_lo, static_cast<uint32_t>(median_size), &reward_hi, &reward_lo);
     div128_32(reward_hi, reward_lo, static_cast<uint32_t>(median_size), &reward_hi, &reward_lo);
-    assert(0 == reward_hi);
-    assert(reward_lo < base_reward || base_reward == 0);
+    CHECK_AND_ASSERT(0 == reward_hi, false);
+    CHECK_AND_ASSERT(reward_lo < base_reward || base_reward == 0, false);
     
     reward = reward_lo;
     return true;

@@ -229,6 +229,11 @@ bool blockchain_storage::store_blockchain()
 {
   m_is_blockchain_storing = true;
   misc_utils::auto_scope_leave_caller scope_exit_handler = misc_utils::create_scope_leave_handler([&](){m_is_blockchain_storing=false;});
+  
+  if (!crypto::g_hash_cache.store())
+  {
+    LOG_PRINT_RED_L0("Failed to store hashe cache.");
+  }
 
   LOG_PRINT_L0("Storing blockchain...");
   if (!tools::create_directories_if_necessary(m_config_folder))
@@ -2842,8 +2847,7 @@ bool blockchain_storage::handle_block_to_main_chain(const block& bl, const crypt
   {
     if (!check_pow_pos(bl, current_diffic, bvc, proof_of_work))
     {
-      LOG_PRINT_RED_L0("Block with id: " << id
-                       << ENDL << " could not check pow/pos");
+      LOG_PRINT_RED_L0("Block with id: " << id << " failed pow/pos check");
       bvc.m_verifivation_failed = true;
       return false;
     }

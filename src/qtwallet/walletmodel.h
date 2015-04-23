@@ -120,7 +120,8 @@ public:
         TransactionCommitFailed,
         NotEnoughOutsToMix,
         TxTooBig,
-        NotYetImplemented
+        NotYetImplemented,
+        InvalidPaymentId
     };
 
     enum EncryptionStatus

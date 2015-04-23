@@ -2,21 +2,6 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "coincontroldialog.h"
-#include "ui_coincontroldialog.h"
-
-#include "addresstablemodel.h"
-#include "bitcoinunits.h"
-#include "guiutil.h"
-#include "interface/init.h"
-#include "optionsmodel.h"
-#include "walletmodel.h"
-
-//#include "coincontrol.h"
-#include "interface/main.h"
-#include "interface/wallet.h"
-#include "bitcoin/util.h"
-
 #include <QApplication>
 #include <QCheckBox>
 #include <QCursor>
@@ -26,6 +11,21 @@
 #include <QString>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+
+#include "cryptonote_config.h"
+
+#include "interface/main.h"
+#include "interface/wallet.h"
+#include "bitcoin/util.h"
+#include "interface/init.h"
+#include "addresstablemodel.h"
+#include "bitcoinunits.h"
+#include "guiutil.h"
+#include "optionsmodel.h"
+#include "walletmodel.h"
+
+#include "coincontroldialog.h"
+#include "ui_coincontroldialog.h"
 
 using namespace std;
 QList<qint64> CoinControlDialog::payAmounts;
@@ -614,7 +614,7 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     l5->setStyleSheet((nBytes >= 1000) ? "color:red;" : "");                            // Bytes >= 1000
     l6->setStyleSheet((dPriority > 0 && !bAllowFree) ? "color:red;" : "");              // Priority < "medium"
     l7->setStyleSheet((fLowOutput) ? "color:red;" : "");                                // Low Output = "yes"
-    l8->setStyleSheet((nChange > 0 && nChange < CENT) ? "color:red;" : "");             // Change < 0.01XPB
+    l8->setStyleSheet((nChange > 0 && nChange < ICENT) ? "color:red;" : "");             // Change < 0.01XPB
 
     // tool tips
     QString toolTip1 = tr("This label turns red, if the transaction size is greater than 1000 bytes.") + "<br /><br />";
@@ -625,11 +625,11 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     toolTip2 += tr("This label turns red, if the priority is smaller than \"medium\".") + "<br /><br />";
     toolTip2 += tr("This means a fee of at least %1 per kB is required.").arg(BitcoinUnits::formatWithUnit(nDisplayUnit, CTransaction_nMinTxFee));
 
-    QString toolTip3 = tr("This label turns red, if any recipient receives an amount smaller than %1.").arg(BitcoinUnits::formatWithUnit(nDisplayUnit, CENT)) + "<br /><br />";
+    QString toolTip3 = tr("This label turns red, if any recipient receives an amount smaller than %1.").arg(BitcoinUnits::formatWithUnit(nDisplayUnit, ICENT)) + "<br /><br />";
     toolTip3 += tr("This means a fee of at least %1 is required.").arg(BitcoinUnits::formatWithUnit(nDisplayUnit, CTransaction_nMinTxFee)) + "<br /><br />";
     toolTip3 += tr("Amounts below 0.546 times the minimum relay fee are shown as dust.");
 
-    QString toolTip4 = tr("This label turns red, if the change is smaller than %1.").arg(BitcoinUnits::formatWithUnit(nDisplayUnit, CENT)) + "<br /><br />";
+    QString toolTip4 = tr("This label turns red, if the change is smaller than %1.").arg(BitcoinUnits::formatWithUnit(nDisplayUnit, ICENT)) + "<br /><br />";
     toolTip4 += tr("This means a fee of at least %1 is required.").arg(BitcoinUnits::formatWithUnit(nDisplayUnit, CTransaction_nMinTxFee));
 
     l5->setToolTip(toolTip1);

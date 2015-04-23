@@ -3,7 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #pragma once 
+
 #include "chaingen.h"
+#include "test_chain_unit_base.h"
 
 const size_t invalid_index_value = std::numeric_limits<size_t>::max();
 
@@ -16,8 +18,8 @@ public:
 
   gen_double_spend_base();
 
-  bool check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t event_idx, const cryptonote::transaction& tx);
-  bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& block);
+  virtual bool check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t event_idx, const cryptonote::transaction& tx);
+  virtual bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& block);
 
   bool mark_last_valid_block(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
   bool mark_invalid_tx(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
@@ -40,7 +42,7 @@ struct gen_double_spend_in_tx : public gen_double_spend_base< gen_double_spend_i
   static const uint64_t expected_bob_balance = send_amount;
   static const uint64_t expected_alice_balance = 0;
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 
@@ -53,7 +55,7 @@ struct gen_double_spend_in_the_same_block : public gen_double_spend_base< gen_do
   static const uint64_t expected_bob_balance = send_amount;
   static const uint64_t expected_alice_balance = 0;
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 
@@ -66,7 +68,7 @@ struct gen_double_spend_in_different_blocks : public gen_double_spend_base< gen_
   static const uint64_t expected_bob_balance = 0;
   static const uint64_t expected_alice_balance = send_amount - TESTS_DEFAULT_FEE;
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 
@@ -79,7 +81,7 @@ struct gen_double_spend_in_alt_chain_in_the_same_block : public gen_double_spend
   static const uint64_t expected_bob_balance = send_amount;
   static const uint64_t expected_alice_balance = 0;
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 
@@ -92,7 +94,7 @@ struct gen_double_spend_in_alt_chain_in_different_blocks : public gen_double_spe
   static const uint64_t expected_bob_balance = send_amount;
   static const uint64_t expected_alice_balance = 0;
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 
@@ -104,7 +106,7 @@ public:
 
   gen_double_spend_in_different_chains();
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 
   bool check_double_spend(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
 };

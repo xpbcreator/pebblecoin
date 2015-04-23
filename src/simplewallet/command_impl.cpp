@@ -182,7 +182,8 @@ bool simple_wallet::show_payments(const std::vector<std::string> &args)
           pd.m_tx_hash << '\t' <<
           std::setw(8)  << pd.m_block_height << '\t' <<
           std::setw(21) << print_money(pd.m_amount) << '\t' <<
-          pd.m_unlock_time;
+          pd.m_unlock_time << '\t' <<
+          (pd.m_sent ? "Sent" : "Received");
       }
     }
     else

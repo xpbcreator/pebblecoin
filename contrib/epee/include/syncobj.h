@@ -32,6 +32,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <memory>
 
 namespace boost
 {
@@ -70,20 +71,16 @@ namespace epee
 
   class critical_section
   {
-    boost::recursive_mutex *m_psection;
+    class impl;
+    std::unique_ptr<impl> m_pimpl;
 
   public:
-    //to make copy fake!
-    critical_section(const critical_section& section);
     critical_section();
     ~critical_section();
 
     void lock();
     void unlock();
     bool tryLock();
-
-    // to make copy fake
-    critical_section& operator=(const critical_section& section);
   };
 
 

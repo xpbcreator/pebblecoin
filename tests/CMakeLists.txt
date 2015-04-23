@@ -53,7 +53,7 @@ endif()
 add_custom_target(tests DEPENDS version coretests crypto-tests difficulty-tests hash-tests hash-target-tests performance_tests unit_tests)
 set_property(TARGET coretests crypto-tests functional_tests difficulty-tests gtest gtest_main hash-tests hash-target-tests performance_tests core_proxy unit_tests tests net_load_tests_clt net_load_tests_srv one_off_test PROPERTY FOLDER "tests")
 
-add_test(coretests coretests --generate_and_play_test_data)
+add_test(coretests coretests)
 add_test(crypto crypto-tests ${CMAKE_CURRENT_SOURCE_DIR}/crypto/tests.txt)
 add_test(difficulty difficulty-tests ${CMAKE_CURRENT_SOURCE_DIR}/difficulty/data.txt)
 foreach(hash IN ITEMS fast slow tree extra-blake extra-groestl extra-jh extra-skein)

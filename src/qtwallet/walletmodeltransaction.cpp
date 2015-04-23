@@ -18,12 +18,12 @@ WalletModelTransaction::~WalletModelTransaction()
 {
 }
 
-QList<SendCoinsRecipient> WalletModelTransaction::getRecipients()
+QList<SendCoinsRecipient> WalletModelTransaction::getRecipients() const
 {
     return recipients;
 }
 
-qint64 WalletModelTransaction::getTransactionFee()
+qint64 WalletModelTransaction::getTransactionFee() const
 {
     return fee;
 }
@@ -33,7 +33,7 @@ void WalletModelTransaction::setTransactionFee(qint64 newFee)
     fee = newFee;
 }
 
-qint64 WalletModelTransaction::getTotalTransactionAmount()
+qint64 WalletModelTransaction::getTotalTransactionAmount() const
 {
     qint64 totalTransactionAmount = 0;
     foreach(const SendCoinsRecipient &rcp, recipients)
@@ -52,7 +52,7 @@ void WalletModelTransaction::setFakeOuts(qint64 min, qint64 desired)
     desiredFakeOuts = desired;
 }
 
-void WalletModelTransaction::getFakeOuts(qint64& min, qint64& desired)
+void WalletModelTransaction::getFakeOuts(qint64& min, qint64& desired) const
 {
     min = minFakeOuts;
     desired = desiredFakeOuts;
@@ -65,7 +65,7 @@ void WalletModelTransaction::setRegisteringDelegate(cryptonote::delegate_id_t ne
     registrationFee = newRegistrationFee;
 }
 
-bool WalletModelTransaction::getRegisteringDelegate(cryptonote::delegate_id_t& outDelegateId, qint64& outRegistrationFee)
+bool WalletModelTransaction::getRegisteringDelegate(cryptonote::delegate_id_t& outDelegateId, qint64& outRegistrationFee) const
 {
     if (!registeringDelegate)
         return false;
@@ -74,3 +74,15 @@ bool WalletModelTransaction::getRegisteringDelegate(cryptonote::delegate_id_t& o
     outRegistrationFee = registrationFee;
     return true;
 }
+
+void WalletModelTransaction::setPaymentId(const QString& paymentId_in)
+{
+    paymentId = paymentId_in;
+}
+
+QString WalletModelTransaction::getPaymentId() const
+{
+    return paymentId;
+}
+
+

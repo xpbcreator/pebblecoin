@@ -26,6 +26,7 @@
 #include "cryptonote_basic.h"
 #include "cryptonote_basic_impl.h"
 #include "verification_context.h"
+#include "i_tx_pool_callback.h"
 
 namespace cryptonote
 {
@@ -200,8 +201,6 @@ namespace cryptonote
   class tx_memory_pool: boost::noncopyable
   {
   public:
-    class i_tx_pool_callback;
-    
     tx_memory_pool(blockchain_storage& bchs);
     bool add_tx(const transaction &tx, const crypto::hash &id, size_t blob_size, tx_verification_context& tvc, bool keeped_by_block);
     bool add_tx(const transaction &tx, tx_verification_context& tvc, bool keeped_by_block);
@@ -282,14 +281,6 @@ namespace cryptonote
 #if defined(DEBUG_CREATE_BLOCK_TEMPLATE)
     friend class blockchain_storage;
 #endif
-    
-  public:
-    class i_tx_pool_callback
-    {
-    public:
-      virtual void on_tx_added(const crypto::hash& tx_hash, const cryptonote::transaction& tx) {}
-      virtual void on_tx_removed(const crypto::hash& tx_hash, const cryptonote::transaction& tx) {}
-    };
   };
 }
 

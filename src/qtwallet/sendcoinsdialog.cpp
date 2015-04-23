@@ -193,6 +193,10 @@ void SendCoinsDialog::on_sendButton_clicked()
 
     // prepare transaction for getting txFee earlier
     WalletModelTransaction currentTransaction(recipients);
+    
+    currentTransaction.setFakeOuts(ui->coinMixSpinBox->value(), ui->coinMixSpinBox->value());
+    currentTransaction.setPaymentId(ui->paymentID->text());
+    
     WalletModel::SendCoinsReturn prepareStatus;
     /*if (model->getOptionsModel()->getCoinControlFeatures()) // coin control enabled
         prepareStatus = model->prepareTransaction(currentTransaction, CoinControlDialog::coinControl);
@@ -202,16 +206,14 @@ void SendCoinsDialog::on_sendButton_clicked()
 
     // process prepareStatus and on error generate message shown to user
     model->processSendCoinsReturn(prepareStatus,
-        BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), currentTransaction.getTransactionFee()));
+                                  BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(),
+                                                               currentTransaction.getTransactionFee()));
 
     if(prepareStatus.status != WalletModel::OK) {
         fNewRecipientAllowed = true;
         return;
     }
 
-    int minFakeOuts = ui->coinMixSpinBox->value();
-    currentTransaction.setFakeOuts(minFakeOuts, minFakeOuts);
-    
     qint64 txFee = currentTransaction.getTransactionFee();
     QString questionString = tr("Are you sure you want to send?");
     questionString.append("<br /><br />%1");
@@ -237,6 +239,13 @@ void SendCoinsDialog::on_sendButton_clicked()
     questionString.append(tr("Total Amount %1 (= %2)")
         .arg(BitcoinUnits::formatWithUnit(model->getOptionsModel()->getDisplayUnit(), totalAmount))
         .arg(alternativeUnits.join(" " + tr("or") + " ")));
+    
+    if (!currentTransaction.getPaymentId().isEmpty())
+    {
+        questionString.append("<hr /><b>");
+        questionString.append(tr("Payment ID:"));
+        questionString.append(QString("</b> %1").arg(currentTransaction.getPaymentId()));
+    }
 
     QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm send coins"),
         questionString.arg(formatted.join("<br />")),
@@ -273,6 +282,9 @@ void SendCoinsDialog::clear()
     addEntry();
 
     updateTabsAndLabels();
+    
+    ui->paymentID->setText("");
+    ui->coinMixSpinBox->setValue(3);
 }
 
 void SendCoinsDialog::reject()

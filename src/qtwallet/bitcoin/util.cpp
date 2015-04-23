@@ -3,26 +3,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "util.h"
-
-//#include "chainparams.h"
-//#include "netbase.h"
-#include "sync.h"
-//#include "uint256.h"
-#include "../interface/qtversion.h"
-#include "../qt_options.h"
-
-#include "include_base_utils.h"
-
-using namespace epee; // needed for epee util imports to work
-
-#include "common/command_line.h"
-#include "common/util.h" // Pebblecoin utils
-#include "daemon/daemon_options.h"
-
 #include <stdarg.h>
-
-#include <boost/date_time/posix_time/posix_time.hpp>
 
 #ifndef WIN32
 // for posix_fallocate
@@ -55,6 +36,21 @@ using namespace epee; // needed for epee util imports to work
 #include <shlobj.h>
 #endif
 
+#include "include_base_utils.h"
+
+#include "common/command_line.h"
+#include "common/util.h"
+#include "crypto/hash.h"
+#include "cryptonote_config.h"
+#include "cryptonote_core/cryptonote_basic.h"
+#include "cryptonote_core/cryptonote_format_utils.h"
+#include "daemon/daemon_options.h"
+
+#include "interface/qtversion.h"
+#include "sync.h"
+#include "qt_options.h"
+
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/predicate.hpp> // for startswith() and endswith()
@@ -65,6 +61,10 @@ using namespace epee; // needed for epee util imports to work
 #include <boost/program_options/parsers.hpp>
 #include <openssl/crypto.h>
 #include <openssl/rand.h>
+
+#include "util.h"
+
+using namespace epee;
 
 // Work around clang compilation problem in Boost 1.46:
 // /usr/include/boost/program_options/detail/config_file.hpp:163:17: error: call to function 'to_internal' that is neither visible in the template definition nor found by argument-dependent lookup
@@ -85,10 +85,7 @@ po::variables_map vmapArgs;
 bool fDebug = false;
 bool fPrintToConsole = false;
 bool fPrintToDebugLog = true;
-bool fDaemon = false;
-bool fServer = false;
 string strMiscWarning;
-bool fNoListen = false;
 bool fLogTimestamps = false;
 volatile bool fReopenDebugLog = false;
 
@@ -102,106 +99,6 @@ void locking_callback(int mode, int i, const char* file, int line)
         LEAVE_CRITICAL_SECTION(*ppmutexOpenSSL[i]);
     }
 }
-
-// Init
-class CInit
-{
-public:
-    CInit()
-    {
-        // Init OpenSSL library multithreading support
-        ppmutexOpenSSL = (CCriticalSection**)OPENSSL_malloc(CRYPTO_num_locks() * sizeof(CCriticalSection*));
-        for (int i = 0; i < CRYPTO_num_locks(); i++)
-            ppmutexOpenSSL[i] = new CCriticalSection();
-        CRYPTO_set_locking_callback(locking_callback);
-
-#ifdef WIN32
-        // Seed random number generator with screen scrape and other hardware sources
-        RAND_screen();
-#endif
-
-        // Seed random number generator with performance counter
-        RandAddSeed();
-    }
-    ~CInit()
-    {
-        // Shutdown OpenSSL library multithreading support
-        CRYPTO_set_locking_callback(NULL);
-        for (int i = 0; i < CRYPTO_num_locks(); i++)
-            delete ppmutexOpenSSL[i];
-        OPENSSL_free(ppmutexOpenSSL);
-    }
-}
-instance_of_cinit;
-
-
-
-
-
-
-
-
-void RandAddSeed()
-{
-    // Seed with CPU performance counter
-    int64_t nCounter = GetPerformanceCounter();
-    RAND_add(&nCounter, sizeof(nCounter), 1.5);
-    memset(&nCounter, 0, sizeof(nCounter));
-}
-
-void RandAddSeedPerfmon()
-{
-    RandAddSeed();
-
-    // This can take up to 2 seconds, so only do it every 10 minutes
-    static int64_t nLastPerfmon;
-    if (GetTime() < nLastPerfmon + 10 * 60)
-        return;
-    nLastPerfmon = GetTime();
-
-#ifdef WIN32
-    // Don't need this on Linux, OpenSSL automatically uses /dev/urandom
-    // Seed with the entire set of perfmon data
-    unsigned char pdata[250000];
-    memset(pdata, 0, sizeof(pdata));
-    unsigned long nSize = sizeof(pdata);
-    long ret = RegQueryValueExA(HKEY_PERFORMANCE_DATA, "Global", NULL, NULL, pdata, &nSize);
-    RegCloseKey(HKEY_PERFORMANCE_DATA);
-    if (ret == ERROR_SUCCESS)
-    {
-        RAND_add(pdata, nSize, nSize/100.0);
-        OPENSSL_cleanse(pdata, nSize);
-        LogPrint("rand", "RandAddSeed() %lu bytes\n", nSize);
-    }
-#endif
-}
-
-uint64_t GetRand(uint64_t nMax)
-{
-    if (nMax == 0)
-        return 0;
-
-    // The range of the random source must be a multiple of the modulus
-    // to give every possible output value an equal possibility
-    uint64_t nRange = (std::numeric_limits<uint64_t>::max() / nMax) * nMax;
-    uint64_t nRand = 0;
-    do
-        RAND_bytes((unsigned char*)&nRand, sizeof(nRand));
-    while (nRand >= nRange);
-    return (nRand % nMax);
-}
-
-int GetRandInt(int nMax)
-{
-    return GetRand(nMax);
-}
-
-/*uint256 GetRandHash()
-{
-    uint256 hash;
-    RAND_bytes((unsigned char*)&hash, sizeof(hash));
-    return hash;
-}*/
 
 // LogPrintf() has been broken a couple of times now
 // by well-meaning people adding mutexes in the most straightforward way.
@@ -305,8 +202,8 @@ string FormatMoney(int64_t n, bool fPlus)
     // Note: not using straight sprintf here because we do NOT want
     // localized number formatting.
     int64_t n_abs = (n > 0 ? n : -n);
-    int64_t quotient = n_abs/COIN;
-    int64_t remainder = n_abs%COIN;
+    int64_t quotient = n_abs/ICOIN;
+    int64_t remainder = n_abs%ICOIN;
     string str = strprintf("%d.%08d", quotient, remainder);
 
     // Right-trim excess zeros before the decimal point:
@@ -341,7 +238,7 @@ bool ParseMoney(const char* pszIn, int64_t& nRet)
         if (*p == '.')
         {
             p++;
-            int64_t nMult = CENT*10;
+            int64_t nMult = ICENT*10;
             while (isdigit(*p) && (nMult > 0))
             {
                 nUnits += nMult * (*p++ - '0');
@@ -360,10 +257,10 @@ bool ParseMoney(const char* pszIn, int64_t& nRet)
             return false;
     if (strWhole.size() > 10) // guard against 63 bit overflow
         return false;
-    if (nUnits < 0 || nUnits > COIN)
+    if (nUnits < 0 || nUnits > ICOIN)
         return false;
     int64_t nWhole = atoi64(strWhole);
-    int64_t nValue = nWhole*COIN + nUnits;
+    int64_t nValue = nWhole*ICOIN + nUnits;
 
     nRet = nValue;
     return true;
@@ -1149,61 +1046,6 @@ int64_t GetAdjustedTime()
 {
     return GetTime() + GetTimeOffset();
 }
-
-/*void AddTimeData(const CNetAddr& ip, int64_t nTime)
-{
-    int64_t nOffsetSample = nTime - GetTime();
-
-    LOCK(cs_nTimeOffset);
-    // Ignore duplicates
-    static set<CNetAddr> setKnown;
-    if (!setKnown.insert(ip).second)
-        return;
-
-    // Add data
-    static CMedianFilter<int64_t> vTimeOffsets(200,0);
-    vTimeOffsets.input(nOffsetSample);
-    LogPrintf("Added time data, samples %d, offset %+d (%+d minutes)\n", vTimeOffsets.size(), nOffsetSample, nOffsetSample/60);
-    if (vTimeOffsets.size() >= 5 && vTimeOffsets.size() % 2 == 1)
-    {
-        int64_t nMedian = vTimeOffsets.median();
-        std::vector<int64_t> vSorted = vTimeOffsets.sorted();
-        // Only let other nodes change our time by so much
-        if (abs64(nMedian) < 70 * 60)
-        {
-            nTimeOffset = nMedian;
-        }
-        else
-        {
-            nTimeOffset = 0;
-
-            static bool fDone;
-            if (!fDone)
-            {
-                // If nobody has a time different than ours but within 5 minutes of ours, give a warning
-                bool fMatch = false;
-                BOOST_FOREACH(int64_t nOffset, vSorted)
-                    if (nOffset != 0 && abs64(nOffset) < 5 * 60)
-                        fMatch = true;
-
-                if (!fMatch)
-                {
-                    fDone = true;
-                    string strMessage = _("Warning: Please check that your computer's date and time are correct! If your clock is wrong Bitcoin will not work properly.");
-                    strMiscWarning = strMessage;
-                    LogPrintf("*** %s\n", strMessage);
-                    uiInterface.ThreadSafeMessageBox(strMessage, "", CClientUIInterface::MSG_WARNING);
-                }
-            }
-        }
-        if (fDebug) {
-            BOOST_FOREACH(int64_t n, vSorted)
-                LogPrintf("%+d  ", n);
-            LogPrintf("|  ");
-        }
-        LogPrintf("nTimeOffset = %+d  (%+d minutes)\n", nTimeOffset, nTimeOffset/60);
-    }
-}*/
 
 uint32_t insecure_rand_Rz = 11;
 uint32_t insecure_rand_Rw = 11;

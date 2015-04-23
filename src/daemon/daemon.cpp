@@ -15,7 +15,6 @@
 #include "include_base_utils.h"
 #include "console_handler.h"
 
-#include "version.h"
 #include "cryptonote_genesis_config.h"
 #include "common/types.h"
 #include "common/ntp_time.h"

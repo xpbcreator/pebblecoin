@@ -126,6 +126,7 @@ namespace tools
       uint64_t m_amount;
       uint64_t m_block_height;
       uint64_t m_unlock_time;
+      bool m_sent;
     };
 
     struct unconfirmed_transfer_details
@@ -182,6 +183,7 @@ namespace tools
     bool get_known_transfer(const crypto::hash& tx_hash, wallet2::known_transfer_details& kd) const;
     size_t get_num_transfers() const;
     void get_payments(const crypto::hash& payment_id, std::list<wallet2::payment_details>& payments) const;
+    bool get_payment_for_tx(const crypto::hash& tx_hash, crypto::hash& payment_id, wallet2::payment_details& payment) const;
     uint64_t get_blockchain_current_height() const { return m_local_bc_height; }
     cryptonote::account_public_address get_public_address() const { return m_account_public_address; }
     template <class t_archive>

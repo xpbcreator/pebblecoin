@@ -15,6 +15,7 @@
 #include "common/ui_interface.h"
 #include "cryptonote_core/blockchain_storage.h"
 #include "cryptonote_core/cryptonote_core.h"
+#include "cryptonote_core/cryptonote_format_utils.h"
 #include "wallet/wallet_errors.h"
 
 #include "interface/base58.h"
@@ -208,6 +209,29 @@ bool WalletModel::validateAddress(const QString &address)
     return cryptonote::get_account_address_from_str(addr, address.toStdString());
 }
 
+bool processPaymentId(const QString& qPaymentIdStr, std::vector<uint8_t>& extra)
+{
+    std::string paymentIdStr = qPaymentIdStr.toStdString();
+    if (paymentIdStr.empty())
+        return true;
+    
+    crypto::hash paymentId;
+    if (!cryptonote::parse_payment_id(paymentIdStr, paymentId))
+    {
+        return false;
+    }
+    
+    std::string extraNonce;
+    cryptonote::set_payment_id_to_tx_extra_nonce(extraNonce, paymentId);
+    
+    if (!cryptonote::add_extra_nonce_to_tx_extra(extra, extraNonce))
+    {
+        return false;
+    }
+    
+    return true;
+}
+
 WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransaction &transaction, const CCoinControl *coinControl)
 {
     qint64 total = 0;
@@ -285,6 +309,10 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
         return AmountWithFeeExceedsBalance;
     }
     
+    std::vector<uint8_t> extra;
+    if (!processPaymentId(transaction.getPaymentId(), extra))
+        return InvalidPaymentId;
+    
     int64_t nFeeRequired = nTransactionFee < DEFAULT_FEE ? DEFAULT_FEE : nTransactionFee;
     transaction.setTransactionFee(nFeeRequired);
 
@@ -353,6 +381,9 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
     if (registeringDelegate && !recipients.empty())
         return TransactionCreationFailed;
     
+    if (!processPaymentId(transaction.getPaymentId(), extra))
+        return InvalidPaymentId;
+    
     LOG_PRINT_GREEN("Fee is " << transaction.getTransactionFee() << ", default fee is " << DEFAULT_FEE << ", nTransactionFee is " << nTransactionFee << ", fake outs are " << minFakeOuts << "/" << fakeOuts << ", registrationFee is " << registrationFee, LOG_LEVEL_0);
     
     try
@@ -365,7 +396,8 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
         }
         else
         {
-            pwalletMain->GetWallet2()->transfer(dsts, minFakeOuts, fakeOuts, unlockTime, transaction.getTransactionFee(), extra, tx);
+            pwalletMain->GetWallet2()->transfer(dsts, minFakeOuts, fakeOuts, unlockTime, transaction.getTransactionFee(),
+                                                extra, tx);
         }
         checkBalanceChanged();
         return OK;
@@ -829,6 +861,9 @@ void WalletModel::processSendCoinsReturn(const WalletModel::SendCoinsReturn &sen
         break;
     case WalletModel::NotYetImplemented:
         msgParams.first = tr("You have attempted to use a feature that is not yet implemented.");
+        break;
+    case WalletModel::InvalidPaymentId:
+        msgParams.first = tr("The payment ID is invalid.  It must be a 64-character hex string.");
         break;
     // included to prevent a compiler warning.
     case WalletModel::OK:

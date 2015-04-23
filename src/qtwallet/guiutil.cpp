@@ -2,19 +2,6 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "guiutil.h"
-
-#include "bitcoinaddressvalidator.h"
-#include "bitcoinunits.h"
-#include "qvalidatedlineedit.h"
-#include "walletmodel.h"
-
-//#include "core.h"
-#include "interface/init.h"
-#include "bitcoin/util.h"
-
-#include "common/util.h"
-
 #ifdef WIN32
 #include "shellapi.h"
 #include "shlobj.h"
@@ -27,6 +14,12 @@
 #include <boost/filesystem/detail/utf8_codecvt_facet.hpp>
 #endif
 
+#include <QtGlobal>
+#if QT_VERSION < 0x050000
+#include <QUrl>
+#else
+#include <QUrlQuery>
+#endif
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QClipboard>
@@ -41,11 +34,17 @@
 #include <QTextDocument> // for Qt::mightBeRichText
 #include <QThread>
 
-#if QT_VERSION < 0x050000
-#include <QUrl>
-#else
-#include <QUrlQuery>
-#endif
+#include "cryptonote_config.h"
+
+#include "interface/init.h"
+#include "bitcoin/util.h"
+#include "common/util.h"
+
+#include "bitcoinaddressvalidator.h"
+#include "bitcoinunits.h"
+#include "qvalidatedlineedit.h"
+#include "walletmodel.h"
+#include "guiutil.h"
 
 #if BOOST_FILESYSTEM_VERSION >= 3
 static boost::filesystem::detail::utf8_codecvt_facet utf8;

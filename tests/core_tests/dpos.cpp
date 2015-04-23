@@ -11,6 +11,7 @@
 #include "dpos.h"
 #include "cryptonote_core/tx_builder.h"
 #include "cryptonote_core/tx_tester.h"
+#include "cryptonote_core/blockchain_storage.h"
 
 using namespace epee;
 using namespace crypto;

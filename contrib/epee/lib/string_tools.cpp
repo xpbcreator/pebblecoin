@@ -277,14 +277,14 @@ namespace string_tools
 	//----------------------------------------------------------------------------
 	std::string& get_current_module_name()
 	{
-		static std::string module_name;
-		return module_name;
+		static std::string *p_module_name = new std::string();
+		return *p_module_name;
 	}
 	//----------------------------------------------------------------------------
 	std::string& get_current_module_folder()
 	{	
-		static std::string module_folder;
-		return module_folder;
+		static std::string *p_module_folder = new std::string();
+		return *p_module_folder;
 	}
   //----------------------------------------------------------------------------
 #ifdef _WIN32

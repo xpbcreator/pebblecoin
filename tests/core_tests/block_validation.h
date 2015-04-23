@@ -3,7 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #pragma once 
+
 #include "chaingen.h"
+#include "test_chain_unit_base.h"
 
 template<size_t invalid_block_idx = 0>
 class gen_block_verification_base : public test_chain_unit_base
@@ -14,7 +16,7 @@ public:
     REGISTER_CALLBACK("check_block_purged", gen_block_verification_base<invalid_block_idx>::check_block_purged);
   }
 
-  bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*blk*/)
+  virtual bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*blk*/)
   {
     if (invalid_block_idx == event_idx)
       return bvc.m_verifivation_failed;
@@ -55,125 +57,125 @@ struct gen_block_accepted_base : public test_chain_unit_base
 
 struct gen_block_big_major_version : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_big_minor_version : public gen_block_accepted_base<2>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_ts_not_checked : public gen_block_accepted_base<BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_ts_in_past : public gen_block_verification_base<BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_ts_in_future : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_invalid_prev_id : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
-  bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*blk*/);
+  virtual bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*blk*/);
 };
 
 struct gen_block_invalid_nonce : public gen_block_verification_base<4>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_no_miner_tx : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_unlock_time_is_low : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_unlock_time_is_high : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_unlock_time_is_timestamp_in_past : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_unlock_time_is_timestamp_in_future : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_height_is_low : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_height_is_high : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_miner_tx_has_2_tx_gen_in : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_miner_tx_has_2_in : public gen_block_verification_base<CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW + 2>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_miner_tx_with_txin_to_key : public gen_block_verification_base<CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW + 2>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_miner_tx_out_is_small : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_miner_tx_out_is_big : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_miner_tx_has_no_out : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_miner_tx_has_out_to_alice : public gen_block_accepted_base<2>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_has_invalid_tx : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_is_too_big : public gen_block_verification_base<1>
 {
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 };
 
 struct gen_block_invalid_binary_format : public test_chain_unit_base
 {
   gen_block_invalid_binary_format();
-  bool generate(std::vector<test_event_entry>& events) const;
-  bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*blk*/);
+  virtual bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*blk*/);
   bool check_all_blocks_purged(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
   bool corrupt_blocks_boundary(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
 

@@ -2,9 +2,6 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-
-#include <unordered_set>
-
 #include <boost/foreach.hpp>
 
 #include "include_base_utils.h"
@@ -16,12 +13,14 @@
 #include "common/util.h"
 #include "crypto/crypto.h"
 
-#include "cryptonote_core.h"
 #include "cryptonote_config.h"
 #include "cryptonote_format_utils.h"
 #include "visitors.h"
 #include "tx_input_compat_checker.h"
 #include "nulls.h"
+#include "blockchain_storage.h"
+#include "checkpoints.h"
+#include "cryptonote_core.h"
 
 using namespace epee;
 
@@ -31,8 +30,9 @@ namespace cryptonote
 {
   //-----------------------------------------------------------------------------------------------
   core::core(i_cryptonote_protocol* pprotocol, tools::ntp_time& ntp_time_in):
-              m_mempool(m_blockchain_storage),
-              m_blockchain_storage(m_mempool, ntp_time_in),
+              m_pblockchain_storage(new blockchain_storage(m_mempool, ntp_time_in)),
+              m_mempool(*m_pblockchain_storage),
+              m_blockchain_storage(*m_pblockchain_storage),
               m_miner(this),
               m_miner_address(boost::value_initialized<account_public_address>()), 
               m_starter_message_showed(false),
@@ -40,6 +40,11 @@ namespace cryptonote
   {
     set_cryptonote_protocol(pprotocol);
   }
+  //-----------------------------------------------------------------------------------
+  core::~core()
+  {
+  }
+  //-----------------------------------------------------------------------------------
   void core::set_cryptonote_protocol(i_cryptonote_protocol* pprotocol)
   {
     if(pprotocol)
@@ -87,7 +92,14 @@ namespace cryptonote
   bool core::get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks)
   {
     return m_blockchain_storage.get_blocks(start_offset, count, blocks);
-  }  //-----------------------------------------------------------------------------------------------
+  }
+  //-----------------------------------------------------------------------------------------------
+  bool core::get_blocks(const std::list<crypto::hash>& block_ids, std::list<cryptonote::block>& blocks,
+                        std::list<crypto::hash>& missed_bs)
+  {
+    return m_blockchain_storage.get_blocks(block_ids, blocks, missed_bs);
+  }
+  //-----------------------------------------------------------------------------------------------
   bool core::get_transactions(const std::vector<crypto::hash>& txs_ids, std::list<transaction>& txs, std::list<crypto::hash>& missed_txs)
   {
     return m_blockchain_storage.get_transactions(txs_ids, txs, missed_txs);
@@ -400,6 +412,11 @@ namespace cryptonote
   void core::resume_mine()
   {
     m_miner.resume();
+  }
+  //-----------------------------------------------------------------------------------------------
+  blockchain_storage& core::get_blockchain_storage()
+  {
+    return m_blockchain_storage;
   }
   //-----------------------------------------------------------------------------------------------
   bool core::handle_block_found(block& b)

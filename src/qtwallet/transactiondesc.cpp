@@ -101,6 +101,15 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, int vout, int u
     strHTML += "<b>" + tr("Net amount") + ":</b> " + BitcoinUnits::formatWithUnit(unit, nNet, true) + "<br>";
 
     strHTML += "<b>" + tr("Transaction ID") + ":</b> " + QString::fromStdString(wtx.txHash) + "<br>";
+    
+    if (wtx.IsPayment(*wallet))
+    {
+        std::string paymentId;
+        tools::wallet2::payment_details pd;
+        wtx.GetPaymentInfo(*wallet, paymentId, pd);
+        
+        strHTML += "<b>" + tr("Payment ID") + ":</b> " + QString::fromStdString(paymentId) + "<br>";
+    }
 
     return strHTML;
 }

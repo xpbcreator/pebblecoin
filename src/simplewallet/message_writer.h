@@ -14,8 +14,6 @@
 
 namespace crypto { POD_CLASS hash; }
 
-bool parse_payment_id(const std::string& payment_id_str, crypto::hash& payment_id);
-
 class message_writer
 {
 public:

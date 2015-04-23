@@ -7,7 +7,6 @@
 
 
 #include "include_base_utils.h"
-#include "version.h"
 
 using namespace epee;
 
@@ -24,7 +23,6 @@ using namespace std;
 //#include "cryptonote_core/cryptonote_core.h"
 #include "cryptonote_protocol/cryptonote_protocol_handler.h"
 #include "core_proxy.h"
-#include "version.h"
 
 #if defined(WIN32)
 #include <crtdbg.h>

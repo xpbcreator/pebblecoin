@@ -6,7 +6,8 @@
 
 #include "interface/base58.h"
 
-#include "cryptonote_core/cryptonote_core.h"
+#include "cryptonote_core/account.h"
+#include "cryptonote_core/cryptonote_basic_impl.h"
 
 /* Base58 characters are:
      "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"

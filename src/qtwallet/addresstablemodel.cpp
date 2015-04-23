@@ -2,23 +2,22 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "addresstablemodel.h"
+#include <QFont>
+#include <QDebug>
 
-#include "guiutil.h"
-#include "walletmodel.h"
+#include <boost/foreach.hpp>
+
+#include "common/ui_interface.h"
+#include "common/types.h"
+#include "cryptonote_core/cryptonote_basic_impl.h"
 
 #include "bitcoin/util.h"
 #include "interface/base58.h"
 #include "interface/wallet.h"
 #include "interface/script.h"
-
-#include "common/ui_interface.h"
-#include "common/types.h"
-
-#include <boost/foreach.hpp>
-
-#include <QFont>
-#include <QDebug>
+#include "guiutil.h"
+#include "walletmodel.h"
+#include "addresstablemodel.h"
 
 const QString AddressTableModel::Send = "S";
 const QString AddressTableModel::Receive = "R";

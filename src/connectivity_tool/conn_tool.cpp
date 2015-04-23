@@ -9,8 +9,6 @@
 #include "storages/portable_storage_template_helper.h"
 #include "storages/http_abstract_invoke.h"
 
-#include "version.h"
-
 #include "cryptonote_config.h"
 #include "common/command_line.h"
 #include "crypto/crypto.h"

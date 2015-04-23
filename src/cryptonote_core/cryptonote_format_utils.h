@@ -232,14 +232,13 @@ namespace cryptonote
   bool block_to_blob(const block& b, blobdata& b_blob);
   blobdata tx_to_blob(const transaction& b);
   bool tx_to_blob(const transaction& b, blobdata& b_blob);
-  
+  //---------------------------------------------------------------
   bool is_pow_block(const block& b);
   bool is_pos_block(const block& b);
-
+  //---------------------------------------------------------------
 #define CHECKED_GET_SPECIFIC_VARIANT(variant_var, specific_type, variable_name, fail_return_val) \
   CHECK_AND_ASSERT_MES(variant_var.type() == typeid(specific_type), fail_return_val, "wrong variant type: " << variant_var.type().name() << ", expected " << typeid(specific_type).name()); \
   specific_type& variable_name = boost::get<specific_type>(variant_var);
-
   //------------------------------------------------------------------
   // sort and give nth item after, in order
   // e.g. given [10, 4, 0, 13], sorts as [0, 4, 10, 13], then:
@@ -254,7 +253,6 @@ namespace cryptonote
   //   nth_sorted_item_after(14, 0) -> 0
   //   nth_sorted_item_after(14, 1) -> 4
   //   nth_sorted_item_after(14, 2) -> 10
-  
   template <class list_t, class item_t, class extract_f_t>
   item_t nth_sorted_item_after(const list_t& l, const item_t& start, size_t n, const extract_f_t& extract_f)
   {
@@ -279,10 +277,13 @@ namespace cryptonote
     size_t start_index = start_it - items.begin();
     return items[(start_index + n) % items.size()];
   }
-  
+  //---------------------------------------------------------------
   template <class list_t, class item_t>
   item_t nth_sorted_item_after(const list_t& l, const item_t& start, size_t n)
   {
     return nth_sorted_item_after(l, start, n, tools::identity());
   }
+  //---------------------------------------------------------------
+  bool parse_payment_id(const std::string& payment_id_str, crypto::hash& payment_id);
+  //---------------------------------------------------------------
 }

@@ -7,7 +7,6 @@
 #include <QMessageBox>
 
 #include "include_base_utils.h"
-#include "version.h"
 #include "console_handler.h"
 
 #include "common/types.h"
@@ -19,6 +18,7 @@
 #include "rpc/core_rpc_server.h"
 #include "daemon/daemon_options.h"
 #include "daemon/daemon_commands_handler.h"
+#include "cryptonote_core/blockchain_storage.h"
 
 #include "bitcoin/util.h"
 #include "init.h"
@@ -164,7 +164,7 @@ bool DaemonThreadInit(node_server_t &p2psrv, protocol_handler_t &cprotocol,
 
 class thread_interrupter : public cryptonote::i_core_callback {
 public:
-    CCriticalSection cs_wt;
+    mutable CCriticalSection cs_wt;
     
     thread_interrupter(boost::thread* th) : walletThread(th) {}
     

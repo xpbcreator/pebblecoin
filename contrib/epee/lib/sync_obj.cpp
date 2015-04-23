@@ -24,35 +24,41 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
-#include "../include/syncobj.h"
-
 #include <boost/thread/recursive_mutex.hpp>
+
+#include "syncobj.h"
 
 namespace epee
 {
+  class critical_section::impl
+  {
+  public:
+    boost::recursive_mutex m_section;
+  };
+  
   //to make copy fake!
-  critical_section::critical_section(const critical_section& section) { }
-  critical_section::critical_section() { m_psection = new boost::recursive_mutex(); }
-  critical_section::~critical_section() { delete m_psection; m_psection = NULL; }
+  //critical_section::critical_section(const critical_section& section) { }
+  critical_section::critical_section() : m_pimpl(new critical_section::impl) { }
+  critical_section::~critical_section() { }
   
   void critical_section::lock()
   {
-    m_psection->lock();
+    m_pimpl->m_section.lock();
   }
   
   void critical_section::unlock()
   {
-    m_psection->unlock();
+    m_pimpl->m_section.unlock();
   }
   
   bool critical_section::tryLock()
   {
-    return m_psection->try_lock();
+    return m_pimpl->m_section.try_lock();
   }
   
-  // to make copy fake
+  /*// to make copy fake
   critical_section& critical_section::operator=(const critical_section& section)
   {
     return *this;
-  }
+  }*/
 }

@@ -1,16 +1,23 @@
 #ifndef PEBBLECOIN_BCWALLET_H
 #define PEBBLECOIN_BCWALLET_H
 
-#include "../bitcoin/sync.h"
+#include <memory>
+
+#include <boost/signals2/signal.hpp>
 
 #include "common/types.h"
 #include "common/ui_interface.h"
 #include "common/concurrent_queue.h"
-#include "cryptonote_core/cryptonote_core.h"
+#include "cryptonote_core/cryptonote_basic.h"
+#include "cryptonote_core/i_tx_pool_callback.h"
 #include "wallet/wallet2.h"
 #include "serialization/serialization.h"
 
-#include <boost/signals2/signal.hpp>
+#include "bitcoin/sync.h"
+
+namespace cryptonote {
+  class tx_memory_pool;
+};
 
 class CWalletTx {
 private:
@@ -36,7 +43,9 @@ public:
   int GetDepthInMainChain() const;
   int GetBlocksToMaturity() const;
   bool IsTrusted() const;
+  bool IsPayment(const CWallet& wallet) const;
   
+  bool GetPaymentInfo(const CWallet& wallet, std::string& paymentId, tools::wallet2::payment_details& paymentDetails) const;
   bool GetCreditDebit(uint64_t& nMined, uint64_t& nCredit, uint64_t& nDebit) const;
   
   BEGIN_SERIALIZE_OBJECT()
@@ -59,7 +68,7 @@ struct CAddressBookData
   END_SERIALIZE()
 };
 
-class CWallet : public tools::i_wallet2_callback, public cryptonote::tx_memory_pool::i_tx_pool_callback {
+class CWallet : public tools::i_wallet2_callback, public cryptonote::i_tx_pool_callback {
   tools::wallet2 *pwallet2;
   std::string cwalletFileName;
   
@@ -70,16 +79,17 @@ class CWallet : public tools::i_wallet2_callback, public cryptonote::tx_memory_p
   bool AddTransaction(const cryptonote::transaction& tx);
   bool RemoveTransaction(const cryptonote::transaction& tx);
   
-  CCriticalSection cs_refresh;
+  mutable CCriticalSection cs_refresh;
   
   std::atomic<bool> m_stop;
 
 public:
-  CCriticalSection cs_wallet;
+  mutable CCriticalSection cs_wallet;
   std::map<address_t, CAddressBookData> mapAddressBook;
   std::map<crypto::hash, CWalletTx> mapWallet;
   
   explicit CWallet(const std::string& cwalletFileNameArg);
+  ~CWallet();
   
   bool HasWallet2() const;
   void SetWallet2(tools::wallet2 *pwalletArg);
@@ -153,7 +163,7 @@ private:
   };
   
   concurrent_queue<wallet_task> tasks;
-  boost::thread wallet_task_thread;
+  std::unique_ptr<boost::thread> p_wallet_task_thread;
   
   void WalletTaskThread();
 };

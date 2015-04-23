@@ -1007,20 +1007,69 @@ bool find_block_chain(const std::vector<test_event_entry>& events, std::vector<c
   return b_success;
 }
 
+//--------------------------------------------------------------------------
 
-void test_chain_unit_base::register_callback(const std::string& cb_name, verify_callback cb)
+bool replay_events_through_core(core_t& cr, const std::vector<test_event_entry>& events, test_chain_unit_base& validator)
 {
-  m_callbacks[cb_name] = cb;
-}
-bool test_chain_unit_base::verify(const std::string& cb_name, core_t& c, size_t ev_index, const std::vector<test_event_entry> &events)
-{
-  auto cb_it = m_callbacks.find(cb_name);
-  if(cb_it == m_callbacks.end())
+  TRY_ENTRY();
+
+  //init core here
+
+  CHECK_AND_ASSERT_MES(typeid(cryptonote::block) == events[0].type(), false, "First event must be genesis block creation");
+  cr.set_genesis_block(boost::get<cryptonote::block>(events[0]));
+
+  bool r = true;
+  push_core_event_visitor visitor(cr, events, validator);
+  for(size_t i = 1; i < events.size() && r; ++i)
   {
-    LOG_ERROR("Failed to find callback " << cb_name);
+    visitor.event_index(i);
+    r = boost::apply_visitor(visitor, events[i]);
+  }
+
+  return r;
+
+  CATCH_ENTRY_L0("replay_events_through_core", false);
+}
+
+//--------------------------------------------------------------------------
+
+bool do_replay_events(std::vector<test_event_entry>& events, test_chain_unit_base& validator)
+{
+  boost::program_options::options_description desc("Allowed options");
+  core_t::init_options(desc);
+  command_line::add_arg(desc, command_line::arg_data_dir);
+  boost::program_options::variables_map vm;
+  bool r = command_line::handle_error_helper(desc, [&]()
+  {
+    boost::program_options::store(boost::program_options::basic_parsed_options<char>(&desc), vm);
+    boost::program_options::notify(vm);
+    return true;
+  });
+  if (!r)
+    return false;
+
+  cryptonote::cryptonote_protocol_stub pr; //TODO: stub only for this kind of test, make real validation of relayed objects
+  core_t c(&pr, g_ntp_time);
+  if (!c.init(vm))
+  {
+    std::cout << concolor::magenta << "Failed to init core" << concolor::normal << std::endl;
     return false;
   }
-  return cb_it->second(c, ev_index, events);
+  reset_test_defaults();
+  return replay_events_through_core(c, events, validator);
+}
+
+//--------------------------------------------------------------------------
+
+bool do_replay_file(const std::string& filename, test_chain_unit_base& validator)
+{
+  std::vector<test_event_entry> events;
+  if (!tools::unserialize_obj_from_file(events, filename))
+  {
+    std::cout << concolor::magenta << "Failed to deserialize data from file: " << filename << concolor::normal << std::endl;
+    return false;
+  }
+  return do_replay_events(events, validator);
 }
 
 //--------------------------------------------------------------------------
@@ -1285,3 +1334,4 @@ void reset_test_defaults()
   cryptonote::config::dpos_num_delegates = 5;
   DEFAULT_FEE = 0; // add no-fee txs, lot of tests use them
 }
+

@@ -12,9 +12,9 @@
 #include "common/util.h"
 #include "common/types.h"
 #include "crypto/hash.h"
-#include "version.h"
 #include "cryptonote_protocol/cryptonote_protocol_handler.h"
 #include "cryptonote_core/cryptonote_core.h"
+#include "cryptonote_core/blockchain_storage.h"
 #include "p2p/net_node.h"
 
 class daemon_cmmands_handler

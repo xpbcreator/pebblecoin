@@ -1,23 +1,24 @@
 // Copyright (c) 2011-2014 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#include "utilitydialog.h"
 
-#include "ui_aboutdialog.h"
-#include "ui_helpmessagedialog.h"
+#include <QLabel>
+#include <QVBoxLayout>
 
-#include "bitcoingui.h"
-#include "clientmodel.h"
-#include "guiutil.h"
+#include "common/util.h"
 
 #include "interface/clientversion.h"
 #include "interface/init.h"
 #include "bitcoin/util.h"
 
-#include "version.h"
+#include "bitcoingui.h"
+#include "clientmodel.h"
+#include "guiutil.h"
 
-#include <QLabel>
-#include <QVBoxLayout>
+#include "ui_aboutdialog.h"
+#include "ui_helpmessagedialog.h"
+#include "utilitydialog.h"
+
 
 /** "About" dialog box */
 AboutDialog::AboutDialog(QWidget *parent) :

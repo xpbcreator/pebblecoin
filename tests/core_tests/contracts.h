@@ -4,8 +4,10 @@
 
 #pragma once
 
-#include "chaingen.h"
 #include "cryptonote_core/tx_builder.h"
+
+#include "chaingen.h"
+#include "test_chain_unit_base.h"
 
 struct contracts_base : public test_chain_unit_base
 {
@@ -15,7 +17,7 @@ struct contracts_base : public test_chain_unit_base
     REGISTER_CALLBACK_METHOD(contracts_base, mark_invalid_block);
   }
   
-  bool check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t event_idx, const cryptonote::transaction& /*tx*/)
+  virtual bool check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t event_idx, const cryptonote::transaction& /*tx*/)
   {
     if (m_invalid_tx_index == event_idx)
       return tvc.m_verifivation_failed;
@@ -23,7 +25,7 @@ struct contracts_base : public test_chain_unit_base
       return !tvc.m_verifivation_failed && tx_added;
   }
   
-  bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*block*/)
+  virtual bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*block*/)
   {
     if (m_invalid_block_index == event_idx)
       return bvc.m_verifivation_failed;

@@ -45,6 +45,7 @@ namespace tools
 
 BOOST_CLASS_VERSION(tools::wallet2, 10)
 BOOST_CLASS_VERSION(tools::wallet2::known_transfer_details, 3)
+BOOST_CLASS_VERSION(tools::wallet2::payment_details, 2)
 
 namespace boost
 {
@@ -78,6 +79,17 @@ namespace boost
       a & x.m_amount;
       a & x.m_block_height;
       a & x.m_unlock_time;
+      if (ver >= (boost::serialization::version_type)(2))
+      {
+        a & x.m_sent;
+      }
+      else
+      {
+        if (!(typename Archive::is_saving()))
+        {
+          x.m_sent = false;
+        }
+      }
     }
 
     template <class Archive>

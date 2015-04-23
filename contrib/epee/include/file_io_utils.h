@@ -33,6 +33,7 @@
 //#include <sys/stat.h>
 
 #include <iostream>
+#include <fstream>
 #include <boost/filesystem.hpp>
 
 

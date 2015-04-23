@@ -4,8 +4,10 @@
 
 #pragma once
 
-#include "chaingen.h"
 #include "cryptonote_core/tx_builder.h"
+
+#include "chaingen.h"
+#include "test_chain_unit_base.h"
 #include "contracts.h"
 #include "currency.h"
 
@@ -29,7 +31,7 @@ struct chain_switch_3_base : public test_chain_unit_base
     REGISTER_CALLBACK_METHOD(chain_switch_3_base, check_not_head_3);
   }
   
-  bool check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t event_idx, const cryptonote::transaction& /*tx*/)
+  virtual bool check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t event_idx, const cryptonote::transaction& /*tx*/)
   {
     if (m_invalid_tx_index == event_idx)
       return tvc.m_verifivation_failed;
@@ -37,7 +39,7 @@ struct chain_switch_3_base : public test_chain_unit_base
       return !tvc.m_verifivation_failed && tx_added;
   }
   
-  bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*block*/)
+  virtual bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& /*block*/)
   {
     if (m_invalid_block_index == event_idx)
       return bvc.m_verifivation_failed;
@@ -95,7 +97,7 @@ private:
 #define DEFINE_CREATE_TEST(TEST_NAME, t_id, t_first, t_second, t_third)   \
 struct TEST_NAME : public chain_switch_3_base                             \
 {                                                                         \
-  bool generate(std::vector<test_event_entry>& events) const              \
+  virtual bool generate(std::vector<test_event_entry>& events) const              \
   {                                                                       \
     uint64_t ts_start = 1338224400;                                       \
                                                                           \

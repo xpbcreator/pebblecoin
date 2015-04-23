@@ -1,50 +1,50 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2010 Satoshi Nakamoto
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_UTIL_H
 #define BITCOIN_UTIL_H
 
-#if defined(HAVE_CONFIG_H)
-#include "bitcoin-config.h"
-#endif
-
-#include "compat.h"
-#include "serialize.h"
-#include "tinyformat.h"
-
-#include <cstdio>
-#include <exception>
-#include <map>
 #include <stdarg.h>
 #include <stdint.h>
-#include <string>
-#include <utility>
-#include <vector>
-
 #ifndef WIN32
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #endif
 
+#include <cstdio>
+#include <exception>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include <boost/filesystem/path.hpp>
 #include <boost/thread.hpp>
 
-#include "cryptonote_config.h" // introduces COIN
+#if defined(HAVE_CONFIG_H)
+#include "bitcoin-config.h"
+#endif
+
+#include "common/pod-class.h"
 #include "common/command_line.h" // for GetArg
-#include "cryptonote_core/cryptonote_core.h" // for transaction
-#include "crypto/hash.h"
 
-//class CNetAddr;
-//class uint256;
+#include "compat.h"
+#include "serialize.h"
+#include "tinyformat.h"
 
-#define UCOIN COIN
-#undef COIN
+namespace crypto
+{
+  POD_CLASS hash;
+}
 
-static const int64_t COIN = UCOIN; //100000000;
-static const int64_t CENT = COIN / 100; //1000000;
+namespace cryptonote
+{
+  class transaction;
+}
 
 #define BEGIN(a)            ((char*)&(a))
 #define END(a)              ((char*)&((&(a))[1]))
@@ -54,20 +54,6 @@ static const int64_t CENT = COIN / 100; //1000000;
 
 // This is needed because the foreach macro can't get over the comma in pair<t1, t2>
 #define PAIRTYPE(t1, t2)    std::pair<t1, t2>
-
-// Align by increasing pointer, must have extra space at end of buffer
-template <size_t nBytes, typename T>
-T* alignup(T* p)
-{
-    union
-    {
-        T* ptr;
-        size_t n;
-    } u;
-    u.ptr = p;
-    u.n = (u.n + (nBytes-1)) & ~(nBytes-1);
-    return u.ptr;
-}
 
 #ifdef WIN32
 #define MSG_DONTWAIT        0
@@ -84,29 +70,14 @@ T* alignup(T* p)
 #define MSG_NOSIGNAL 0
 #endif
 
-inline void MilliSleep(int64_t n)
-{
-// Boost's sleep_for was uninterruptable when backed by nanosleep from 1.50
-// until fixed in 1.52. But bytecoin requires Boost 1.53+, so always use it.
-    boost::this_thread::sleep_for(boost::chrono::milliseconds(n));
-}
-
-
-
-//extern std::map<std::string, std::string> mapArgs;
-//extern std::map<std::string, std::vector<std::string> > mapMultiArgs;
 extern boost::program_options::variables_map vmapArgs;
 extern bool fDebug;
 extern bool fPrintToConsole;
 extern bool fPrintToDebugLog;
-extern bool fServer;
 extern std::string strMiscWarning;
-extern bool fNoListen;
 extern bool fLogTimestamps;
 extern volatile bool fReopenDebugLog;
 
-void RandAddSeed();
-void RandAddSeedPerfmon();
 void SetupEnvironment();
 
 /* Return true if log accepts specified category */
@@ -190,16 +161,12 @@ void CreatePidFile(const boost::filesystem::path &path, pid_t pid);
 bool ReadConfigFile(const boost::program_options::options_description& desc_options);
 boost::filesystem::path GetTempPath();
 void ShrinkDebugFile();
-int GetRandInt(int nMax);
-uint64_t GetRand(uint64_t nMax);
-//uint256 GetRandHash();
 int64_t GetTime();
 void SetMockTime(int64_t nMockTimeIn);
 int64_t GetAdjustedTime();
 int64_t GetTimeOffset();
 std::string FormatFullVersion();
 std::string FormatSubVersion(const std::string& name, int nClientVersion, const std::vector<std::string>& comments);
-//void AddTimeData(const CNetAddr& ip, int64_t nTime);
 void runCommand(std::string strCommand);
 
 extern const signed char p_util_hexdigit[256];
@@ -524,66 +491,6 @@ inline uint32_t ByteReverse(uint32_t value)
 {
     value = ((value & 0xFF00FF00) >> 8) | ((value & 0x00FF00FF) << 8);
     return (value<<16) | (value>>16);
-}
-
-// Standard wrapper for do-something-forever thread functions.
-// "Forever" really means until the thread is interrupted.
-// Use it like:
-//   new boost::thread(boost::bind(&LoopForever<void (*)()>, "dumpaddr", &DumpAddresses, 900000));
-// or maybe:
-//    boost::function<void()> f = boost::bind(&FunctionWithArg, argument);
-//    threadGroup.create_thread(boost::bind(&LoopForever<boost::function<void()> >, "nothing", f, milliseconds));
-template <typename Callable> void LoopForever(const char* name,  Callable func, int64_t msecs)
-{
-    std::string s = strprintf("bitcoin-%s", name);
-    RenameThread(s.c_str());
-    LogPrintf("%s thread start\n", name);
-    try
-    {
-        while (1)
-        {
-            MilliSleep(msecs);
-            func();
-        }
-    }
-    catch (boost::thread_interrupted)
-    {
-        LogPrintf("%s thread stop\n", name);
-        throw;
-    }
-    catch (std::exception& e) {
-        PrintExceptionContinue(&e, name);
-        throw;
-    }
-    catch (...) {
-        PrintExceptionContinue(NULL, name);
-        throw;
-    }
-}
-// .. and a wrapper that just calls func once
-template <typename Callable> void TraceThread(const char* name,  Callable func)
-{
-    std::string s = strprintf("bitcoin-%s", name);
-    RenameThread(s.c_str());
-    try
-    {
-        LogPrintf("%s thread start\n", name);
-        func();
-        LogPrintf("%s thread exit\n", name);
-    }
-    catch (boost::thread_interrupted)
-    {
-        LogPrintf("%s thread interrupt\n", name);
-        throw;
-    }
-    catch (std::exception& e) {
-        PrintExceptionContinue(&e, name);
-        throw;
-    }
-    catch (...) {
-        PrintExceptionContinue(NULL, name);
-        throw;
-    }
 }
 
 std::string GetStrHash(const crypto::hash& h);

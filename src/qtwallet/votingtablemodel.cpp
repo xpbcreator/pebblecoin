@@ -8,6 +8,7 @@
 
 #include "cryptonote_config.h"
 #include "cryptonote_core/delegate_auto_vote.h"
+#include "cryptonote_core/blockchain_storage.h"
 
 #include "interface/main.h"
 #include "interface/wallet.h"

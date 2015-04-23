@@ -2,16 +2,17 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "transactionrecord.h"
+#include <stdint.h>
+
+#include <boost/foreach.hpp>
+
+#include "cryptonote_core/cryptonote_basic_impl.h"
 
 #include "interface/base58.h"
 #include "interface/wallet.h"
 #include "interface/main.h"
 #include "bitcoin/util.h"
-
-#include <stdint.h>
-
-#include <boost/foreach.hpp>
+#include "transactionrecord.h"
 
 /* Return positive answer if transaction should be shown in list.
  */
@@ -38,6 +39,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     // Three parts: mined credits, non-mined credits, and debits.
     uint64_t nMined, nCredit, nDebit;
     wtx.GetCreditDebit(nMined, nCredit, nDebit);
+    
+    bool isPayment = wtx.IsPayment(*wallet);
 
     LOG_PRINT_L2("inMain=" << wtx.IsInMainChain() << ", nMined=" << nMined << ", nDebit=" << nDebit << ", nCredit=" << nCredit);
     
@@ -71,7 +74,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             }
             nDebit -= nThisAmount;
             
-            auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp, TransactionRecord::SendToAddress,
+            auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp,
+                                         isPayment ? TransactionRecord::PayToAddress : TransactionRecord::SendToAddress,
                                          cryptonote::get_account_address_as_str(dest.addr),
                                          nThisAmount, 0);
             rec.idx = parts.size();
@@ -127,8 +131,9 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     // If net is negative but have both credit & debit, assume user sent & got change back
     if (nCredit > 0 && nDebit > 0 && nDebit > nCredit)
     {
-        auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp, TransactionRecord::SendToOther, "",
-                                     nDebit - nCredit, 0);
+        auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp,
+                                     wtx.IsPayment(*wallet) ? TransactionRecord::PayToOther : TransactionRecord::SendToOther,
+                                     "", nDebit - nCredit, 0);
         rec.idx = parts.size();
         parts.append(rec);
     }
@@ -137,15 +142,18 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
         // Put them as separate transactions:
         if (nCredit > 0)
         {
-            auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp, TransactionRecord::RecvFromOther, "",
+            auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp,
+                                         wtx.IsPayment(*wallet) ? TransactionRecord::PayFromOther : TransactionRecord::RecvFromOther,
+                                         "",
                                          0, nCredit);
             rec.idx = parts.size();
             parts.append(rec);
         }
         if (nDebit > 0)
         {
-            auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp, TransactionRecord::SendToAddress, "",
-                                         nDebit, 0);
+            auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp,
+                                         isPayment ? TransactionRecord::PayToAddress : TransactionRecord::SendToAddress,
+                                         "", nDebit, 0);
             rec.idx = parts.size();
             parts.append(rec);
         }

@@ -1,15 +1,20 @@
-#include "interface/wallet.h"
+#include <boost/thread.hpp>
 
 #include "string_tools.h"
+#include "file_io_utils.h"
 #include "serialization/binary_utils.h"
 
 #include "cryptonote_config.h"
+#include "cryptonote_core/tx_pool.h"
+#include "cryptonote_core/cryptonote_core.h"
+#include "cryptonote_core/blockchain_storage.h"
 #include "wallet/wallet2.h"
 #include "wallet/wallet_errors.h"
 
 #include "bitcoin/util.h"
 #include "interface/script.h"
 #include "interface/main.h"
+#include "interface/wallet.h"
 
 int64_t nTransactionFee = DEFAULT_FEE;
 
@@ -91,6 +96,26 @@ bool CWalletTx::IsTrusted() const
   return false;
 }
 
+bool CWalletTx::IsPayment(const CWallet& wallet) const
+{
+  std::string paymentId;
+  tools::wallet2::payment_details paymentDetails;
+  return GetPaymentInfo(wallet, paymentId, paymentDetails);
+}
+  
+bool CWalletTx::GetPaymentInfo(const CWallet& wallet, std::string& paymentId,
+                               tools::wallet2::payment_details& paymentDetails) const
+{
+  LOCK(wallet.cs_wallet);
+  
+  crypto::hash paymentIdHash;
+  bool r = wallet.GetWallet2()->get_payment_for_tx(GetCryptoHash(txHash), paymentIdHash, paymentDetails);
+  if (!r)
+    return false;
+  
+  paymentId = GetStrHash(paymentIdHash);
+  return true;
+}
 
 bool CWalletTx::GetCreditDebit(uint64_t& nMined, uint64_t& nCredit, uint64_t& nDebit) const
 {
@@ -136,10 +161,17 @@ bool CWalletTx::GetCreditDebit(uint64_t& nMined, uint64_t& nCredit, uint64_t& nD
 
 
 
-CWallet::CWallet(const std::string& cwalletFileNameArg) : pwallet2(NULL), cwalletFileName(cwalletFileNameArg), wallet_task_thread(boost::bind(&CWallet::WalletTaskThread, this)), m_stop(false)
-
+CWallet::CWallet(const std::string& cwalletFileNameArg)
+    : pwallet2(NULL)
+    , cwalletFileName(cwalletFileNameArg)
+    , p_wallet_task_thread(new boost::thread(boost::bind(&CWallet::WalletTaskThread, this)))
+    , m_stop(false)
 {
   LoadCWallet();
+}
+
+CWallet::~CWallet()
+{
 }
 
 
@@ -430,7 +462,7 @@ void CWallet::Shutdown()
   }
   
   LOG_PRINT_L0("Joining wallet task thread...");
-  wallet_task_thread.join();
+  p_wallet_task_thread->join();
   
   StoreCWallet();
 }

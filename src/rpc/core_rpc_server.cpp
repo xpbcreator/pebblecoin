@@ -14,6 +14,7 @@
 #include "cryptonote_core/account.h"
 #include "cryptonote_core/cryptonote_basic_impl.h"
 #include "cryptonote_core/nulls.h"
+#include "cryptonote_core/blockchain_storage.h"
 
 #include "core_rpc_server.h"
 #include "core_rpc_server_error_codes.h"

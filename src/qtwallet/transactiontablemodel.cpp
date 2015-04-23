@@ -2,7 +2,21 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "transactiontablemodel.h"
+#include <string>
+
+#include <QColor>
+#include <QDateTime>
+#include <QDebug>
+#include <QIcon>
+#include <QList>
+
+#include "common/ui_interface.h"
+#include "crypto/crypto_basic_impl.h"
+
+#include "interface/main.h"
+#include "bitcoin/sync.h"
+#include "bitcoin/util.h"
+#include "interface/wallet.h"
 
 #include "addresstablemodel.h"
 #include "bitcoinunits.h"
@@ -12,20 +26,7 @@
 #include "transactiondesc.h"
 #include "transactionrecord.h"
 #include "walletmodel.h"
-
-#include "interface/main.h"
-#include "bitcoin/sync.h"
-#include <string> //#include "uint256.h"
-#include "bitcoin/util.h"
-#include "interface/wallet.h"
-
-#include "common/ui_interface.h"
-
-#include <QColor>
-#include <QDateTime>
-#include <QDebug>
-#include <QIcon>
-#include <QList>
+#include "transactiontablemodel.h"
 
 // Amount column is right-aligned it contains numbers
 static int column_alignments[] = {
@@ -373,6 +374,11 @@ QString TransactionTableModel::formatTxType(const TransactionRecord *wtx) const
         return tr("Sent to");
     case TransactionRecord::SendToSelf:
         return tr("Payment to yourself");
+    case TransactionRecord::PayToAddress:
+    case TransactionRecord::PayToOther:
+        return tr("Pay to");
+    case TransactionRecord::PayFromOther:
+        return tr("Pay from");
     case TransactionRecord::Generated:
         return tr("Mined");
     default:
@@ -388,9 +394,12 @@ QVariant TransactionTableModel::txAddressDecoration(const TransactionRecord *wtx
         return QIcon(":/icons/tx_mined");
     case TransactionRecord::RecvWithAddress:
     case TransactionRecord::RecvFromOther:
+    case TransactionRecord::PayFromOther:
         return QIcon(":/icons/tx_input");
     case TransactionRecord::SendToAddress:
     case TransactionRecord::SendToOther:
+    case TransactionRecord::PayToAddress:
+    case TransactionRecord::PayToOther:
         return QIcon(":/icons/tx_output");
     default:
         return QIcon(":/icons/tx_inout");
@@ -403,12 +412,15 @@ QString TransactionTableModel::formatTxToAddress(const TransactionRecord *wtx, b
     switch(wtx->type)
     {
     case TransactionRecord::RecvFromOther:
+    case TransactionRecord::PayFromOther:
         return QString::fromStdString(wtx->address);
     case TransactionRecord::RecvWithAddress:
     case TransactionRecord::SendToAddress:
+    case TransactionRecord::PayToAddress:
     case TransactionRecord::Generated:
         return lookupAddress(wtx->address, tooltip);
     case TransactionRecord::SendToOther:
+    case TransactionRecord::PayToOther:
         return QString::fromStdString(wtx->address);
     case TransactionRecord::SendToSelf:
     default:
@@ -422,6 +434,7 @@ QVariant TransactionTableModel::addressColor(const TransactionRecord *wtx) const
     switch(wtx->type)
     {
     case TransactionRecord::RecvWithAddress:
+    case TransactionRecord::PayToAddress:
     case TransactionRecord::SendToAddress:
     case TransactionRecord::Generated:
         {
@@ -490,6 +503,8 @@ QString TransactionTableModel::formatTooltip(const TransactionRecord *rec) const
 {
     QString tooltip = formatTxStatus(rec) + QString("\n") + formatTxType(rec);
     if(rec->type==TransactionRecord::RecvFromOther || rec->type==TransactionRecord::SendToOther ||
+       rec->type==TransactionRecord::PayFromOther || rec->type==TransactionRecord::PayToOther ||
+       rec->type==TransactionRecord::PayToAddress ||
        rec->type==TransactionRecord::SendToAddress || rec->type==TransactionRecord::RecvWithAddress)
     {
         tooltip += QString(" ") + formatTxToAddress(rec, true);

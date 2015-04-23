@@ -6,12 +6,13 @@
 #pragma once
 
 #include "chaingen.h"
+#include "test_chain_unit_base.h"
 
 class gen_simple_chain_001: public test_chain_unit_base
 {
 public:
   gen_simple_chain_001();
-  bool generate(std::vector<test_event_entry> &events);
+  virtual bool generate(std::vector<test_event_entry> &events) const;
   bool verify_callback_1(core_t& c, size_t ev_index, const std::vector<test_event_entry> &events);
   bool verify_callback_2(core_t& c, size_t ev_index, const std::vector<test_event_entry> &events);
 };
@@ -21,6 +22,6 @@ class one_block: public test_chain_unit_base
   cryptonote::account_base alice;
 public:
   one_block();
-  bool generate(std::vector<test_event_entry> &events);
+  virtual bool generate(std::vector<test_event_entry> &events) const;
   bool verify_1(core_t& c, size_t ev_index, const std::vector<test_event_entry> &events);
 };

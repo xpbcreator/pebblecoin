@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 
@@ -13,9 +15,9 @@
 #include "common/ntp_time.h"
 #include "crypto/hash.h"
 #include "cryptonote_protocol/cryptonote_protocol_handler_common.h"
+#include "rpc/core_rpc_server_commands_defs.h"
 
 #include "tx_pool.h"
-#include "blockchain_storage.h"
 #include "miner.h"
 #include "connection_context.h"
 #include "cryptonote_stat_info.h"
@@ -27,6 +29,9 @@ namespace cryptonote
 {
   class i_core_callback;
   class core_tester;
+  class blockchain_storage;
+  class checkpoints;
+  struct bs_delegate_info;
   
   /************************************************************************/
   /*                                                                      */
@@ -37,6 +42,7 @@ namespace cryptonote
      
    public:
      core(i_cryptonote_protocol* pprotocol, tools::ntp_time& ntp_time_in);
+     ~core();
      bool handle_get_objects(NOTIFY_REQUEST_GET_OBJECTS::request& arg, NOTIFY_RESPONSE_GET_OBJECTS::request& rsp, cryptonote_connection_context& context);
      bool on_idle();
      bool handle_incoming_tx(const blobdata& tx_blob, tx_verification_context& tvc, bool keeped_by_block);
@@ -57,11 +63,8 @@ namespace cryptonote
      bool get_blockchain_top(uint64_t& heeight, crypto::hash& top_id);
      bool get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks, std::list<transaction>& txs);
      bool get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks);
-     template<class t_ids_container, class t_blocks_container, class t_missed_container>
-     bool get_blocks(const t_ids_container& block_ids, t_blocks_container& blocks, t_missed_container& missed_bs)
-     {
-       return m_blockchain_storage.get_blocks(block_ids, blocks, missed_bs);
-     }
+     bool get_blocks(const std::list<crypto::hash>& block_ids, std::list<cryptonote::block>& blocks,
+                     std::list<crypto::hash>& missed_bs);
      crypto::hash get_block_id_by_height(uint64_t height);
      bool get_transactions(const std::vector<crypto::hash>& txs_ids, std::list<transaction>& txs, std::list<crypto::hash>& missed_txs);
      bool get_transaction(const crypto::hash &h, transaction &tx);
@@ -90,7 +93,7 @@ namespace cryptonote
      bool get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::request& req, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::response& res);
      void pause_mine();
      void resume_mine();
-     blockchain_storage& get_blockchain_storage(){return m_blockchain_storage;}
+     blockchain_storage& get_blockchain_storage();
      tx_memory_pool* get_memory_pool(){return &m_mempool;}
      //debug functions
      void print_blockchain(uint64_t start_index, uint64_t end_index);
@@ -126,9 +129,9 @@ namespace cryptonote
      bool handle_command_line(const boost::program_options::variables_map& vm);
      bool on_update_blocktemplate_interval();
 
-
+     std::unique_ptr<blockchain_storage> m_pblockchain_storage;
+     blockchain_storage& m_blockchain_storage;
      tx_memory_pool m_mempool;
-     blockchain_storage m_blockchain_storage;
      i_cryptonote_protocol* m_pprotocol;
      epee::critical_section m_incoming_tx_lock;
      //m_miner and m_miner_addres are probably temporary here

@@ -221,7 +221,7 @@ namespace cryptonote
       txd_p.first->second.last_failed_id = null_hash;
       tvc.m_added_to_pool = true;
 
-      if(txd_p.first->second.fee > 0)
+      if(txd_p.first->second.fee >= DEFAULT_FEE)
         tvc.m_should_be_relayed = true;
     }
 

@@ -3,7 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #pragma once 
+
 #include "chaingen.h"
+#include "test_chain_unit_base.h"
 
 /************************************************************************/
 /*                                                                      */
@@ -12,7 +14,7 @@ class gen_simple_chain_split_1 : public test_chain_unit_base
 {
 public: 
   gen_simple_chain_split_1();
-  bool generate(std::vector<test_event_entry> &events) const; 
+  virtual bool generate(std::vector<test_event_entry> &events) const; 
   bool check_split_not_switched(core_t& c, size_t ev_index, const std::vector<test_event_entry> &events);
   bool check_split_not_switched2(core_t& c, size_t ev_index, const std::vector<test_event_entry> &events);
   bool check_split_switched(core_t& c, size_t ev_index, const std::vector<test_event_entry> &events);

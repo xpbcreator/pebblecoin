@@ -13,7 +13,6 @@
 
 #include "console_handler.h"
 
-#include "version.h"
 #include "cryptonote_genesis_config.h"
 #include "common/util.h"
 #include "common/command_line.h"

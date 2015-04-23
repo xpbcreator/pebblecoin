@@ -2,11 +2,12 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include <QStringList>
+
+#include "cryptonote_config.h"
+
 #include "bitcoinunits.h"
 
-#include "bitcoin/util.h"
-
-#include <QStringList>
 
 BitcoinUnits::BitcoinUnits(QObject *parent):
         QAbstractListModel(parent),
@@ -62,14 +63,10 @@ qint64 BitcoinUnits::factor(int unit)
 {
     switch(unit)
     {
-/*    case XPB:  return COIN;
-    case mXPB: return COIN / 1000;
-    case uXPB: return COIN / 1000 / 1000;
-    default:   return COIN;*/
-    case XPB:  return 100000000;
-    case mXPB: return 100000;
-    case uXPB: return 100;
-    default:   return 100000000;
+    case XPB:  return ICOIN;
+    case mXPB: return ICOIN / 1000;
+    case uXPB: return ICOIN / 1000 / 1000;
+    default:   return ICOIN;
     }
 }
 

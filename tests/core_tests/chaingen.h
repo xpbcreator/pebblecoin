@@ -32,6 +32,9 @@
 #include "cryptonote_core/core_tester.h"
 #include "cryptonote_core/construct_tx_mod.h"
 
+#include "test_event_entry.h"
+#include "test_chain_unit_base.h"
+
 namespace concolor
 {
   inline std::basic_ostream<char, std::char_traits<char> >& bright_white(std::basic_ostream<char, std::char_traits<char> >& ostr)
@@ -74,201 +77,7 @@ namespace concolor
 extern tools::ntp_time g_ntp_time;
 void reset_test_defaults();
 
-typedef boost::function<bool (core_t& c, size_t ev_index)> verify_callback_func;
-
-struct callback_entry
-{
-  std::string callback_name;
-  BEGIN_SERIALIZE_OBJECT()
-    FIELD(callback_name)
-  END_SERIALIZE()
-
-private:
-  friend class boost::serialization::access;
-
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/)
-  {
-    ar & callback_name;
-  }
-};
-
-struct callback_entry_func
-{
-  verify_callback_func cb;
-  BEGIN_SERIALIZE_OBJECT()
-    throw std::runtime_error("Can't epee serialize callback_entry_func");
-  END_SERIALIZE()
-
-private:
-  friend class boost::serialization::access;
-
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/)
-  {
-    throw std::runtime_error("Can't boost serialize callback_entry_func");
-  }
-};
-
-struct dont_mark_spent_tx
-{
-  BEGIN_SERIALIZE_OBJECT()
-  END_SERIALIZE()
-
-private:
-  friend class boost::serialization::access;
-  
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/)
-  {
-  }
-};
-
-struct set_dpos_switch_block_struct
-{
-  int64_t block;
-  int64_t registration_block;
-  BEGIN_SERIALIZE_OBJECT()
-    FIELD(block);
-    FIELD(registration_block);
-  END_SERIALIZE()
-  
-  set_dpos_switch_block_struct() { }
-  set_dpos_switch_block_struct(int64_t block_in, int64_t registration_block_in)
-      : block(block_in), registration_block(registration_block_in) { }
-  
-private:
-  friend class boost::serialization::access;
-  
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/)
-  {
-    ar & block;
-  }
-};
-
-struct debug_mark
-{
-  std::string message;
-  BEGIN_SERIALIZE_OBJECT()
-    FIELD(message)
-  END_SERIALIZE()
-
-private:
-  friend class boost::serialization::access;
-
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/)
-  {
-    ar & message;
-  }
-};
-
-struct register_delegate_account
-{
-  cryptonote::delegate_id_t delegate_id;
-  cryptonote::account_base acct;
-  BEGIN_SERIALIZE_OBJECT()
-    FIELD(delegate_id)
-    FIELD(acct)
-  END_SERIALIZE()
-  
-private:
-  friend class boost::serialization::access;
-  
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/)
-  {
-    ar & delegate_id;
-    ar & acct;
-  }
-};
-
-template<typename T>
-struct serialized_object
-{
-  serialized_object() { }
-
-  serialized_object(const cryptonote::blobdata& a_data)
-    : data(a_data)
-  {
-  }
-
-  cryptonote::blobdata data;
-  BEGIN_SERIALIZE_OBJECT()
-    FIELD(data)
-    END_SERIALIZE()
-
-private:
-  friend class boost::serialization::access;
-
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/)
-  {
-    ar & data;
-  }
-};
-
-typedef serialized_object<cryptonote::block> serialized_block;
-typedef serialized_object<cryptonote::transaction> serialized_transaction;
-
-struct event_visitor_settings
-{
-  int valid_mask;
-  bool txs_keeped_by_block;
-  bool check_can_create_block_from_template;
-
-  enum settings
-  {
-    set_txs_keeped_by_block = 1 << 0,
-    set_check_can_create_block_from_template = 1 << 1
-  };
-
-  event_visitor_settings(int a_valid_mask = 0, bool a_txs_keeped_by_block = false,
-                         bool a_check_can_create_block_from_template = true)
-    : valid_mask(a_valid_mask)
-    , txs_keeped_by_block(a_txs_keeped_by_block)
-    , check_can_create_block_from_template(a_check_can_create_block_from_template)
-  {
-  }
-
-private:
-  friend class boost::serialization::access;
-
-  template<class Archive>
-  void serialize(Archive & ar, const unsigned int /*version*/)
-  {
-    ar & valid_mask;
-    ar & txs_keeped_by_block;
-  }
-};
-
-VARIANT_TAG(binary_archive, callback_entry, 0xcb);
-VARIANT_TAG(binary_archive, cryptonote::account_base, 0xcc);
-VARIANT_TAG(binary_archive, serialized_block, 0xcd);
-VARIANT_TAG(binary_archive, serialized_transaction, 0xce);
-VARIANT_TAG(binary_archive, event_visitor_settings, 0xcf);
-VARIANT_TAG(binary_archive, dont_mark_spent_tx, 0xd0);
-VARIANT_TAG(binary_archive, set_dpos_switch_block_struct, 0xd1);
-VARIANT_TAG(binary_archive, debug_mark, 0xd2);
-VARIANT_TAG(binary_archive, register_delegate_account, 0xd3);
-VARIANT_TAG(binary_archive, callback_entry_func, 0xd4);
-
-typedef boost::variant<cryptonote::block, cryptonote::transaction, cryptonote::account_base, callback_entry, serialized_block, serialized_transaction, event_visitor_settings, dont_mark_spent_tx, set_dpos_switch_block_struct, debug_mark, register_delegate_account, callback_entry_func> test_event_entry;
-
 typedef std::unordered_map<crypto::hash, std::pair<const cryptonote::transaction*, bool> > map_hash2tx_isregular_t;
-
-class test_chain_unit_base
-{
-public:
-  typedef boost::function<bool (core_t& c, size_t ev_index, const std::vector<test_event_entry> &events)> verify_callback;
-  typedef std::map<std::string, verify_callback> callbacks_map;
-
-  void register_callback(const std::string& cb_name, verify_callback cb);
-  bool verify(const std::string& cb_name, core_t& c, size_t ev_index, const std::vector<test_event_entry> &events);
-private:
-  callbacks_map m_callbacks;
-};
 
 
 class test_generator
@@ -406,63 +215,15 @@ uint64_t get_balance(const cryptonote::account_base& addr, const std::vector<cry
 uint64_t get_balance(const std::vector<test_event_entry>& events, const cryptonote::account_base& addr,
                      const cryptonote::block& head);
 
-//--------------------------------------------------------------------------
-template<class t_test_class>
-auto do_check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t event_index, const cryptonote::transaction& tx, t_test_class& validator, int)
-  -> decltype(validator.check_tx_verification_context(tvc, tx_added, event_index, tx))
-{
-  return validator.check_tx_verification_context(tvc, tx_added, event_index, tx);
-}
-//--------------------------------------------------------------------------
-template<class t_test_class>
-bool do_check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t /*event_index*/, const cryptonote::transaction& /*tx*/, t_test_class&, long)
-{
-  // Default block verification context check
-  if (tvc.m_verifivation_failed)
-    throw std::runtime_error("Transaction verification failed");
-  return true;
-}
-//--------------------------------------------------------------------------
-template<class t_test_class>
-bool check_tx_verification_context(const cryptonote::tx_verification_context& tvc, bool tx_added, size_t event_index, const cryptonote::transaction& tx, t_test_class& validator)
-{
-  // SFINAE in action
-  return do_check_tx_verification_context(tvc, tx_added, event_index, tx, validator, 0);
-}
-//--------------------------------------------------------------------------
-template<class t_test_class>
-auto do_check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_index, const cryptonote::block& blk, t_test_class& validator, int)
-  -> decltype(validator.check_block_verification_context(bvc, event_index, blk))
-{
-  return validator.check_block_verification_context(bvc, event_index, blk);
-}
-//--------------------------------------------------------------------------
-template<class t_test_class>
-bool do_check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t /*event_index*/, const cryptonote::block& /*blk*/, t_test_class&, long)
-{
-  // Default block verification context check
-  if (bvc.m_verifivation_failed)
-    throw std::runtime_error("Block verification failed");
-  return true;
-}
-//--------------------------------------------------------------------------
-template<class t_test_class>
-bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_index, const cryptonote::block& blk, t_test_class& validator)
-{
-  // SFINAE in action
-  return do_check_block_verification_context(bvc, event_index, blk, validator, 0);
-}
-
 /************************************************************************/
 /*                                                                      */
 /************************************************************************/
-template<class t_test_class>
 struct push_core_event_visitor: public boost::static_visitor<bool>
 {
 private:
   core_t& m_c;
   const std::vector<test_event_entry>& m_events;
-  t_test_class& m_validator;
+  test_chain_unit_base& m_validator;
   size_t m_ev_index;
   std::map<cryptonote::delegate_id_t, cryptonote::account_base> m_delegate_accts;
 
@@ -470,7 +231,7 @@ private:
   bool m_check_can_create_block_from_template;
 
 public:
-  push_core_event_visitor(core_t& c, const std::vector<test_event_entry>& events, t_test_class& validator)
+  push_core_event_visitor(core_t& c, const std::vector<test_event_entry>& events, test_chain_unit_base& validator)
     : m_c(c)
     , m_events(events)
     , m_validator(validator)
@@ -579,7 +340,7 @@ public:
       m_c.handle_incoming_tx(txblob, tvc, m_txs_keeped_by_block);
     }
     bool tx_added = pool_size + 1 == m_c.get_pool_transactions_count();
-    bool r = check_tx_verification_context(tvc, tx_added, m_ev_index, tx, m_validator);
+    bool r = m_validator.check_tx_verification_context(tvc, tx_added, m_ev_index, tx);
     CHECK_AND_NO_ASSERT_MES(r, false, "tx verification context check failed");
     
     CHECK_AND_ASSERT(check_can_create_valid_mining_block(), false);
@@ -601,7 +362,7 @@ public:
     {
       m_c.handle_incoming_block(bd, bvc);
     }
-    bool r = check_block_verification_context(bvc, m_ev_index, b, m_validator);
+    bool r = m_validator.check_block_verification_context(bvc, m_ev_index, b);
     CHECK_AND_NO_ASSERT_MES(r, false, "block verification context check failed");
     
     CHECK_AND_ASSERT(check_can_create_valid_mining_block(), false);
@@ -678,7 +439,7 @@ public:
     {
       blk = cryptonote::block();
     }
-    bool r = check_block_verification_context(bvc, m_ev_index, blk, m_validator);
+    bool r = m_validator.check_block_verification_context(bvc, m_ev_index, blk);
     CHECK_AND_NO_ASSERT_MES(r, false, "block verification context check failed");
     
     CHECK_AND_ASSERT(check_can_create_valid_mining_block(), false);
@@ -705,7 +466,7 @@ public:
       tx = cryptonote::transaction();
     }
 
-    bool r = check_tx_verification_context(tvc, tx_added, m_ev_index, tx, m_validator);
+    bool r = m_validator.check_tx_verification_context(tvc, tx_added, m_ev_index, tx);
     CHECK_AND_NO_ASSERT_MES(r, false, "transaction verification context check failed");
     
     CHECK_AND_ASSERT(check_can_create_valid_mining_block(), false);
@@ -720,68 +481,9 @@ private:
   }
 };
 //--------------------------------------------------------------------------
-template<class t_test_class>
-inline bool replay_events_through_core(core_t& cr, const std::vector<test_event_entry>& events, t_test_class& validator)
-{
-  TRY_ENTRY();
-
-  //init core here
-
-  CHECK_AND_ASSERT_MES(typeid(cryptonote::block) == events[0].type(), false, "First event must be genesis block creation");
-  cr.set_genesis_block(boost::get<cryptonote::block>(events[0]));
-
-  bool r = true;
-  push_core_event_visitor<t_test_class> visitor(cr, events, validator);
-  for(size_t i = 1; i < events.size() && r; ++i)
-  {
-    visitor.event_index(i);
-    r = boost::apply_visitor(visitor, events[i]);
-  }
-
-  return r;
-
-  CATCH_ENTRY_L0("replay_events_through_core", false);
-}
-//--------------------------------------------------------------------------
-template<class t_test_class>
-inline bool do_replay_events(std::vector<test_event_entry>& events)
-{
-  boost::program_options::options_description desc("Allowed options");
-  core_t::init_options(desc);
-  command_line::add_arg(desc, command_line::arg_data_dir);
-  boost::program_options::variables_map vm;
-  bool r = command_line::handle_error_helper(desc, [&]()
-  {
-    boost::program_options::store(boost::program_options::basic_parsed_options<char>(&desc), vm);
-    boost::program_options::notify(vm);
-    return true;
-  });
-  if (!r)
-    return false;
-
-  cryptonote::cryptonote_protocol_stub pr; //TODO: stub only for this kind of test, make real validation of relayed objects
-  core_t c(&pr, g_ntp_time);
-  if (!c.init(vm))
-  {
-    std::cout << concolor::magenta << "Failed to init core" << concolor::normal << std::endl;
-    return false;
-  }
-  t_test_class validator;
-  reset_test_defaults();
-  return replay_events_through_core<t_test_class>(c, events, validator);
-}
-//--------------------------------------------------------------------------
-template<class t_test_class>
-inline bool do_replay_file(const std::string& filename)
-{
-  std::vector<test_event_entry> events;
-  if (!tools::unserialize_obj_from_file(events, filename))
-  {
-    std::cout << concolor::magenta << "Failed to deserialize data from file: " << filename << concolor::normal << std::endl;
-    return false;
-  }
-  return do_replay_events<t_test_class>(events);
-}
+bool replay_events_through_core(core_t& cr, const std::vector<test_event_entry>& events, test_chain_unit_base& validator);
+bool do_replay_events(std::vector<test_event_entry>& events, test_chain_unit_base& validator);
+bool do_replay_file(const std::string& filename, test_chain_unit_base& validator);
 //--------------------------------------------------------------------------
 #define GENERATE_ACCOUNT(account) \
     cryptonote::account_base account; \
@@ -903,78 +605,6 @@ inline bool do_replay_file(const std::string& filename)
 
 #define SET_EVENT_VISITOR_SETT(VEC_EVENTS, SETT, VAL) VEC_EVENTS.push_back(event_visitor_settings(SETT, VAL, VAL));
 
-#define GENERATE(filename, genclass) \
-    { \
-        std::vector<test_event_entry> events; \
-        genclass g; \
-        reset_test_defaults(); \
-        g.generate(events); \
-        if (!tools::serialize_obj_to_file(events, filename)) \
-        { \
-            std::cout << concolor::magenta << "Failed to serialize data to file: " << filename << concolor::normal << std::endl; \
-            throw std::runtime_error("Failed to serialize data to file"); \
-        } \
-    }
-
-
-#define PLAY(filename, genclass) \
-    if(!do_replay_file<genclass>(filename)) \
-    { \
-      std::cout << concolor::magenta << "Failed to pass test : " << #genclass << concolor::normal << std::endl; \
-      return 1; \
-    }
-
-#define GENERATE_AND_PLAY(genclass)                                                                        \
-{                                                                                                        \
-  if (!only_test.empty() && #genclass != only_test)   { \
-    std::cout << concolor::yellow << "#TEST# skipped " << #genclass << concolor::normal << '\n'; \
-  }  \
-  else { \
-    std::vector<test_event_entry> events;                                                                  \
-    ++tests_count;                                                                                         \
-    bool generated = false;                                                                                \
-    try                                                                                                    \
-    {                                                                                                      \
-       std::cout << concolor::green << "#TEST# started " << #genclass << concolor::normal << '\n';          \
-       genclass g;                                                                                          \
-       reset_test_defaults(); \
-       generated = g.generate(events);                                                                     \
-    }                                                                                                      \
-    catch (const std::exception& ex)                                                                       \
-    {                                                                                                      \
-      LOG_PRINT(#genclass << " generation failed: what=" << ex.what(), 0);                                 \
-    }                                                                                                      \
-    catch (...)                                                                                            \
-    {                                                                                                      \
-      LOG_PRINT(#genclass << " generation failed: generic exception", 0);                                  \
-    }                                                                                                      \
-    if (generated && do_replay_events< genclass >(events))                                                 \
-    {                                                                                                      \
-      std::cout << concolor::green << "#TEST# Succeeded " << #genclass << concolor::normal << '\n';        \
-    }                                                                                                      \
-    else                                                                                                   \
-    {                                                                                                      \
-      std::cout << concolor::magenta << "#TEST# Failed " << #genclass << concolor::normal << '\n';         \
-      failed_tests.push_back(#genclass);                                                                   \
-      if (stop_on_fail) throw std::runtime_error("Breaking early from test failure");                      \
-    }                                                                                                      \
-    std::cout << std::endl;                                                                                \
-  }   \
-}
-
-#define CALL_TEST(test_name, function)                                                                     \
-  {                                                                                                        \
-    if(!function())                                                                                        \
-    {                                                                                                      \
-      std::cout << concolor::magenta << "#TEST# Failed " << test_name << concolor::normal << std::endl;    \
-      return 1;                                                                                            \
-    }                                                                                                      \
-    else                                                                                                   \
-    {                                                                                                      \
-      std::cout << concolor::green << "#TEST# Succeeded " << test_name << concolor::normal << std::endl;   \
-    }                                                                                                      \
-  }
-
 #define QUOTEME(x) #x
 #define DEFINE_TESTS_ERROR_CONTEXT(text) const char* perr_context = text;
 #define CHECK_TEST_CONDITION(cond) CHECK_AND_ASSERT_MES(cond, false, "[" << perr_context << "] failed: \"" << QUOTEME(cond) << "\"")
@@ -986,7 +616,7 @@ inline bool do_replay_file(const std::string& filename)
 #define DEFINE_TEST(TEST_NAME, BASE_CLASS) \
   struct TEST_NAME : public BASE_CLASS \
   { \
-    bool generate(std::vector<test_event_entry>& events) const; \
+    virtual bool generate(std::vector<test_event_entry>& events) const; \
   };
 //--------------------------------------------------------------------------
 

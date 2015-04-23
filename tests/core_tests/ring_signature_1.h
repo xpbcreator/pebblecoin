@@ -3,7 +3,9 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #pragma once 
+
 #include "chaingen.h"
+#include "test_chain_unit_base.h"
 
 /************************************************************************/
 /*                                                                      */
@@ -13,7 +15,7 @@ class gen_ring_signature_1 : public test_chain_unit_base
 public:
   gen_ring_signature_1();
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 
   bool check_balances_1(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
   bool check_balances_2(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
@@ -32,7 +34,7 @@ class gen_ring_signature_2 : public test_chain_unit_base
 public:
   gen_ring_signature_2();
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 
   bool check_balances_1(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
   bool check_balances_2(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
@@ -51,7 +53,7 @@ class gen_ring_signature_big : public test_chain_unit_base
 public:
   gen_ring_signature_big();
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 
   bool check_balances_1(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
   bool check_balances_2(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);

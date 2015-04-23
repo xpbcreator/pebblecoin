@@ -240,13 +240,15 @@ void wallet2::process_new_transaction(const cryptonote::transaction& tx, uint64_
     if(get_payment_id_from_tx_extra_nonce(extra_nonce.nonce, payment_id))
     {
       uint64_t received = (tx_money_spent_in_ins < tx_money_got_in_outs) ? tx_money_got_in_outs - tx_money_spent_in_ins : 0;
-      if (0 < received && null_hash != payment_id)
+      uint64_t sent = (tx_money_spent_in_ins > tx_money_got_in_outs) ? tx_money_spent_in_ins - tx_money_got_in_outs : 0;
+      if ((received > 0 || sent > 0) && null_hash != payment_id)
       {
         payment_details payment;
         payment.m_tx_hash      = cryptonote::get_transaction_hash(tx);
         payment.m_amount       = received;
         payment.m_block_height = height;
         payment.m_unlock_time  = tx.unlock_time;
+        payment.m_sent         = sent > 0;
         m_payments.emplace(payment_id, payment);
         LOG_PRINT_L2("Payment found: " << payment_id << " / " << payment.m_tx_hash << " / " << payment.m_amount);
       }
@@ -806,6 +808,21 @@ void wallet2::get_payments(const crypto::hash& payment_id, std::list<wallet2::pa
   std::for_each(range.first, range.second, [&payments](const payment_container::value_type& x) {
     payments.push_back(x.second);
   });
+}
+//----------------------------------------------------------------------------------------------------
+bool wallet2::get_payment_for_tx(const crypto::hash& tx_hash,
+                                 crypto::hash& payment_id, wallet2::payment_details& payment) const
+{
+  BOOST_FOREACH(const auto& item, m_payments)
+  {
+    if (item.second.m_tx_hash == tx_hash)
+    {
+      payment_id = item.first;
+      payment = item.second;
+      return true;
+    }
+  }
+  return false;
 }
 //----------------------------------------------------------------------------------------------------
 bool wallet2::is_transfer_unlocked(const transfer_details& td) const

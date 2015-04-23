@@ -28,7 +28,7 @@ one_block::one_block()
   REGISTER_CALLBACK("verify_1", one_block::verify_1);
 }
 
-bool one_block::generate(std::vector<test_event_entry> &events)
+bool one_block::generate(std::vector<test_event_entry> &events) const
 {
     uint64_t ts_start = 1338224400;
 
@@ -75,7 +75,7 @@ gen_simple_chain_001::gen_simple_chain_001()
   REGISTER_CALLBACK("verify_callback_2", gen_simple_chain_001::verify_callback_2);
 }
 
-bool gen_simple_chain_001::generate(std::vector<test_event_entry> &events)
+bool gen_simple_chain_001::generate(std::vector<test_event_entry> &events) const
 {
     uint64_t ts_start = 1338224400;
 

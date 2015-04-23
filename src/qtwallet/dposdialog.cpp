@@ -10,6 +10,7 @@
 
 #include "include_base_utils.h"
 
+#include "cryptonote_config.h"
 #include "cryptonote_core/blockchain_storage.h"
 
 #include "interface/main.h"

@@ -3,15 +3,17 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #pragma once 
+
 #include "chaingen.h"
+#include "test_chain_unit_base.h"
 
 struct gen_block_reward : public test_chain_unit_base
 {
   gen_block_reward();
 
-  bool generate(std::vector<test_event_entry>& events) const;
+  virtual bool generate(std::vector<test_event_entry>& events) const;
 
-  bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& blk);
+  virtual bool check_block_verification_context(const cryptonote::block_verification_context& bvc, size_t event_idx, const cryptonote::block& blk);
 
   bool mark_invalid_block(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);
   bool mark_checked_block(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events);

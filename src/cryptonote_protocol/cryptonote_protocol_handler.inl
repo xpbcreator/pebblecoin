@@ -124,7 +124,7 @@ namespace cryptonote
           }
         }
       }
-      request_missing_objects(context, true); // this func will filter and remove signed hashes we don't need
+      request_missing_objects(context, true, true); // this func will filter and remove signed hashes we don't need
       
       return true;
     }
@@ -456,7 +456,7 @@ namespace cryptonote
       return 1;
     }
     
-    request_missing_objects(context, true);
+    request_missing_objects(context, true, false);
     return 1;
   }
   //------------------------------------------------------------------------------------------------------------------------
@@ -511,7 +511,7 @@ namespace cryptonote
   }
   
   template<class t_core>
-  bool t_cryptonote_protocol_handler<t_core>::request_missing_objects(cryptonote_connection_context& context, bool check_having_blocks)
+  bool t_cryptonote_protocol_handler<t_core>::request_missing_objects(cryptonote_connection_context& context, bool check_having_blocks, bool signed_hashes_only)
   {
     // filter needed objects first
     if (check_having_blocks)
@@ -574,6 +574,13 @@ namespace cryptonote
       
       LOG_PRINT_CCONTEXT_L2("-->>NOTIFY_REQUEST_GET_OBJECTS: blocks.size()=" << req.blocks.size() << ", txs.size()=" << req.txs.size() << ", signed_hashes.size()=" << req.signed_hashes.size() << ", require_signed_hashes=" << req.require_signed_hashes);
       post_notify<NOTIFY_REQUEST_GET_OBJECTS>(req, context);    
+    }
+    
+    // don't request objects, we were called form process_payload_sync_data where we have the top block and
+    // connection was marked as synchronized
+    if (signed_hashes_only)
+    {
+      return true;
     }
     
     // if only need signed hashes, ask for more objects, or we may be synchronized
@@ -677,7 +684,7 @@ namespace cryptonote
         context.m_needed_signed_hashes.push_back(bl_id); // if have the block, but not the hash, ask for it
     }
 
-    request_missing_objects(context, false);
+    request_missing_objects(context, false, false);
     return 1;
   }
   //------------------------------------------------------------------------------------------------------------------------

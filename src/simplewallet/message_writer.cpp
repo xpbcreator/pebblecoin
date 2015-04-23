@@ -17,19 +17,6 @@ using namespace epee;
 using namespace cryptonote;
 
 
-bool parse_payment_id(const std::string& payment_id_str, crypto::hash& payment_id)
-{
-  blobdata payment_id_data;
-  if(!string_tools::parse_hexstr_to_binbuff(payment_id_str, payment_id_data))
-    return false;
-
-  if(sizeof(crypto::hash) != payment_id_data.size())
-    return false;
-
-  payment_id = *reinterpret_cast<const crypto::hash*>(payment_id_data.data());
-  return true;
-}
-
 message_writer::message_writer(epee::log_space::console_colors color, bool bright,
                                std::string&& prefix, int log_level)
     : m_flush(true)

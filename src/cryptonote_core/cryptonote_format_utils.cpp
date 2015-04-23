@@ -984,4 +984,17 @@ namespace cryptonote
     return b.major_version >= DPOS_BLOCK_MAJOR_VERSION;
   }
   //---------------------------------------------------------------
+  bool parse_payment_id(const std::string& payment_id_str, crypto::hash& payment_id)
+  {
+    blobdata payment_id_data;
+    if(!string_tools::parse_hexstr_to_binbuff(payment_id_str, payment_id_data))
+      return false;
+
+    if(sizeof(crypto::hash) != payment_id_data.size())
+      return false;
+
+    payment_id = *reinterpret_cast<const crypto::hash*>(payment_id_data.data());
+    return true;
+  }
+  //---------------------------------------------------------------
 }

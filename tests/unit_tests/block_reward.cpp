@@ -8,6 +8,7 @@
 
 #include "cryptonote_config.h"
 #include "cryptonote_core/cryptonote_basic_impl.h"
+#include "common/finally.h"
 
 using namespace cryptonote;
 
@@ -92,8 +93,7 @@ namespace
   {
     using namespace cryptonote::detail;
     
-    auto prev_switch = cryptonote::config::dpos_switch_block;
-    cryptonote::config::dpos_switch_block = 0xffffffffffffffff;
+    auto ss = tools::scoped_set_var(cryptonote::config::dpos_switch_block, 0xffffffffffffffff);
     
     for (size_t into_era = 1; into_era < num_reward_eras; into_era++)
     {
@@ -116,8 +116,6 @@ namespace
     TEST_COIN_GEN(9 * YEAR_HEIGHT - 1, 100*COIN);
     TEST_COIN_GEN(9 * YEAR_HEIGHT,     0*COIN);
     TEST_COIN_GEN(9 * YEAR_HEIGHT + 1, 0*COIN);
-    
-    cryptonote::config::dpos_switch_block = prev_switch;
   }
   
   //--------------------------------------------------------------------------------------------------------------------
@@ -189,7 +187,8 @@ namespace
   {
 #if !defined(NDEBUG)
     size_t huge_size = std::numeric_limits<uint32_t>::max() + UINT64_C(2);
-    ASSERT_DEATH(do_test(huge_size, huge_size + 1), "");
+    do_test(huge_size, huge_size + 1);
+    ASSERT_FALSE(m_block_not_too_big);
 #endif
   }
 
@@ -197,10 +196,31 @@ namespace
   {
 #if !defined(NDEBUG)
     size_t huge_size = std::numeric_limits<uint32_t>::max() + UINT64_C(2);
-    ASSERT_DEATH(do_test(huge_size - 2, huge_size), "");
+    do_test(huge_size - 2, huge_size);
+    ASSERT_FALSE(m_block_not_too_big);
 #endif
   }
 
+  TEST_F(block_reward_and_current_block_size, dpos_reward_0)
+  {
+    auto ss = tools::scoped_set_var(cryptonote::config::dpos_switch_block, 1);
+    
+    do_test(0, CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE + 1);
+    ASSERT_TRUE(m_block_not_too_big);
+    ASSERT_EQ(0, m_block_reward);
+    
+    do_test(0, 2 * CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE - 1);
+    ASSERT_TRUE(m_block_not_too_big);
+    ASSERT_EQ(0, m_block_reward);
+    
+    do_test(0, 2 * CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE);
+    ASSERT_TRUE(m_block_not_too_big);
+    ASSERT_EQ(0, m_block_reward);
+    
+    do_test(0, 2 * CRYPTONOTE_BLOCK_GRANTED_FULL_REWARD_ZONE + 1);
+    ASSERT_FALSE(m_block_not_too_big);
+  }
+  
   //--------------------------------------------------------------------------------------------------------------------
   class block_reward_and_last_block_sizes : public ::testing::Test
   {
