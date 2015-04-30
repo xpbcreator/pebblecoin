@@ -25,7 +25,6 @@
 // 
 
 
-
 #include "net_utils_base.h"
 #include <boost/lambda/bind.hpp>
 #include <boost/foreach.hpp>
@@ -37,6 +36,11 @@
 #include <string>
 #include "misc_language.h"
 #include "pragma_comp_defs.h"
+
+/*#include <atomic>
+namespace {
+  std::atomic<uint32_t> g_connection_count;
+}*/
 
 PRAGMA_WARNING_PUSH
 namespace epee
@@ -57,15 +61,20 @@ PRAGMA_WARNING_DISABLE_VS(4355)
                             m_was_shutdown(0), 
                             m_ref_sockets_count(sock_count), 
                             m_pfilter(pfilter),
-                            m_protocol_handler(this, config, context)
+                            m_protocol_handler(this, config, context),
+                            m_send_que_lock("connection::m_send_que_lock"),
+                            m_self_refs_lock("connection::m_self_refs_lock")
   {
+    //m_connection_id = g_connection_count++;
     boost::interprocess::ipcdetail::atomic_inc32(&m_ref_sockets_count);
+    //LOG_PRINT_L0("[connection " << m_connection_id << "/" << socket_.native_handle() << "] constructed");
   }
 PRAGMA_WARNING_DISABLE_VS(4355)
   //---------------------------------------------------------------------------------
   template<class t_protocol_handler>
   connection<t_protocol_handler>::~connection()
   {
+    //LOG_PRINT_L0("[connection " << m_connection_id << "/" << socket_.native_handle() << "] destructing");
     if(!m_was_shutdown)
     {
       LOG_PRINT_L3("[sock " << socket_.native_handle() << "] Socket destroyed without shutdown.");
@@ -74,6 +83,7 @@ PRAGMA_WARNING_DISABLE_VS(4355)
 
     LOG_PRINT_L3("[sock " << socket_.native_handle() << "] Socket destroyed");
     boost::interprocess::ipcdetail::atomic_dec32(&m_ref_sockets_count);
+    //LOG_PRINT_L0("[connection " << m_connection_id << "/" << socket_.native_handle() << "] destructed");
   }
   //---------------------------------------------------------------------------------
   template<class t_protocol_handler>
@@ -147,11 +157,13 @@ PRAGMA_WARNING_DISABLE_VS(4355)
   bool connection<t_protocol_handler>::request_callback()
   {
     TRY_ENTRY();
-    LOG_PRINT_L2("[" << print_connection_context_short(context) << "] request_callback");
+    
     // Use safe_shared_from_this, because of this is public method and it can be called on the object being deleted
     auto self = safe_shared_from_this();
     if(!self)
       return false;
+    
+    LOG_PRINT_L2("[" << print_connection_context_short(context) << "] request_callback");
 
     strand_.post(boost::bind(&connection<t_protocol_handler>::call_back_starter, self));
     CATCH_ENTRY_L0("connection<t_protocol_handler>::request_callback()", false);
@@ -168,13 +180,16 @@ PRAGMA_WARNING_DISABLE_VS(4355)
   bool connection<t_protocol_handler>::add_ref()
   {
     TRY_ENTRY();
-    LOG_PRINT_L4("[sock " << socket_.native_handle() << "] add_ref");
-    CRITICAL_REGION_LOCAL(m_self_refs_lock);
-
+    
     // Use safe_shared_from_this, because of this is public method and it can be called on the object being deleted
     auto self = safe_shared_from_this();
     if(!self)
       return false;
+    
+    //LOG_PRINT_L0("[connection " << m_connection_id << "/" << socket_.native_handle() << "] add_ref");
+    LOG_PRINT_L4("[sock " << socket_.native_handle() << "] add_ref");
+    CRITICAL_REGION_LOCAL(m_self_refs_lock);
+
     if(m_was_shutdown)
       return false;
     m_self_refs.push_back(self);
@@ -186,6 +201,13 @@ PRAGMA_WARNING_DISABLE_VS(4355)
   bool connection<t_protocol_handler>::release()
   {
     TRY_ENTRY();
+    
+    // Use safe_shared_from_this, because of this is public method and it can be called on the object being deleted
+    auto self = safe_shared_from_this();
+    if(!self)
+      return false;
+    
+    //LOG_PRINT_L0("[connection " << m_connection_id << "/" << socket_.native_handle() << "] release");
     boost::shared_ptr<connection<t_protocol_handler> >  back_connection_copy;
     LOG_PRINT_L4("[sock " << socket_.native_handle() << "] release");
     CRITICAL_REGION_BEGIN(m_self_refs_lock);
@@ -422,7 +444,8 @@ PRAGMA_WARNING_DISABLE_VS(4355)
     io_service_(*m_io_service_local_instance.get()),
     acceptor_(io_service_),
     new_connection_(new connection<t_protocol_handler>(io_service_, m_config, m_sockets_count, m_pfilter)), 
-    m_stop_signal_sent(false), m_port(0), m_sockets_count(0), m_threads_count(0), m_pfilter(NULL), m_thread_index(0)
+    m_stop_signal_sent(false), m_port(0), m_sockets_count(0), m_threads_count(0), m_pfilter(NULL), m_thread_index(0),
+    m_threads_lock("boosted_tcp_server::m_threads_lock")
   {
     m_thread_name_prefix = "NET";
   }

@@ -48,6 +48,7 @@ namespace net_utils
 		/************************************************************************/
 		struct http_server_config
 		{
+      http_server_config() : m_lock("http_server_config::m_lock") { }
 			std::string m_folder;
 			critical_section m_lock;
 		};

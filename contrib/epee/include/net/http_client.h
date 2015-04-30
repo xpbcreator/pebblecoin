@@ -204,7 +204,7 @@ using namespace std;
 		class http_simple_client: public i_target_handler
 		{
 		public:
-			
+			http_simple_client() : m_lock("http_simple_client::m_lock") { }
 
 		private:
 			enum reciev_machine_state

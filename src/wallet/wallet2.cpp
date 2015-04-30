@@ -263,7 +263,8 @@ void wallet2::process_unconfirmed(const cryptonote::transaction& tx)
     m_unconfirmed_txs.erase(unconf_it);
 }
 //----------------------------------------------------------------------------------------------------
-void wallet2::process_new_blockchain_entry(const cryptonote::block& b, cryptonote::block_complete_entry& bche, crypto::hash& bl_id, uint64_t height)
+void wallet2::process_new_blockchain_entry(const cryptonote::block& b, cryptonote::block_complete_entry& bche,
+                                           crypto::hash& bl_id, uint64_t height)
 {
   //handle transactions from new block
   THROW_WALLET_EXCEPTION_IF(height != m_blockchain.size(), error::wallet_internal_error,
@@ -295,6 +296,9 @@ void wallet2::process_new_blockchain_entry(const cryptonote::block& b, cryptonot
 
   if (0 != m_callback)
     m_callback->on_new_block_processed(height, b);
+  
+  if (m_local_bc_height % 1000 == 0)
+    store();
 }
 //----------------------------------------------------------------------------------------------------
 void wallet2::get_short_chain_history(std::list<crypto::hash>& ids)
@@ -433,6 +437,8 @@ void wallet2::refresh(size_t & blocks_fetched, bool& received_money)
       }
     }
   }
+
+  store();
   
   LOG_PRINT_L0("Starting pull_autovote_delegates...");
   // refresh autovote delegates
@@ -744,12 +750,13 @@ void wallet2::load(const std::string& wallet_, const std::string& password)
 void wallet2::store()
 {
   THROW_WALLET_EXCEPTION_IF(m_read_only, error::invalid_read_only_operation, "store");
-  
+  LOG_PRINT_GREEN("Storing wallet ...", LOG_LEVEL_0);
   bool r = tools::serialize_obj_to_file(*this, m_wallet_file);
   r = r && tools::serialize_obj_to_file(this->m_known_transfers, m_known_transfers_file);
   r = r && tools::serialize_obj_to_file(this->m_currency_keys, m_currency_keys_file);
   r = r && tools::serialize_obj_to_file(this->m_votes_info, m_votes_info_file);
   THROW_WALLET_EXCEPTION_IF(!r, error::file_save_error, m_wallet_file);
+  LOG_PRINT_GREEN("Wallet stored.", LOG_LEVEL_0);
 }
 //----------------------------------------------------------------------------------------------------
 cryptonote::currency_map wallet2::unlocked_balance() const
@@ -905,7 +912,18 @@ fake_outs_map wallet2::get_fake_outputs(const std::unordered_map<cryptonote::coi
 {
   fake_outs_map res = AUTO_VAL_INIT(res);
   if (!fake_outputs_count)
+  {
+    // push back empty fake outs
+    BOOST_FOREACH(const auto& item, amounts)
+    {
+      BOOST_FOREACH(const auto& amt, item.second)
+      {
+        res[item.first].push_back(std::list<out_entry>());
+      }
+    }
+    
     return res;
+  }
   
   BOOST_FOREACH(const auto& item, amounts)
   {

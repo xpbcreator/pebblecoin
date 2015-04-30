@@ -437,7 +437,7 @@ std::vector<cryptonote::tx_source_entry> wallet_tx_builder::impl::prepare_inputs
     src.amount_in = src.amount_out = td.amount();
     //paste mixin transaction
     auto& these_fakes = fake_outputs[td.cp()];
-    if(these_fakes.size())
+    if(i < these_fakes.size())
     {
       these_fakes[i].sort([](const out_entry& a, const out_entry& b){return a.global_amount_index < b.global_amount_index;});
       BOOST_FOREACH(const auto& daemon_oe, these_fakes[i])

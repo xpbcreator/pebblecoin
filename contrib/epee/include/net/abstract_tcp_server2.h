@@ -130,6 +130,7 @@ namespace net_utils
     //typename t_protocol_handler::config_type m_dummy_config;
     std::list<boost::shared_ptr<connection<t_protocol_handler> > > m_self_refs; // add_ref/release support
     critical_section m_self_refs_lock;
+    //uint32_t m_connection_id;
   };
 
 

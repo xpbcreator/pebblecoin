@@ -75,7 +75,7 @@ namespace epee
     std::unique_ptr<impl> m_pimpl;
 
   public:
-    critical_section();
+    critical_section(const std::string& name="");
     ~critical_section();
 
     void lock();

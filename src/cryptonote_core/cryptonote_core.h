@@ -21,13 +21,13 @@
 #include "miner.h"
 #include "connection_context.h"
 #include "cryptonote_stat_info.h"
+#include "i_core_callback.h"
 
 PUSH_WARNINGS
 DISABLE_VS_WARNINGS(4355)
 
 namespace cryptonote
 {
-  class i_core_callback;
   class core_tester;
   class blockchain_storage;
   class checkpoints;
@@ -145,11 +145,6 @@ namespace cryptonote
      
      i_core_callback *m_callback;
    };
-  
-  class i_core_callback {
-  public:
-    virtual void on_new_block_added(uint64_t height, const cryptonote::block& block) {}
-  };
 }
 
 POP_WARNINGS

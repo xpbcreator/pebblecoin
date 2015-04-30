@@ -82,7 +82,13 @@ namespace levin
     ::critical_section m_connection_lock;
     net_utils::blocked_mode_client m_transport;
 	public:
-		levin_client_async():m_pcommands_handler(NULL), m_is_stop(0), m_threads_count(0), m_invoke_data_ready(0), m_invoke_is_active(0)
+		levin_client_async():m_pcommands_handler(NULL), m_is_stop(0), m_threads_count(0), m_invoke_data_ready(0), m_invoke_is_active(0), m_send_lock("levin_client_async::m_send_lock"),
+        m_local_invoke_buff_lock("levin_client_async::m_local_invoke_buff_lock"),
+        m_recieved_packets_lock("levin_client_async::m_recieved_packets_lock"),
+        m_invoke_lock("levin_client_async::m_invoke_lock"),
+        m_reciev_packet_lock("levin_client_async::m_reciev_packet_lock"),
+        m_connection_lock("levin_client_async::m_connection_lock")
+    
 		{}
 		levin_client_async(const levin_client_async& /*v*/):m_pcommands_handler(NULL), m_is_stop(0), m_threads_count(0), m_invoke_data_ready(0), m_invoke_is_active(0)
 		{}

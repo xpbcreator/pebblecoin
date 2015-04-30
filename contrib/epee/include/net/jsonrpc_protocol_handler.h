@@ -47,6 +47,7 @@ namespace net_utils
     template<class t_connection_context>
     struct jsonrpc2_server_config
     {
+      jsonrpc2_server_config() : m_lock("jsonrpc2_server_config::m_lock") { }
       i_jsonrpc2_server_handler<t_connection_context>* m_phandler;
       critical_section m_lock;
     };

@@ -1395,7 +1395,7 @@ bool blockchain_storage::handle_get_objects(NOTIFY_REQUEST_GET_OBJECTS::request&
     crypto::hash_cache::signed_hash_entry sigent;
     if (crypto::g_hash_cache.get_signed_longhash_entry(block_id, sigent))
       rsp.signed_hashes.push_back(sigent);
-    else if (arg.require_signed_hashes)
+    else if (arg.require_signed_hashes && !config::in_pos_era(get_block_height(bl)))
         no_more_blocks = true; // other client won't process them anyway, so don't send them
     
     if (no_more_blocks)

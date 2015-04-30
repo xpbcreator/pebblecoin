@@ -182,7 +182,7 @@ namespace log_space
   /************************************************************************/
   /* logger                                                               */
   /************************************************************************/
-  logger::logger()
+  logger::logger() : m_critical_sec("logger::m_critical_sec")
   {
     CRITICAL_REGION_BEGIN(m_critical_sec);
     init();

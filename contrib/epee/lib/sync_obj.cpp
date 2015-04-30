@@ -24,35 +24,78 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
+#include <iostream>
+#include <atomic>
+#include <string>
+
 #include <boost/thread/recursive_mutex.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include "syncobj.h"
 
 namespace epee
 {
+#ifdef DEBUG_LOCKS
+  namespace {
+    std::atomic<uint32_t> g_cs_counter(0);
+  }
+#endif
+  
   class critical_section::impl
   {
   public:
+    impl(const std::string& name) {
+#ifdef DEBUG_LOCKS
+      g_cs_counter++;
+      m_name = name + ":" + std::to_string(g_cs_counter);
+#else
+      m_name = name;
+#endif
+    }
+    
     boost::recursive_mutex m_section;
+    std::string m_name;
   };
   
   //to make copy fake!
   //critical_section::critical_section(const critical_section& section) { }
-  critical_section::critical_section() : m_pimpl(new critical_section::impl) { }
-  critical_section::~critical_section() { }
+  critical_section::critical_section(const std::string& name) : m_pimpl(new critical_section::impl(name))
+  {
+#ifdef DEBUG_LOCKS
+    std::cout << "[critical_section(" << m_pimpl->m_name << ")]" << std::endl;
+#endif
+  }
+  critical_section::~critical_section()
+  {
+#ifdef DEBUG_LOCKS
+    std::cout << "[~critical_section(" << m_pimpl->m_name << ")]" << std::endl;
+#endif
+  }
   
   void critical_section::lock()
   {
+#ifdef DEBUG_LOCKS
+    if (boost::starts_with(m_pimpl->m_name, "connection::"))
+      std::cout << "[critical_section(" << m_pimpl->m_name << ")->lock()]" << std::endl;
+#endif
     m_pimpl->m_section.lock();
   }
   
   void critical_section::unlock()
   {
+#ifdef DEBUG_LOCKS
+    if (boost::starts_with(m_pimpl->m_name, "connection::"))
+      std::cout << "[critical_section(" << m_pimpl->m_name << ")->unlock()]" << std::endl;
+#endif
     m_pimpl->m_section.unlock();
   }
   
   bool critical_section::tryLock()
   {
+#ifdef DEBUG_LOCKS
+    if (boost::starts_with(m_pimpl->m_name, "connection::"))
+      std::cout << "[critical_section(" << m_pimpl->m_name << ")->trylock()]" << std::endl;
+#endif
     return m_pimpl->m_section.try_lock();
   }
   
