@@ -8,7 +8,7 @@
 
 namespace cryptonote
 {
-  class block;
+  struct block;
   
   class i_core_callback
   {

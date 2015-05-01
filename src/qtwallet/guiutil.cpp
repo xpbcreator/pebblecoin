@@ -3,9 +3,10 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifdef WIN32
-#include "shellapi.h"
-#include "shlobj.h"
-#include "shlwapi.h"
+#include <windows.h>
+#include <shellapi.h>
+#include <shlobj.h>
+#include <shlwapi.h>
 #endif
 
 #include <boost/filesystem.hpp>

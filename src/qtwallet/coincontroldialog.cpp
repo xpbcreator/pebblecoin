@@ -470,11 +470,11 @@ void CoinControlDialog::updateLabels(WalletModel *model, QDialog* dialog)
     int64_t nAfterFee           = 0;
     int64_t nChange             = 0;
     unsigned int nBytes         = 0;
-    unsigned int nBytesInputs   = 0;
+    //unsigned int nBytesInputs   = 0;
     double dPriority            = 0;
-    double dPriorityInputs      = 0;
+    //double dPriorityInputs      = 0;
     unsigned int nQuantity      = 0;
-    int nQuantityUncompressed   = 0;
+    //int nQuantityUncompressed   = 0;
 
     /*vector<COutPoint> vCoinControl;
     vector<COutput>   vOutputs;
@@ -658,7 +658,7 @@ void CoinControlDialog::updateView()
     ui->treeWidget->setEnabled(false); // performance, otherwise updateLabels would be called for every checked checkbox
     ui->treeWidget->setAlternatingRowColors(!treeMode);
 
-    int nDisplayUnit = model->getOptionsModel()->getDisplayUnit();
+    //int nDisplayUnit = model->getOptionsModel()->getDisplayUnit();
 
     /*map<QString, vector<COutput> > mapCoins;
     model->listCoins(mapCoins);

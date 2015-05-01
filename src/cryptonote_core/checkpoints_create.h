@@ -21,6 +21,10 @@ namespace cryptonote {
     else
     {
       ADD_CHECKPOINT(79000, "a0f97e100a8b48741a841659b14ecbadd80dc5b8b41fbb58f9202c03c190d8f1");
+      // checkpoint entry into DPOS
+      ADD_CHECKPOINT(85296, "551f4306ebea0f73d4388679f53b01a24ce722a150a726fb349606cec1749ecd");
+      ADD_CHECKPOINT(85300, "043ddf9d65aec38dd8277d6949701370c5c2edf3c01224093a55c17ccb590639");
+      ADD_CHECKPOINT(85304, "b86cbac6cdcf0edb92bd710456ffd4b3e41864952da45b6b08316df777277ce8");
     }
 
     return true;

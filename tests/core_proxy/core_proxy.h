@@ -60,5 +60,7 @@ namespace tests
     bool find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, cryptonote::NOTIFY_RESPONSE_CHAIN_ENTRY::request& resp){return true;}
     bool handle_get_objects(cryptonote::NOTIFY_REQUEST_GET_OBJECTS::request& arg, cryptonote::NOTIFY_RESPONSE_GET_OBJECTS::request& rsp, cryptonote::cryptonote_connection_context& context){return true;}
     crypto::hash get_block_id_by_height(uint64_t height);
+    bool get_block_by_hash(const crypto::hash &h, cryptonote::block &blk);
+    bool is_in_checkpoint_zone(uint64_t height);
   };
 }

@@ -3,7 +3,7 @@
 
 namespace qt_opt
 {
-  const command_line::arg_descriptor<std::string> arg_lang = {"lang", "Specify language (e.g. de_DE)"};
+  const command_line::arg_descriptor<std::string> arg_lang = {"lang", "Specify language (e.g. de_DE)", "", true};
   const command_line::arg_descriptor<bool> arg_min = {"min", "Whether to start minimized", false};
   const command_line::arg_descriptor<bool> arg_no_splash = {"nosplash", "Disable the splash screen", false};
   const command_line::arg_descriptor<bool> arg_disable_wallet = {"disable-wallet", "Whether to run without the wallet", false};

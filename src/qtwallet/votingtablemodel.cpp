@@ -21,6 +21,7 @@
 // Amount column is right-aligned it contains numbers
 static int column_alignments[] = {
     Qt::AlignLeft|Qt::AlignVCenter, /* Selected */
+    Qt::AlignCenter|Qt::AlignVCenter, /* Rank */
     Qt::AlignRight|Qt::AlignVCenter, /* Votes */
     Qt::AlignLeft|Qt::AlignVCenter, /* ID */
     Qt::AlignLeft|Qt::AlignVCenter, /* Address */
@@ -114,7 +115,7 @@ VotingTableModel::VotingTableModel(CWallet *wallet) :
         priv(new VotingTablePriv(wallet, this)),
         cachedNumDelegates(0)
 {
-    columns << QString() << tr("Votes") << tr("ID") << tr("Address") << tr("Score");
+    columns << QString() << tr("#") << tr("Votes") << tr("ID") << tr("Address") << tr("Score");
 
     priv->refreshDelegates();
 }
@@ -135,7 +136,15 @@ int VotingTableModel::columnCount(const QModelIndex &parent) const
 
 QString VotingTableModel::formatTooltip(const VotingRecord *rec) const
 {
-    QString tooltip = QString("TransactionTableModel::formatTooltip NYI");
+    auto unit = BitcoinUnits::XPB;
+    
+    QString tooltip;
+    tooltip += tr("Blocks Processed:") + " " + QString::number(rec->info->processed_blocks);
+    tooltip += "\n" + tr("Blocks Missed:") + " " + QString::number(rec->info->missed_blocks);
+    tooltip += "\n" + tr("Fees Received:") + " " + BitcoinUnits::formatWithUnit(unit, rec->info->fees_received);
+    tooltip += "\n" + tr("Vote Rank:") + " " + QString::number(rec->info->cached_vote_rank + 1);
+    tooltip += "\n" + tr("Autoselect Rank:") + " " + QString::number(rec->info->cached_autoselect_rank + 1);
+
     return tooltip;
 }
 
@@ -153,6 +162,8 @@ QVariant VotingTableModel::data(const QModelIndex &index, int role) const
         {
         case Selected:
             return isVotingUserDelegates() ? rec->isUserSelected : rec->isAutoselected;
+        case Rank:
+            return (qint64)(rec->info->cached_vote_rank + 1);
         case Votes:
             return BitcoinUnits::formatWithUnit(BitcoinUnits::XPB, rec->info->total_votes);
         case ID:
@@ -160,7 +171,7 @@ QVariant VotingTableModel::data(const QModelIndex &index, int role) const
         case Address:
             return QString::fromStdString(rec->info->address_as_string);
         case AutoselectScore:
-            return QString::number(cryptonote::get_delegate_rank(*rec->info)*100, 'f', 2) + "%";
+            return QString::number(cryptonote::get_delegate_rank(*rec->info), 'f', 4);
         }
         break;
     case Qt::EditRole:
@@ -169,6 +180,8 @@ QVariant VotingTableModel::data(const QModelIndex &index, int role) const
         {
         case Selected:
             return isVotingUserDelegates() ? rec->isUserSelected : rec->isAutoselected;
+        case Rank:
+            return (qint64)(rec->info->cached_vote_rank);
         case Votes:
             return quint64(rec->info->total_votes);
         case ID:
@@ -226,6 +239,8 @@ QVariant VotingTableModel::headerData(int section, Qt::Orientation orientation, 
             {
             case Selected:
                 return tr("Whether you are voting for this delegate with your transactions.");
+            case Rank:
+                return tr("The delegate's vote rank.");
             case Votes:
                 return tr("The total number of votes this delegate has received from the network.");
             case ID:

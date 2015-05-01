@@ -33,6 +33,18 @@ OptionsDialog::OptionsDialog(QWidget *parent) :
     fProxyIpValid(true)
 {
     ui->setupUi(this);
+  
+    // Hide non-functional parts
+    ui->databaseCacheLabel->hide();
+    ui->databaseCache->hide();
+    ui->databaseCacheUnitLabel->hide();
+    ui->threadsScriptVerifLabel->hide();
+    ui->threadsScriptVerif->hide();
+    ui->groupBox->hide();
+    ui->tabWidget->removeTab(2); // network tab
+    ui->thirdPartyTxUrls->hide();
+    ui->thirdPartyTxUrlsLabel->hide();
+  
     GUIUtil::restoreWindowGeometry("nOptionsDialogWindow", this->size(), this);
 
     // Main elements init

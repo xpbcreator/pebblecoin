@@ -526,9 +526,9 @@ int main(int argc, char* argv[])
     LOG_PRINT_L0("Stopped wallet rpc server");
     try
     {
-      LOG_PRINT_L0("Storing wallet...");
+      LOG_PRINT_L1("Storing wallet...");
       wal.store();
-      LOG_PRINT_GREEN("Stored ok", LOG_LEVEL_0);
+      LOG_PRINT_GREEN("Stored ok", LOG_LEVEL_1);
     }
     catch (const std::exception& e)
     {

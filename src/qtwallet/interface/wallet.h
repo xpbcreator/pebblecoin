@@ -15,9 +15,13 @@
 
 #include "bitcoin/sync.h"
 
+namespace boost {
+  class thread;
+}
+
 namespace cryptonote {
   class tx_memory_pool;
-};
+}
 
 class CWalletTx {
 private:
@@ -94,6 +98,8 @@ public:
   bool HasWallet2() const;
   void SetWallet2(tools::wallet2 *pwalletArg);
   tools::wallet2 *GetWallet2() const;
+  
+  void ProcTxUpdated(std::string txHash, bool fAdded);
   
   void SetTxMemoryPool(cryptonote::tx_memory_pool *pmempool);
   

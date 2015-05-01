@@ -174,9 +174,8 @@ public:
                 parent->endRemoveRows();
                 break;
             case CT_UPDATED:
-                // Remove & re-add the transaction
-                updateWallet(hash, CT_DELETED);
-                updateWallet(hash, CT_NEW);
+                // Miscellaneous updates -- nothing to do, status update will take care of this, and is only computed for
+                // visible transactions.
                 break;
             }
         }
@@ -591,6 +590,8 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
         return rec->credit + rec->debit;
     case TxIDRole:
         return rec->getTxID();
+    case PaymentIDRole:
+        return rec->getPaymentID();
     case TxHashRole:
         return QString::fromStdString(rec->hash); //.ToString());
     case ConfirmedRole:

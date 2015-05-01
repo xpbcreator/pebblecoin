@@ -118,7 +118,10 @@ static void initTranslations(QTranslator &qtTranslatorBase, QTranslator &qtTrans
     if(!lang_territory_qsettings.isEmpty())
         lang_territory = lang_territory_qsettings;
     // 3) -lang command line argument
-    lang_territory = QString::fromStdString(GetArg(qt_opt::arg_lang));
+    if (HasArg(qt_opt::arg_lang))
+    {
+        lang_territory = QString::fromStdString(GetArg(qt_opt::arg_lang));
+    }
 
     // Convert to "de" only by truncating "_DE"
     QString lang = lang_territory;
@@ -511,7 +514,7 @@ static po::options_description InitParameters()
 
     po::options_description desc_cmd_qt("QT-specific options");
     QString lang_territory = QLocale::system().name();
-    command_line::add_arg(desc_cmd_qt, qt_opt::arg_lang, lang_territory.toStdString());
+    command_line::add_arg(desc_cmd_qt, qt_opt::arg_lang);
     command_line::add_arg(desc_cmd_qt, qt_opt::arg_min);
     command_line::add_arg(desc_cmd_qt, qt_opt::arg_no_splash);
     command_line::add_arg(desc_cmd_qt, qt_opt::arg_disable_wallet);

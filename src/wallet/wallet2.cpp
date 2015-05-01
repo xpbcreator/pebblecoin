@@ -750,13 +750,13 @@ void wallet2::load(const std::string& wallet_, const std::string& password)
 void wallet2::store()
 {
   THROW_WALLET_EXCEPTION_IF(m_read_only, error::invalid_read_only_operation, "store");
-  LOG_PRINT_GREEN("Storing wallet ...", LOG_LEVEL_0);
+  LOG_PRINT_GREEN("Storing wallet ...", LOG_LEVEL_1);
   bool r = tools::serialize_obj_to_file(*this, m_wallet_file);
   r = r && tools::serialize_obj_to_file(this->m_known_transfers, m_known_transfers_file);
   r = r && tools::serialize_obj_to_file(this->m_currency_keys, m_currency_keys_file);
   r = r && tools::serialize_obj_to_file(this->m_votes_info, m_votes_info_file);
   THROW_WALLET_EXCEPTION_IF(!r, error::file_save_error, m_wallet_file);
-  LOG_PRINT_GREEN("Wallet stored.", LOG_LEVEL_0);
+  LOG_PRINT_GREEN("Wallet stored.", LOG_LEVEL_1);
 }
 //----------------------------------------------------------------------------------------------------
 cryptonote::currency_map wallet2::unlocked_balance() const

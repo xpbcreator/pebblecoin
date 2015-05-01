@@ -272,3 +272,17 @@ crypto::hash tests::proxy_core::get_block_id_by_height(uint64_t height)
     
     throw std::runtime_error(std::string("No block of height ") + boost::lexical_cast<string>(height));
 }
+
+bool tests::proxy_core::get_block_by_hash(const crypto::hash &h, cryptonote::block &blk)
+{
+    if (m_hash2blkidx.count(h) == 0)
+        return false;
+    
+    blk = m_hash2blkidx[h].blk;
+    return true;
+}
+
+bool tests::proxy_core::is_in_checkpoint_zone(uint64_t height)
+{
+    return false;
+}

@@ -7,6 +7,7 @@
 
 #include <QMessageBox>
 #include <QSortFilterProxyModel>
+#include <QMenu>
 
 #include "include_base_utils.h"
 
@@ -34,6 +35,16 @@ DposDialog::DposDialog(QWidget *parent) :
 #endif
     
     ui->labelUnvoted->setText("N/A");
+    
+    // Actions
+    QAction *copyAddressAction = new QAction(tr("Copy address"), this);
+
+    contextMenu = new QMenu();
+    contextMenu->addAction(copyAddressAction);
+    
+    connect(ui->votingTableView, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(contextualMenu(QPoint)));
+    
+    connect(copyAddressAction, SIGNAL(triggered()), this, SLOT(copyAddress()));
 }
 
 void DposDialog::setModel(WalletModel *model)
@@ -57,6 +68,7 @@ void DposDialog::setModel(WalletModel *model)
     ui->votingTableView->sortByColumn(VotingTableModel::Votes, Qt::DescendingOrder);
     
     ui->votingTableView->setColumnWidth(VotingTableModel::Selected, SELECTED_COLUMN_WIDTH);
+    ui->votingTableView->setColumnWidth(VotingTableModel::Rank, RANK_COLUMN_WIDTH);
     ui->votingTableView->setColumnWidth(VotingTableModel::Votes, VOTES_COLUMN_WIDTH);
     ui->votingTableView->setColumnWidth(VotingTableModel::ID, ID_COLUMN_WIDTH);
     ui->votingTableView->setColumnWidth(VotingTableModel::Address, ADDRESS_MINIMUM_COLUMN_WIDTH);
@@ -258,6 +270,20 @@ void DposDialog::on_registerButton_clicked()
     {
         accept();
     }
+}
+
+void DposDialog::contextualMenu(const QPoint &point)
+{
+    QModelIndex index = ui->votingTableView->indexAt(point);
+    if(index.isValid())
+    {
+        contextMenu->exec(QCursor::pos());
+    }
+}
+
+void DposDialog::copyAddress()
+{
+    GUIUtil::copyEntryData(ui->votingTableView, VotingTableModel::Address, Qt::EditRole);
 }
 
 /*void TransactionView::showDetails()

@@ -50,6 +50,8 @@ public:
         AmountRole,
         /** Unique identifier */
         TxIDRole,
+        /** Payment identifier */
+        PaymentIDRole,
         /** Transaction hash */
         TxHashRole,
         /** Is transaction confirmed? */

@@ -29,10 +29,11 @@ public:
 
     enum ColumnIndex {
         Selected = 0,
-        Votes = 1,
-        ID = 2,
-        Address = 3,
-        AutoselectScore = 4,
+        Rank = 1,
+        Votes = 2,
+        ID = 3,
+        Address = 4,
+        AutoselectScore = 5,
     };
 
     /** Roles to get specific information from a voting row.

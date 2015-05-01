@@ -41,6 +41,12 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     wtx.GetCreditDebit(nMined, nCredit, nDebit);
     
     bool isPayment = wtx.IsPayment(*wallet);
+    std::string paymentId;
+    if (isPayment)
+    {
+        tools::wallet2::payment_details pd;
+        wtx.GetPaymentInfo(*wallet, paymentId, pd);
+    }
 
     LOG_PRINT_L2("inMain=" << wtx.IsInMainChain() << ", nMined=" << nMined << ", nDebit=" << nDebit << ", nCredit=" << nCredit);
     
@@ -49,6 +55,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     {
         auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp, TransactionRecord::Generated, "",
                                      0, nMined);
+        rec.payment_id = paymentId;
         rec.idx = parts.size();
         parts.append(rec);
     }
@@ -77,7 +84,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp,
                                          isPayment ? TransactionRecord::PayToAddress : TransactionRecord::SendToAddress,
                                          cryptonote::get_account_address_as_str(dest.addr),
-                                         nThisAmount, 0);
+                                         -((qint64)nThisAmount), 0);
+            rec.payment_id = paymentId;
             rec.idx = parts.size();
 
             if (wallet->GetWallet2()->is_mine(dest.addr))
@@ -133,7 +141,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     {
         auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp,
                                      wtx.IsPayment(*wallet) ? TransactionRecord::PayToOther : TransactionRecord::SendToOther,
-                                     "", nDebit - nCredit, 0);
+                                     "", -((qint64)(nDebit - nCredit)), 0);
+        rec.payment_id = paymentId;
         rec.idx = parts.size();
         parts.append(rec);
     }
@@ -146,6 +155,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                                          wtx.IsPayment(*wallet) ? TransactionRecord::PayFromOther : TransactionRecord::RecvFromOther,
                                          "",
                                          0, nCredit);
+            rec.payment_id = paymentId;
             rec.idx = parts.size();
             parts.append(rec);
         }
@@ -153,7 +163,8 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
         {
             auto rec = TransactionRecord(wtx.txHash, wtx.nTimestamp,
                                          isPayment ? TransactionRecord::PayToAddress : TransactionRecord::SendToAddress,
-                                         "", nDebit, 0);
+                                         "", -((qint64)nDebit), 0);
+            rec.payment_id = paymentId;
             rec.idx = parts.size();
             parts.append(rec);
         }
@@ -288,13 +299,6 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
 
 void TransactionRecord::updateStatus(const CWalletTx &wtx)
 {
-    /*status.countsForBalance = 0;
-    status.depth = 0;
-    status.cur_num_blocks = 0;
-    status.status = TransactionStatus::Offline;
-    status.open_for = 0;
-    return;*/
-    
     AssertLockHeld(cs_main);
     if (!pcore)
         return;
@@ -311,7 +315,8 @@ void TransactionRecord::updateStatus(const CWalletTx &wtx)
         idx);
     status.countsForBalance = wtx.IsTrusted() && !(wtx.GetBlocksToMaturity() > 0);
     status.depth = wtx.GetDepthInMainChain();
-    status.cur_num_blocks = pwalletMain->GetWallet2()->get_blockchain_current_height() - 1;
+    status.cur_daemon_blocks = DaemonProcessedHeight();
+    status.cur_wallet_blocks = WalletProcessedHeight();
 
     /*if (!IsFinalTx(wtx, chainActive.Height() + 1))
     {
@@ -383,7 +388,8 @@ bool TransactionRecord::statusUpdateNeeded()
         return false;
     if (!pwalletMain)
         return false;
-    return status.cur_num_blocks != pwalletMain->GetWallet2()->get_blockchain_current_height() - 1;
+    return status.cur_daemon_blocks != DaemonProcessedHeight() ||
+           status.cur_wallet_blocks != WalletProcessedHeight();
 }
 
 QString TransactionRecord::getTxID() const
@@ -396,3 +402,7 @@ QString TransactionRecord::formatSubTxId(const std::string &hash, int vout)
   return QString::fromStdString(hash + strprintf("-%03d", vout));
 }
 
+QString TransactionRecord::getPaymentID() const
+{
+    return QString::fromStdString(payment_id);
+}

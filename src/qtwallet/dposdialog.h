@@ -10,6 +10,7 @@
 QT_BEGIN_NAMESPACE
 class QModelIndex;
 class QSortFilterProxyModel;
+class QMenu;
 QT_END_NAMESPACE
 
 namespace cryptonote {
@@ -38,7 +39,8 @@ public:
 
     enum ColumnWidths {
         SELECTED_COLUMN_WIDTH = 23,
-        VOTES_COLUMN_WIDTH = 100,
+        RANK_COLUMN_WIDTH = 30,
+        VOTES_COLUMN_WIDTH = 130,
         ID_COLUMN_WIDTH = 60,
         ADDRESS_MINIMUM_COLUMN_WIDTH = 200,
         AUTOSELECT_SCORE_COLUMN_WIDTH = 70,
@@ -58,10 +60,14 @@ private:
     WalletModel *model;
     QSortFilterProxyModel *proxyModel;
     
+    QMenu *contextMenu;
+    
     int cachedDelegateId;
     
 private slots:
     void on_registerButton_clicked();
+    void contextualMenu(const QPoint &);
+    void copyAddress();
 
 signals:
     // Fired when a message should be reported to the user

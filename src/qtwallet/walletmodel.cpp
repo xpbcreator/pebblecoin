@@ -115,6 +115,8 @@ void WalletModel::updateStatus()
 
 void WalletModel::pollBalanceChanged()
 {
+    static int cachedWalletBlocks = 0;
+    
     // Get required locks upfront. This avoids the GUI from getting stuck on
     // periodical polls if the core is holding the locks for a longer time -
     // for example, during a wallet rescan.
@@ -127,16 +129,13 @@ void WalletModel::pollBalanceChanged()
     TRY_LOCK(wallet->cs_wallet, lockWallet);
     if(!lockWallet)
         return;
+    
+    int walletBlocks = WalletProcessedHeight();
+    int daemonBlocks = DaemonProcessedHeight();
   
-    uint64_t current_height;
-    crypto::hash top_id;
-    pcore->get_blockchain_top(current_height, top_id);
-    
-    int numBlocks = (int)current_height - 1;
-    
-    if (numBlocks != cachedNumBlocks)
+    if (daemonBlocks != cachedNumBlocks || walletBlocks != cachedWalletBlocks)
     {
-        cachedNumBlocks = numBlocks;
+        cachedNumBlocks = daemonBlocks;
         
         checkBalanceChanged();
         checkDelegateInfoChanged();

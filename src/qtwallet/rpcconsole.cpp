@@ -200,6 +200,10 @@ RPCConsole::RPCConsole(QWidget *parent) :
 {
     ui->setupUi(this);
     GUIUtil::restoreWindowGeometry("nRPCConsoleWindow", this->size(), this);
+  
+    // Hide non-functional parts
+    ui->tabWidget->removeTab(1); // RPC console
+    ui->tabWidget->removeTab(1); // network traffic
 
 #ifndef Q_OS_MAC
     ui->openDebugLogfileButton->setIcon(QIcon(":/icons/export"));

@@ -93,20 +93,20 @@ BitcoinGUI::BitcoinGUI(boost::program_options::options_description descOptionsIn
     if (!fIsTestnet)
     {
 #ifndef Q_OS_MAC
-        QApplication::setWindowIcon(QIcon(":icons/bitcoin"));
-        setWindowIcon(QIcon(":icons/bitcoin"));
+        QApplication::setWindowIcon(QIcon(":icons/pebblecoin"));
+        setWindowIcon(QIcon(":icons/pebblecoin"));
 #else
-        MacDockIconHandler::instance()->setIcon(QIcon(":icons/bitcoin"));
+        MacDockIconHandler::instance()->setIcon(QIcon(":icons/pebblecoin"));
 #endif
     }
     else
     {
         windowTitle += " " + tr("[testnet]");
 #ifndef Q_OS_MAC
-        QApplication::setWindowIcon(QIcon(":icons/bitcoin_testnet"));
-        setWindowIcon(QIcon(":icons/bitcoin_testnet"));
+        QApplication::setWindowIcon(QIcon(":icons/pebblecoin_testnet"));
+        setWindowIcon(QIcon(":icons/pebblecoin_testnet"));
 #else
-        MacDockIconHandler::instance()->setIcon(QIcon(":icons/bitcoin_testnet"));
+        MacDockIconHandler::instance()->setIcon(QIcon(":icons/pebblecoin_testnet"));
 #endif
     }
     setWindowTitle(windowTitle);
@@ -285,9 +285,9 @@ void BitcoinGUI::createActions(bool fIsTestnet)
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
     if (!fIsTestnet)
-        aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About Pebblecoin Qt"), this);
+        aboutAction = new QAction(QIcon(":/icons/pebblecoin"), tr("&About Pebblecoin Qt"), this);
     else
-        aboutAction = new QAction(QIcon(":/icons/bitcoin_testnet"), tr("&About Pebblecoin Qt"), this);
+        aboutAction = new QAction(QIcon(":/icons/pebblecoin_testnet"), tr("&About Pebblecoin Qt"), this);
     aboutAction->setStatusTip(tr("Show information about Pebblecoin"));
     aboutAction->setMenuRole(QAction::AboutRole);
 #if QT_VERSION < 0x050000
@@ -301,9 +301,9 @@ void BitcoinGUI::createActions(bool fIsTestnet)
     optionsAction->setStatusTip(tr("Modify configuration options for Pebblecoin"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
     if (!fIsTestnet)
-        toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
+        toggleHideAction = new QAction(QIcon(":/icons/pebblecoin"), tr("&Show / Hide"), this);
     else
-        toggleHideAction = new QAction(QIcon(":/icons/bitcoin_testnet"), tr("&Show / Hide"), this);
+        toggleHideAction = new QAction(QIcon(":/icons/pebblecoin_testnet"), tr("&Show / Hide"), this);
     toggleHideAction->setStatusTip(tr("Show or hide the main Window"));
 
     encryptWalletAction = new QAction(QIcon(":/icons/lock_closed"), tr("&Encrypt Wallet..."), this);
@@ -367,13 +367,13 @@ void BitcoinGUI::createMenuBar()
     QMenu *file = appMenuBar->addMenu(tr("&File"));
     if(walletFrame)
     {
-        file->addAction(openAction);
-        file->addAction(backupWalletAction);
-        file->addAction(signMessageAction);
-        file->addAction(verifyMessageAction);
-        file->addSeparator();
+        //file->addAction(openAction);
+        //file->addAction(backupWalletAction);
+        //file->addAction(signMessageAction);
+        //file->addAction(verifyMessageAction);
+        //file->addSeparator();
         file->addAction(usedSendingAddressesAction);
-        file->addAction(usedReceivingAddressesAction);
+        //file->addAction(usedReceivingAddressesAction);
         file->addSeparator();
     }
     file->addAction(quitAction);
@@ -381,9 +381,9 @@ void BitcoinGUI::createMenuBar()
     QMenu *settings = appMenuBar->addMenu(tr("&Settings"));
     if(walletFrame)
     {
-        settings->addAction(encryptWalletAction);
-        settings->addAction(changePassphraseAction);
-        settings->addSeparator();
+        //settings->addAction(encryptWalletAction);
+        //settings->addAction(changePassphraseAction);
+        //settings->addSeparator();
     }
     settings->addAction(optionsAction);
 
@@ -535,9 +535,9 @@ void BitcoinGUI::createTrayIconMenu()
     trayIconMenu->addAction(sendCoinsAction);
     trayIconMenu->addAction(receiveCoinsAction);
     trayIconMenu->addSeparator();
-    trayIconMenu->addAction(signMessageAction);
-    trayIconMenu->addAction(verifyMessageAction);
-    trayIconMenu->addSeparator();
+    // trayIconMenu->addAction(signMessageAction);
+    // trayIconMenu->addAction(verifyMessageAction);
+    // trayIconMenu->addSeparator();
     trayIconMenu->addAction(optionsAction);
     trayIconMenu->addAction(openRPCConsoleAction);
 #ifndef Q_OS_MAC // This is built-in on Mac

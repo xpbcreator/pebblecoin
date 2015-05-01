@@ -175,6 +175,16 @@ CWallet::~CWallet()
 }
 
 
+void CWallet::ProcTxUpdated(std::string txHash, bool fAdded)
+{
+  // Delete & re-add since parts may have changed
+  if (fAdded)
+  {
+    NotifyTransactionChanged(this, txHash, CT_DELETED);
+  }
+  NotifyTransactionChanged(this, txHash, CT_NEW);
+}
+
 void CWallet::ProcTransferDetails(const tools::wallet2::transfer_details& td, bool fProcIn, bool fProcOut)
 {
   LOG_PRINT_L4("LOCK(cs_wallet) ProcTransferDetails");
@@ -332,7 +342,7 @@ void CWallet::SetTxMemoryPool(cryptonote::tx_memory_pool *pmempool)
   BOOST_FOREACH(const auto& tx, txs)
   {
     bool fAdded = AddTransaction(tx);
-    NotifyTransactionChanged(this, GetStrHash(tx), fAdded ? CT_NEW : CT_UPDATED);
+    ProcTxUpdated(GetStrHash(tx), fAdded);
   }
 }
 
@@ -575,7 +585,6 @@ bool CWallet::LoadCWallet()
   return true;
 }
 
-
 void CWallet::WalletTaskThread()
 {
   LOG_PRINT_L0("Wallet task thread started");
@@ -599,7 +608,8 @@ void CWallet::WalletTaskThread()
         
         bool fAdded = AddTransaction(task.td.m_tx);
         ProcTransferDetails(task.td, true, false);
-        NotifyTransactionChanged(this, GetStrHash(task.td.m_tx), fAdded ? CT_NEW : CT_UPDATED);
+        
+        ProcTxUpdated(GetStrHash(task.td.m_tx), fAdded);
       } break;
         
       case wallet_task::TASK_MONEY_SPENT: {
@@ -610,8 +620,8 @@ void CWallet::WalletTaskThread()
         
         ProcTransferDetails(task.td, false, true);
         
-        NotifyTransactionChanged(this, GetStrHash(task.td.m_tx), fAdded1 ? CT_NEW : CT_UPDATED);
-        NotifyTransactionChanged(this, GetStrHash(task.td.m_spent_by_tx), fAdded2 ? CT_NEW : CT_UPDATED);
+        ProcTxUpdated(GetStrHash(task.td.m_tx), fAdded1);
+        ProcTxUpdated(GetStrHash(task.td.m_spent_by_tx), fAdded2);
       } break;
         
       case wallet_task::TASK_SKIP_TRANSACTION: {
@@ -626,7 +636,7 @@ void CWallet::WalletTaskThread()
       case wallet_task::TASK_TX_ADDED: {
         LOG_PRINT_GREEN("TASK_TX_ADDED", LOG_LEVEL_2);
         bool fAdded = AddTransaction(task.tx);
-        NotifyTransactionChanged(this, GetStrHash(task.tx), fAdded ? CT_NEW : CT_UPDATED);
+        ProcTxUpdated(GetStrHash(task.tx), fAdded);
       } break;
         
       case wallet_task::TASK_TX_REMOVED: {

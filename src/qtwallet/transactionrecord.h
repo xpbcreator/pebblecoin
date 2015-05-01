@@ -23,7 +23,7 @@ class TransactionStatus
 public:
     TransactionStatus():
         countsForBalance(false), sortKey(""),
-        matures_in(0), status(Offline), depth(0), open_for(0), cur_num_blocks(0)
+        matures_in(0), status(Offline), depth(0), open_for(0), cur_daemon_blocks(0), cur_wallet_blocks(0)
     { }
 
     enum Status {
@@ -61,7 +61,8 @@ public:
     /**@}*/
 
     /** Current number of blocks (to know whether cached status is still valid) */
-    uint64_t cur_num_blocks;
+    uint64_t cur_daemon_blocks;
+    uint64_t cur_wallet_blocks;
 };
 
 /** UI model for a transaction. A core transaction can be represented by multiple UI transactions if it has
@@ -119,6 +120,7 @@ public:
     std::string address;
     qint64 debit;
     qint64 credit;
+    std::string payment_id;
     /**@}*/
 
     /** Subtransaction index, for sort key */
@@ -129,6 +131,9 @@ public:
 
     /** Return the unique identifier for this transaction (part) */
     QString getTxID() const;
+
+    /** Return the payment identifier, or empty string if it has none */
+    QString getPaymentID() const;
 
     /** Format subtransaction id */
     static QString formatSubTxId(const std::string &hash, int vout);
