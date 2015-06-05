@@ -77,8 +77,16 @@ public: \
   static_assert(std::is_pod<decltype(this_ref.varialble)>::value, "t_type must be a POD type."); \
   KV_SERIALIZE_VAL_POD_AS_BLOB_FORCE_N(varialble, val_name)
 
+// Visual Studio 11 bug https://connect.microsoft.com/VisualStudio/feedback/details/757545/cannot-use-decltype-before-scope-operator
+#ifdef _MSC_VER
+template<typename T> struct Get { typedef T type; };
+#define DECLTYPE(VAR) Get<decltype(VAR)>::type
+#else
+#define DECLTYPE(VAR) decltype(VAR)
+#endif
+  
 #define KV_SERIALIZE_CONTAINER_POD_AS_BLOB_N(varialble, val_name) \
-  static_assert(std::is_pod<typename decltype(this_ref.varialble)::value_type>::value, "varialble must be container of POD type."); \
+  static_assert(std::is_pod<typename DECLTYPE(this_ref.varialble)::value_type>::value, "varialble must be container of POD type."); \
   epee::serialization::selector<is_store>::serialize_stl_container_pod_val_as_blob(this_ref.varialble, stg, hparent_section, val_name);
 
 #define END_KV_SERIALIZE_MAP() return true;}
