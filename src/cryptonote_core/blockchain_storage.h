@@ -149,72 +149,80 @@ namespace cryptonote
     void set_checkpoints(checkpoints&& chk_pts) { m_checkpoints = chk_pts; }
     bool is_in_checkpoint_zone(uint64_t height) { return m_checkpoints.is_in_checkpoint_zone(height); }
 
-    bool get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks, std::list<transaction>& txs);
-    bool get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks);
-    bool get_alternative_blocks(std::list<block>& blocks);
-    size_t get_alternative_blocks_count();
-    crypto::hash get_block_id_by_height(uint64_t height);
-    bool get_block_by_hash(const crypto::hash &h, block &blk);
-    void get_all_known_block_ids(std::list<crypto::hash> &main, std::list<crypto::hash> &alt, std::list<crypto::hash> &invalid);
+    bool get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks, std::list<transaction>& txs) const;
+    bool get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks) const;
+    bool get_alternative_blocks(std::list<block>& blocks) const;
+    size_t get_alternative_blocks_count() const;
+    crypto::hash get_block_id_by_height(uint64_t height) const;
+    bool get_block_by_hash(const crypto::hash &h, block &blk) const;
+    void get_all_known_block_ids(std::list<crypto::hash> &main, std::list<crypto::hash> &alt,
+                                 std::list<crypto::hash> &invalid) const;
 
     template<class archive_t>
     void serialize(archive_t & ar, const unsigned int version);
 
-    bool have_tx(const crypto::hash &id);
-    bool have_tx_keyimg_as_spent(const crypto::key_image &key_im);
-    transaction_chain_entry *get_tx_chain_entry(const crypto::hash &id);
-    transaction *get_tx(const crypto::hash &id);
+    bool have_tx(const crypto::hash &id) const;
+    bool have_tx_keyimg_as_spent(const crypto::key_image &key_im) const;
+    const transaction_chain_entry *get_tx_chain_entry(const crypto::hash &id) const;
+    const transaction *get_tx(const crypto::hash &id) const;
 
     template<class visitor_t>
     bool scan_outputkeys_for_indexes(const txin_to_key& tx_in_to_key, coin_type type,
-                                     visitor_t& vis, uint64_t* pmax_related_block_height = NULL);
+                                     visitor_t& vis, uint64_t* pmax_related_block_height = NULL) const;
 
-    uint64_t get_current_blockchain_height();
-    bool get_delegate_address(const delegate_id_t& delegate_id, account_public_address& address);
-    crypto::hash get_tail_id();
-    crypto::hash get_tail_id(uint64_t& height);
-    difficulty_type get_difficulty_for_next_block();
+    uint64_t get_current_blockchain_height() const;
+    bool get_delegate_address(const delegate_id_t& delegate_id, account_public_address& address) const;
+    crypto::hash get_tail_id() const;
+    crypto::hash get_tail_id(uint64_t& height) const;
+    difficulty_type get_difficulty_for_next_block() const;
     bool add_new_block(const block& bl_, block_verification_context& bvc);
     bool reset_and_set_genesis_block(const block& b);
-    bool create_block_template(block& b, const account_public_address& miner_address, difficulty_type& di, uint64_t& height, const blobdata& ex_nonce, bool dpos_block);
-    bool have_block(const crypto::hash& id);
-    size_t get_total_transactions();
-    bool get_outs(coin_type type, uint64_t amount, std::list<crypto::public_key>& pkeys);
-    bool get_short_chain_history(std::list<crypto::hash>& ids);
-    bool find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, NOTIFY_RESPONSE_CHAIN_ENTRY::request& resp);
-    bool find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, uint64_t& starter_offset);
-    bool find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, std::list<std::pair<block, std::list<transaction> > >& blocks, uint64_t& total_height, uint64_t& start_height, size_t max_count);
-    bool handle_get_objects(NOTIFY_REQUEST_GET_OBJECTS::request& arg, NOTIFY_RESPONSE_GET_OBJECTS::request& rsp);
-    bool handle_get_objects(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::request& req, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::response& res);
-    bool get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::request& req, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::response& res);
-    bool get_backward_blocks_sizes(size_t from_height, std::vector<size_t>& sz, size_t count);
-    bool get_tx_outputs_gindexs(const crypto::hash& tx_id, std::vector<uint64_t>& indexs);
+    bool create_block_template(block& b, const account_public_address& miner_address, difficulty_type& di,
+                               uint64_t& height, const blobdata& ex_nonce, bool dpos_block) const;
+    bool have_block(const crypto::hash& id) const;
+    size_t get_total_transactions() const;
+    bool get_outs(coin_type type, uint64_t amount, std::list<crypto::public_key>& pkeys) const;
+    bool get_short_chain_history(std::list<crypto::hash>& ids) const;
+    bool find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, NOTIFY_RESPONSE_CHAIN_ENTRY::request& resp) const;
+    bool find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, uint64_t& starter_offset) const;
+    bool find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids,
+                                    std::list<std::pair<block, std::list<transaction> > >& blocks,
+                                    uint64_t& total_height, uint64_t& start_height, size_t max_count) const;
+    bool handle_get_objects(NOTIFY_REQUEST_GET_OBJECTS::request& arg, NOTIFY_RESPONSE_GET_OBJECTS::request& rsp) const;
+    bool handle_get_objects(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::request& req,
+                            COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::response& res) const;
+    bool get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::request& req,
+                                     COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::response& res) const;
+    bool get_key_image_seqs(const COMMAND_RPC_GET_KEY_IMAGE_SEQS::request& req,
+                            COMMAND_RPC_GET_KEY_IMAGE_SEQS::response& res) const;
+    bool get_backward_blocks_sizes(size_t from_height, std::vector<size_t>& sz, size_t count) const;
+    bool get_tx_outputs_gindexs(const crypto::hash& tx_id, std::vector<uint64_t>& indexs) const;
     bool store_blockchain();
     bool check_tx_in_to_key(const transaction& tx, size_t i, const txin_to_key& txin,
                             const crypto::hash& tx_prefix_hash=null_hash,
-                            uint64_t* pmax_related_block_height = NULL);
-    bool check_tx_in_mint(const transaction& tx, size_t i, const txin_mint& txin);
-    bool check_tx_in_remint(const transaction& tx, size_t i, const txin_remint& txin);
-    bool check_tx_in_create_contract(const transaction& tx, size_t i, const txin_create_contract& txin);
-    bool check_tx_in_mint_contract(const transaction& tx, size_t i, const txin_mint_contract& txin);
-    bool check_tx_in_grade_contract(const transaction& tx, size_t i, const txin_grade_contract& txin);
-    bool check_tx_in_resolve_bc_coins(const transaction& tx, size_t i, const txin_resolve_bc_coins& inp);
-    bool check_tx_in_fuse_bc_coins(const transaction& tx, size_t i, const txin_fuse_bc_coins& inp);
-    bool check_tx_in_register_delegate(const transaction& tx, size_t i, const txin_register_delegate& inp);
+                            uint64_t* pmax_related_block_height = NULL) const;
+    bool check_tx_in_mint(const transaction& tx, size_t i, const txin_mint& txin) const;
+    bool check_tx_in_remint(const transaction& tx, size_t i, const txin_remint& txin) const;
+    bool check_tx_in_create_contract(const transaction& tx, size_t i, const txin_create_contract& txin) const;
+    bool check_tx_in_mint_contract(const transaction& tx, size_t i, const txin_mint_contract& txin) const;
+    bool check_tx_in_grade_contract(const transaction& tx, size_t i, const txin_grade_contract& txin) const;
+    bool check_tx_in_resolve_bc_coins(const transaction& tx, size_t i, const txin_resolve_bc_coins& inp) const;
+    bool check_tx_in_fuse_bc_coins(const transaction& tx, size_t i, const txin_fuse_bc_coins& inp) const;
+    bool check_tx_in_register_delegate(const transaction& tx, size_t i, const txin_register_delegate& inp) const;
     bool check_tx_in_vote(const transaction& tx, size_t i, const txin_vote& inp,
-                          const crypto::hash& tx_prefix_hash_=null_hash, uint64_t* pmax_related_block_height=NULL);
-    bool check_tx_inputs(const transaction& tx, uint64_t* pmax_used_block_height = NULL);
-    bool check_tx_out_to_key(const transaction& tx, size_t i, const txout_to_key& inp);
-    bool check_tx_outputs(const transaction& tx);
-    bool validate_tx(const transaction& tx, bool is_miner_tx, uint64_t* pmax_used_block_height = NULL);
-    uint64_t get_current_comulative_blocksize_limit();
-    bool is_storing_blockchain(){return m_is_blockchain_storing;}
-    uint64_t block_difficulty(size_t i);
-    uint64_t already_generated_coins(size_t i);
-    uint64_t average_past_block_fees(uint64_t for_block_height);
+                          const crypto::hash& tx_prefix_hash_=null_hash, uint64_t* pmax_related_block_height=NULL) const;
+    bool check_tx_inputs(const transaction& tx, uint64_t* pmax_used_block_height = NULL) const;
+    bool check_tx_out_to_key(const transaction& tx, size_t i, const txout_to_key& inp) const;
+    bool check_tx_outputs(const transaction& tx) const;
+    bool validate_tx(const transaction& tx, bool is_miner_tx, uint64_t* pmax_used_block_height = NULL) const;
+    uint64_t get_current_comulative_blocksize_limit() const;
+    bool is_storing_blockchain() const {return m_is_blockchain_storing;}
+    uint64_t block_difficulty(size_t i) const;
+    uint64_t already_generated_coins(size_t i) const;
+    uint64_t average_past_block_fees(uint64_t for_block_height) const;
     
     template<class t_ids_container, class t_blocks_container, class t_missed_container>
-    bool get_blocks(const t_ids_container& block_ids, t_blocks_container& blocks, t_missed_container& missed_bs)
+    bool get_blocks(const t_ids_container& block_ids, t_blocks_container& blocks, t_missed_container& missed_bs) const
     {
       CRITICAL_REGION_LOCAL(m_blockchain_lock);
 
@@ -234,7 +242,7 @@ namespace cryptonote
     }
 
     template<class t_ids_container, class t_tx_container, class t_missed_container>
-    bool get_transactions(const t_ids_container& txs_ids, t_tx_container& txs, t_missed_container& missed_txs)
+    bool get_transactions(const t_ids_container& txs_ids, t_tx_container& txs, t_missed_container& missed_txs) const
     {
       CRITICAL_REGION_LOCAL(m_blockchain_lock);
 
@@ -258,18 +266,18 @@ namespace cryptonote
     uint64_t currency_decimals(coin_type type) const;
     
     //debug functions
-    void print_blockchain(uint64_t start_index, uint64_t end_index);
-    void print_blockchain_index();
-    void print_blockchain_outs(const std::string& file);
+    void print_blockchain(uint64_t start_index, uint64_t end_index) const;
+    void print_blockchain_index() const;
+    void print_blockchain_outs(const std::string& file) const;
 
-    uint64_t get_adjusted_time();
-    bool get_signing_delegate(const block& block_prev, uint64_t timestamp, delegate_id_t& result);
+    uint64_t get_adjusted_time() const;
+    bool get_signing_delegate(const block& block_prev, uint64_t timestamp, delegate_id_t& result) const;
     
-    const delegate_votes& get_autovote_delegates();
-    bool get_dpos_register_info(cryptonote::delegate_id_t& unused_delegate_id, uint64_t& registration_fee);
+    const delegate_votes& get_autovote_delegates() const;
+    bool get_dpos_register_info(cryptonote::delegate_id_t& unused_delegate_id, uint64_t& registration_fee) const;
     
-    bool get_delegate_info(const cryptonote::account_public_address& addr, bs_delegate_info& res);
-    std::vector<cryptonote::bs_delegate_info> get_delegate_infos();
+    bool get_delegate_info(const cryptonote::account_public_address& addr, bs_delegate_info& res) const;
+    std::vector<cryptonote::bs_delegate_info> get_delegate_infos() const;
     
   private:
     typedef std::unordered_map<crypto::hash, size_t> blocks_by_id_index;
@@ -298,7 +306,7 @@ namespace cryptonote
     typedef std::unordered_map<crypto::key_image, vote_history> vote_history_container;
 
     tx_memory_pool& m_tx_pool;
-    epee::critical_section m_blockchain_lock; // TODO: add here reader/writer lock
+    mutable epee::critical_section m_blockchain_lock;
 
     // main chain
     blocks_container m_blocks;               // height  -> block_extended_info
@@ -345,44 +353,49 @@ namespace cryptonote
     bool handle_block_to_main_chain(const block& bl, block_verification_context& bvc);
     bool handle_block_to_main_chain(const block& bl, const crypto::hash& id, block_verification_context& bvc);
     bool handle_alternative_block(const block& b, const crypto::hash& id, block_verification_context& bvc);
-    difficulty_type get_next_difficulty_for_alternative_chain(const std::list<blocks_ext_by_hash::iterator>& alt_chain, block_extended_info& bei);
-    bool prevalidate_miner_transaction(const block& b, uint64_t height);
-    bool validate_miner_transaction(const block& b, size_t cumulative_block_size, uint64_t fee, uint64_t& base_reward, uint64_t already_generated_coins);
-    bool validate_transaction(const block& b, uint64_t height, const transaction& tx);
+    difficulty_type get_next_difficulty_for_alternative_chain(const std::list<blocks_ext_by_hash::iterator>& alt_chain,
+                                                              block_extended_info& bei) const;
+    bool prevalidate_miner_transaction(const block& b, uint64_t height) const;
+    bool validate_miner_transaction(const block& b, size_t cumulative_block_size, uint64_t fee, uint64_t& base_reward,
+                                    uint64_t already_generated_coins) const;
+    bool validate_transaction(const block& b, uint64_t height, const transaction& tx) const;
     bool rollback_blockchain_switching(std::list<block>& original_chain, size_t rollback_height);
-    bool add_transaction_from_block(const transaction& tx, const crypto::hash& tx_id, const crypto::hash& bl_id, uint64_t bl_height);
-    bool push_transaction_to_global_outs_index(const transaction& tx, const crypto::hash& tx_id, std::vector<uint64_t>& global_indexes);
+    bool add_transaction_from_block(const transaction& tx, const crypto::hash& tx_id, const crypto::hash& bl_id,
+                                    uint64_t bl_height);
+    bool push_transaction_to_global_outs_index(const transaction& tx, const crypto::hash& tx_id,
+                                               std::vector<uint64_t>& global_indexes);
     bool pop_transaction_from_global_index(const transaction& tx, const crypto::hash& tx_id);
-    bool get_last_n_blocks_sizes(std::vector<size_t>& sz, size_t count);
-    bool add_out_to_get_random_outs(std::vector<std::pair<crypto::hash, size_t> >& amount_outs, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& result_outs, uint64_t amount, size_t i);
-    bool is_tx_spendtime_unlocked(uint64_t unlock_time);
-    bool is_contract_resolved(uint64_t contract);
+    bool get_last_n_blocks_sizes(std::vector<size_t>& sz, size_t count) const;
+    bool add_out_to_get_random_outs(const std::vector<std::pair<crypto::hash, size_t> >& amount_outs,
+                                    COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& result_outs,
+                                    uint64_t amount, size_t i) const;
+    bool is_tx_spendtime_unlocked(uint64_t unlock_time) const;
+    bool is_contract_resolved(uint64_t contract) const;
     bool add_block_as_invalid(const block& bl, const crypto::hash& h);
     bool add_block_as_invalid(const block_extended_info& bei, const crypto::hash& h);
-    size_t find_end_of_allowed_index(const std::vector<std::pair<crypto::hash, size_t> >& amount_outs);
-    bool check_block_timestamp_main(const block& b);
-    bool check_block_timestamp(std::vector<uint64_t> timestamps, const block& b);
-    bool complete_timestamps_vector(uint64_t start_height, std::vector<uint64_t>& timestamps);
+    size_t find_end_of_allowed_index(const std::vector<std::pair<crypto::hash, size_t> >& amount_outs) const;
+    bool check_block_timestamp_main(const block& b) const;
+    bool check_block_timestamp(std::vector<uint64_t> timestamps, const block& b) const;
+    bool complete_timestamps_vector(uint64_t start_height, std::vector<uint64_t>& timestamps) const;
     bool update_next_comulative_size_limit();
     
     void catchup_signed_hashes();
     
-    uint64_t get_max_vote(uint64_t voting_for_height);
+    uint64_t get_max_vote(uint64_t voting_for_height) const;
     bool reapply_votes(const vote_instance& vote_inst);
     bool apply_votes(uint64_t vote_amount, const delegate_votes& for_delegates, vote_instance& votes);
     bool unapply_votes(const vote_instance& vote_inst, bool enforce_effective_amount);
-    bool is_top_delegate(const delegate_id_t& delegate_id);
+    bool is_top_delegate(const delegate_id_t& delegate_id) const;
     bool recalculate_top_delegates();
     
-    delegate_id_t nth_delegate_after(const delegate_id_t& start, size_t n);
+    delegate_id_t nth_delegate_after(const delegate_id_t& start, size_t n) const;
 
-    bool check_block_type(const block& bl);
+    bool check_block_type(const block& bl) const;
     bool check_pow_pos(const block& bl, const difficulty_type& current_diffic, block_verification_context& bvc,
-                       crypto::hash& proof_of_work);
+                       crypto::hash& proof_of_work) const;
     
-    delegate_id_t pick_unused_delegate_id();
+    delegate_id_t pick_unused_delegate_id() const;
   };
-
 
   /************************************************************************/
   /*                                                                      */
@@ -496,7 +509,7 @@ namespace cryptonote
   //------------------------------------------------------------------
   template<class visitor_t>
   bool blockchain_storage::scan_outputkeys_for_indexes(const txin_to_key& tx_in_to_key, coin_type type,
-                                                       visitor_t& vis, uint64_t* pmax_related_block_height)
+                                                       visitor_t& vis, uint64_t* pmax_related_block_height) const
   {
     CRITICAL_REGION_LOCAL(m_blockchain_lock);
     auto it = m_outputs.find(std::make_pair(type, tx_in_to_key.amount));
@@ -505,7 +518,7 @@ namespace cryptonote
 
     std::vector<uint64_t> absolute_offsets = relative_output_offsets_to_absolute(tx_in_to_key.key_offsets);
 
-    std::vector<std::pair<crypto::hash, size_t> >& amount_outs_vec = it->second;
+    const auto & amount_outs_vec = it->second;
     size_t count = 0;
     BOOST_FOREACH(uint64_t i, absolute_offsets)
     {
@@ -516,7 +529,7 @@ namespace cryptonote
         return false;
       }
       
-      auto tx_it = m_transactions.find(amount_outs_vec[i].first);
+      const auto tx_it = m_transactions.find(amount_outs_vec[i].first);
       CHECK_AND_ASSERT_MES(tx_it != m_transactions.end(), false, "Wrong transaction id in output indexes: " << epee::string_tools::pod_to_hex(amount_outs_vec[i].first));
       CHECK_AND_ASSERT_MES(amount_outs_vec[i].second < tx_it->second.tx.outs().size(), false,
                            "Wrong index in transaction outputs: " << amount_outs_vec[i].second

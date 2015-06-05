@@ -19,10 +19,3 @@ bool parse_hash256(const std::string str_hash, crypto::hash& hash)
     return true;
   }
 }
-
-namespace crypto {
-  bool operator <(const crypto::hash& a, const crypto::hash& b)
-  {
-    return epee::string_tools::pod_to_hex(a) < epee::string_tools::pod_to_hex(b);
-  }  
-}

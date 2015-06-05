@@ -57,12 +57,6 @@ struct chain_switch_2_base : public test_chain_unit_base
     return true;
   }
   
-#define DEFINE_TEST_(TEST_NAME) \
-  struct TEST_NAME : public chain_switch_2_base \
-  { \
-    virtual bool generate(std::vector<test_event_entry>& events) const; \
-  };
-  
 #define MAKE_FN_NAME(BASE, VAR) bool BASE ## VAR(core_t& c, size_t ev_index, const std::vector<test_event_entry>& events)
 #define FUNCTION_NAME(BASE, VAR) MAKE_FN_NAME(BASE, VAR)
 #define MAKE_VAR_NAME(BASE, VAR, TAIL) BASE ## VAR ## TAIL
@@ -98,9 +92,9 @@ private:
   size_t m_head_3_index;
 };
 
-DEFINE_TEST_(gen_chainswitch_mint);
-DEFINE_TEST_(gen_chainswitch_mint_2);
-DEFINE_TEST_(gen_chainswitch_mint_3);
-DEFINE_TEST_(gen_chainswitch_remint);
-DEFINE_TEST_(gen_chainswitch_remint_2);
+DEFINE_TEST(gen_chainswitch_mint, chain_switch_2_base);
+DEFINE_TEST(gen_chainswitch_mint_2, chain_switch_2_base);
+DEFINE_TEST(gen_chainswitch_mint_3, chain_switch_2_base);
+DEFINE_TEST(gen_chainswitch_remint, chain_switch_2_base);
+DEFINE_TEST(gen_chainswitch_remint_2, chain_switch_2_base);
 

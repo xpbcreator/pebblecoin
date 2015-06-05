@@ -2,30 +2,24 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include "bitcoin-config.h"
-#endif
-
-#include "optionsmodel.h"
-
-#include "bitcoinunits.h"
-#include "guiutil.h"
-
-#include "interface/init.h"
-#include "interface/main.h"
-//#include "net.h"
-#include "bitcoin/util.h"
-#include "../cryptonote_config.h"
-//#include "txdb.h" // for -dbcache defaults
-#ifdef ENABLE_WALLET
-#include "interface/wallet.h"
-//#include "walletdb.h"
-#endif
-#include "qt_options.h"
-
 #include <QNetworkProxy>
 #include <QSettings>
 #include <QStringList>
+
+#include "cryptonote_config.h"
+
+#include "bitcoin/util.h"
+#include "interface/init.h"
+#include "interface/main.h"
+#ifdef ENABLE_WALLET
+#include "interface/wallet.h"
+#endif
+
+#include "qt_options.h"
+#include "bitcoinunits.h"
+#include "guiutil.h"
+#include "optionsmodel.h"
+
 
 OptionsModel::OptionsModel(QObject *parent) :
     QAbstractListModel(parent)

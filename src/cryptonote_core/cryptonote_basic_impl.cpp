@@ -8,7 +8,6 @@
 #include "string_tools.h"
 
 #include "serialization/binary_utils.h"
-#include "serialization/vector.h"
 
 #include "cryptonote_config.h"
 #include "common/base58.h"

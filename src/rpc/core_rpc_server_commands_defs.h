@@ -5,11 +5,12 @@
 
 #pragma once
 
+#include "common/types.h"
+#include "common/stl-util.h"
 #include "crypto/hash.h"
 #include "cryptonote_protocol/cryptonote_protocol_defs.h"
 #include "cryptonote_core/cryptonote_basic.h"
 #include "cryptonote_core/difficulty.h"
-#include "cryptonote_core/delegate_types.h"
 
 namespace cryptonote
 {
@@ -156,6 +157,48 @@ namespace cryptonote
       BEGIN_KV_SERIALIZE_MAP()
         //KV_SERIALIZE(type)
         KV_SERIALIZE(outs)
+        KV_SERIALIZE(status)
+      END_KV_SERIALIZE_MAP()
+    };
+  };
+  //-----------------------------------------------
+  struct COMMAND_RPC_GET_KEY_IMAGE_SEQS
+  {
+    struct request
+    {
+      std::vector<crypto::key_image> images;
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE_CONTAINER_POD_AS_BLOB(images)
+      END_KV_SERIALIZE_MAP()
+    };
+
+    struct response
+    {
+      std::map<crypto::key_image, uint64_t> image_seqs;
+      std::string status;
+      BEGIN_KV_SERIALIZE_MAP()
+        if (is_store) {
+          auto image_seq_keys = tools::map_keys(this_ref.image_seqs);
+          auto image_seq_values = tools::map_values(this_ref.image_seqs);
+          epee::serialization::selector<is_store>::serialize_stl_container_pod_val_as_blob(image_seq_keys, stg, hparent_section, "image_seq_keys");
+          epee::serialization::selector<is_store>::serialize_stl_container_pod_val_as_blob(image_seq_values, stg, hparent_section, "image_seq_values");
+        }
+        else
+        {
+          std::vector<crypto::key_image> image_seq_keys;
+          std::vector<uint64_t> image_seq_values;
+          epee::serialization::selector<is_store>::serialize_stl_container_pod_val_as_blob(image_seq_keys, stg, hparent_section, "image_seq_keys");
+          epee::serialization::selector<is_store>::serialize_stl_container_pod_val_as_blob(image_seq_values, stg, hparent_section, "image_seq_values");
+          if (image_seq_keys.size() != image_seq_values.size())
+            return false;
+          // const_cast so can compile for serialize calls
+          auto& non_const_this = const_cast<typename std::remove_const<this_type>::type&>(this_ref);
+          non_const_this.image_seqs.clear();
+          for (int i=0; i < image_seq_keys.size(); i++)
+          {
+            non_const_this.image_seqs[image_seq_keys[i]] = image_seq_values[i];
+          }
+        }
         KV_SERIALIZE(status)
       END_KV_SERIALIZE_MAP()
     };
@@ -354,7 +397,8 @@ namespace cryptonote
       difficulty_type difficulty;
       uint64_t reward;
       uint64_t already_generated_coins;
-      
+      delegate_id_t signing_delegate_id;
+    
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(major_version)
         KV_SERIALIZE(minor_version)
@@ -368,6 +412,7 @@ namespace cryptonote
         KV_SERIALIZE(difficulty)
         KV_SERIALIZE(reward)
         KV_SERIALIZE(already_generated_coins)
+        KV_SERIALIZE(signing_delegate_id)
       END_KV_SERIALIZE_MAP()
   };
   
@@ -477,6 +522,54 @@ namespace cryptonote
       BEGIN_KV_SERIALIZE_MAP()
         KV_SERIALIZE(status)
         KV_SERIALIZE(autovote_delegates)
+      END_KV_SERIALIZE_MAP()
+    };
+  };
+  
+  struct delegate_info_responce
+  {
+    delegate_id_t delegate_id;
+    std::string public_address;
+    
+    uint64_t total_votes;
+    
+    uint64_t processed_blocks;
+    uint64_t missed_blocks;
+    uint64_t fees_received;
+    
+    uint64_t vote_rank;
+    uint64_t autoselect_rank;
+    
+    BEGIN_KV_SERIALIZE_MAP()
+      KV_SERIALIZE(delegate_id)
+      KV_SERIALIZE(public_address)
+      KV_SERIALIZE(total_votes)
+      KV_SERIALIZE(processed_blocks)
+      KV_SERIALIZE(missed_blocks)
+      KV_SERIALIZE(fees_received)
+      KV_SERIALIZE(vote_rank)
+      KV_SERIALIZE(autoselect_rank)
+    END_KV_SERIALIZE_MAP()
+  };
+  
+  struct COMMAND_RPC_GET_DELEGATE_INFOS
+  {
+    struct request
+    {
+      std::vector<delegate_id_t> delegate_ids;
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(delegate_ids)
+      END_KV_SERIALIZE_MAP()
+    };
+    
+    struct response
+    {
+      std::string status;
+      std::vector<delegate_info_responce> delegate_infos;
+      
+      BEGIN_KV_SERIALIZE_MAP()
+        KV_SERIALIZE(status)
+        KV_SERIALIZE(delegate_infos)
       END_KV_SERIALIZE_MAP()
     };
   };

@@ -5,10 +5,11 @@
 #pragma once
 
 #include <stdint.h>
+
 #include <string>
 #include <map>
 
-#include "common/pod-class.h"
+#include "common/types.h"
 
 namespace crypto
 {

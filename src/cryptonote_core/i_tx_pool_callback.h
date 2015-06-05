@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "common/pod-class.h"
+#include "common/types.h"
 
 namespace crypto
 {

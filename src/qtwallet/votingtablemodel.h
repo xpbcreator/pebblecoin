@@ -10,7 +10,7 @@
 #include <QAbstractTableModel>
 #include <QStringList>
 
-#include "cryptonote_core/delegate_types.h"
+#include "common/types.h"
 
 class CWallet;
 class VotingRecord;

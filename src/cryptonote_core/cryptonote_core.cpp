@@ -384,6 +384,11 @@ namespace cryptonote
     return m_blockchain_storage.get_random_outs_for_amounts(req, res);
   }
   //-----------------------------------------------------------------------------------------------
+  bool core::get_key_image_seqs(const COMMAND_RPC_GET_KEY_IMAGE_SEQS::request& req, COMMAND_RPC_GET_KEY_IMAGE_SEQS::response& res)
+  {
+    return m_blockchain_storage.get_key_image_seqs(req, res);
+  }
+  //-----------------------------------------------------------------------------------------------
   bool core::get_tx_outputs_gindexs(const crypto::hash& tx_id, std::vector<uint64_t>& indexs)
   {
     return m_blockchain_storage.get_tx_outputs_gindexs(tx_id, indexs);

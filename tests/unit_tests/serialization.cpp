@@ -24,8 +24,6 @@
 #include "serialization/binary_archive.h"
 #include "serialization/json_archive.h"
 #include "serialization/debug_archive.h"
-#include "serialization/variant.h"
-#include "serialization/vector.h"
 #include "serialization/binary_utils.h"
 #include "gtest/gtest.h"
 using namespace std;
@@ -272,10 +270,8 @@ TEST(Serialization, serializes_vector_int64_as_fixed_int)
 template<typename T>
 bool blob_serialization_preserves_value(const T& cval)
 {
-  T val = cval;
-  
   std::string blob;
-  if (!serialization::dump_binary(val, blob))
+  if (!serialization::dump_binary(cval, blob))
   {
     std::cout << "failed to dump binary" << std::endl;
     return false;
@@ -288,7 +284,7 @@ bool blob_serialization_preserves_value(const T& cval)
     return false;
   }
   
-  return val == parsed;
+  return cval == parsed;
 }
 
 template<typename T>
@@ -304,7 +300,7 @@ bool boost_serialization_preserves_value(const T& cval)
   T loaded_val;
   i >> loaded_val;
   
-  return val == loaded_val;
+  return cval == loaded_val;
 }
 
 template<typename T>

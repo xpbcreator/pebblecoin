@@ -19,6 +19,7 @@
 
 #include "common/boost_serialization_helper.h"
 #include "common/functional.h"
+#include "common/stl-util.h"
 #include "crypto/hash.h"
 #include "crypto/hash_cache.h"
 #include "cryptonote_config.h"
@@ -36,23 +37,24 @@
 using namespace std;
 using namespace epee;
 using namespace cryptonote;
+using tools::const_get;
 
 DISABLE_VS_WARNINGS(4267)
 
 //------------------------------------------------------------------
-bool blockchain_storage::have_tx(const crypto::hash &id)
+bool blockchain_storage::have_tx(const crypto::hash &id) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   return m_transactions.find(id) != m_transactions.end();
 }
 //------------------------------------------------------------------
-bool blockchain_storage::have_tx_keyimg_as_spent(const crypto::key_image &key_im)
+bool blockchain_storage::have_tx_keyimg_as_spent(const crypto::key_image &key_im) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
-  return  m_spent_keys.find(key_im) != m_spent_keys.end();
+  return m_spent_keys.find(key_im) != m_spent_keys.end();
 }
 //------------------------------------------------------------------
-blockchain_storage::transaction_chain_entry *blockchain_storage::get_tx_chain_entry(const crypto::hash &id)
+const blockchain_storage::transaction_chain_entry *blockchain_storage::get_tx_chain_entry(const crypto::hash &id) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   auto it = m_transactions.find(id);
@@ -62,25 +64,25 @@ blockchain_storage::transaction_chain_entry *blockchain_storage::get_tx_chain_en
   return &it->second;
 }
 //------------------------------------------------------------------
-transaction *blockchain_storage::get_tx(const crypto::hash &id)
+const transaction *blockchain_storage::get_tx(const crypto::hash &id) const
 {
-  transaction_chain_entry *ce = get_tx_chain_entry(id);
+  const transaction_chain_entry *ce = get_tx_chain_entry(id);
   return ce ? &ce->tx : NULL;
 }
 //------------------------------------------------------------------
-uint64_t blockchain_storage::get_current_blockchain_height()
+uint64_t blockchain_storage::get_current_blockchain_height() const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   return m_blocks.size();
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_delegate_address(const delegate_id_t& delegate_id, account_public_address& address)
+bool blockchain_storage::get_delegate_address(const delegate_id_t& delegate_id, account_public_address& address) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
   CHECK_AND_ASSERT_MES(m_delegates.count(delegate_id) > 0, false, "No such delegate " << delegate_id);
   
-  address = m_delegates[delegate_id].public_address;
+  address = const_get(m_delegates, delegate_id).public_address;
   return true;
 }
 //------------------------------------------------------------------
@@ -185,7 +187,7 @@ void blockchain_storage::catchup_signed_hashes()
     LOG_PRINT_RED_L0("Could not store hash cache!");
   }
 }
-
+//------------------------------------------------------------------
 bool blockchain_storage::init(const std::string& config_folder)
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
@@ -227,6 +229,7 @@ bool blockchain_storage::init(const std::string& config_folder)
 //------------------------------------------------------------------
 bool blockchain_storage::store_blockchain()
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   m_is_blockchain_storing = true;
   misc_utils::auto_scope_leave_caller scope_exit_handler = misc_utils::create_scope_leave_handler([&](){m_is_blockchain_storing=false;});
   
@@ -264,6 +267,7 @@ bool blockchain_storage::store_blockchain()
 //------------------------------------------------------------------
 bool blockchain_storage::deinit()
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   m_stop_catchup = true;
   
   if (m_pcatchup_thread)
@@ -695,14 +699,14 @@ bool blockchain_storage::purge_block_data_from_blockchain(const block& bl, size_
   return res;
 }
 //------------------------------------------------------------------
-crypto::hash blockchain_storage::get_tail_id(uint64_t& height)
+crypto::hash blockchain_storage::get_tail_id(uint64_t& height) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
-  height = get_current_blockchain_height()-1;
+  height = get_current_blockchain_height() - 1;
   return get_tail_id();
 }
 //------------------------------------------------------------------
-crypto::hash blockchain_storage::get_tail_id()
+crypto::hash blockchain_storage::get_tail_id() const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   crypto::hash id = null_hash;
@@ -713,7 +717,7 @@ crypto::hash blockchain_storage::get_tail_id()
   return id;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_short_chain_history(std::list<crypto::hash>& ids)
+bool blockchain_storage::get_short_chain_history(std::list<crypto::hash>& ids) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   size_t i = 0;
@@ -743,7 +747,7 @@ bool blockchain_storage::get_short_chain_history(std::list<crypto::hash>& ids)
   return true;
 }
 //------------------------------------------------------------------
-crypto::hash blockchain_storage::get_block_id_by_height(uint64_t height)
+crypto::hash blockchain_storage::get_block_id_by_height(uint64_t height) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(height >= m_blocks.size())
@@ -752,7 +756,8 @@ crypto::hash blockchain_storage::get_block_id_by_height(uint64_t height)
   return get_block_hash(m_blocks[height].bl);
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_block_by_hash(const crypto::hash &h, block &blk) {
+bool blockchain_storage::get_block_by_hash(const crypto::hash &h, block &blk) const
+{
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
 
   // try to find block in main chain
@@ -772,23 +777,26 @@ bool blockchain_storage::get_block_by_hash(const crypto::hash &h, block &blk) {
   return false;
 }
 //------------------------------------------------------------------
-void blockchain_storage::get_all_known_block_ids(std::list<crypto::hash> &main, std::list<crypto::hash> &alt, std::list<crypto::hash> &invalid) {
+void blockchain_storage::get_all_known_block_ids(std::list<crypto::hash> &main, std::list<crypto::hash> &alt,
+                                                 std::list<crypto::hash> &invalid) const
+{
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
 
-  BOOST_FOREACH(blocks_by_id_index::value_type &v, m_blocks_index)
+  BOOST_FOREACH(const auto &v, m_blocks_index)
     main.push_back(v.first);
 
-  BOOST_FOREACH(blocks_ext_by_hash::value_type &v, m_alternative_chains)
+  BOOST_FOREACH(const auto &v, m_alternative_chains)
     alt.push_back(v.first);
 
-  BOOST_FOREACH(blocks_ext_by_hash::value_type &v, m_invalid_blocks)
+  BOOST_FOREACH(const auto &v, m_invalid_blocks)
     invalid.push_back(v.first);
 }
 //------------------------------------------------------------------
-difficulty_type blockchain_storage::get_difficulty_for_next_block()
+difficulty_type blockchain_storage::get_difficulty_for_next_block() const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
-  if (config::in_pos_era(m_blocks.size())) {
+  if (config::in_pos_era(m_blocks.size()))
+  {
     return DPOS_BLOCK_DIFFICULTY;
   }
   std::vector<uint64_t> timestamps;
@@ -825,7 +833,8 @@ bool blockchain_storage::rollback_blockchain_switching(std::list<block>& origina
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::iterator>& alt_chain, bool discard_disconnected_chain)
+bool blockchain_storage::switch_to_alternative_blockchain(std::list<blocks_ext_by_hash::iterator>& alt_chain,
+                                                          bool discard_disconnected_chain)
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   CHECK_AND_ASSERT_MES(alt_chain.size(), false, "switch_to_alternative_blockchain: empty chain passed");
@@ -898,8 +907,10 @@ bool blockchain_storage::switch_to_alternative_blockchain(std::list<blocks_ext_b
   return true;
 }
 //------------------------------------------------------------------
-difficulty_type blockchain_storage::get_next_difficulty_for_alternative_chain(const std::list<blocks_ext_by_hash::iterator>& alt_chain, block_extended_info& bei)
+difficulty_type blockchain_storage::get_next_difficulty_for_alternative_chain(
+    const std::list<blocks_ext_by_hash::iterator>& alt_chain, block_extended_info& bei) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if (config::in_pos_era(bei.height))
   {
     LOG_PRINT_L0("get_next_difficulty_for_alternative_chain: bei.height is " << bei.height << ", dpos_switch_block is " << config::dpos_switch_block << ", returning dpos difficulty");
@@ -949,8 +960,9 @@ difficulty_type blockchain_storage::get_next_difficulty_for_alternative_chain(co
   return next_difficulty(bei.height, timestamps, commulative_difficulties);
 }
 //------------------------------------------------------------------
-bool blockchain_storage::prevalidate_miner_transaction(const block& b, uint64_t height)
+bool blockchain_storage::prevalidate_miner_transaction(const block& b, uint64_t height) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   CHECK_AND_ASSERT_MES(b.miner_tx.ins().size() == 1, false, "coinbase transaction in the block has no inputs");
   CHECK_AND_ASSERT_MES(b.miner_tx.ins()[0].type() == typeid(txin_gen), false, "coinbase transaction in the block has the wrong type");
   if(boost::get<txin_gen>(b.miner_tx.ins()[0]).height != height)
@@ -972,8 +984,10 @@ bool blockchain_storage::prevalidate_miner_transaction(const block& b, uint64_t 
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::validate_miner_transaction(const block& b, size_t cumulative_block_size, uint64_t fee, uint64_t& base_reward, uint64_t already_generated_coins)
+bool blockchain_storage::validate_miner_transaction(const block& b, size_t cumulative_block_size, uint64_t fee,
+                                                    uint64_t& base_reward, uint64_t already_generated_coins) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   //validate reward
   uint64_t money_in_use = 0;
   BOOST_FOREACH(const auto& o, b.miner_tx.outs())
@@ -1000,7 +1014,7 @@ bool blockchain_storage::validate_miner_transaction(const block& b, size_t cumul
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_backward_blocks_sizes(size_t from_height, std::vector<size_t>& sz, size_t count)
+bool blockchain_storage::get_backward_blocks_sizes(size_t from_height, std::vector<size_t>& sz, size_t count) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   CHECK_AND_ASSERT_MES(from_height < m_blocks.size(), false, "Internal error: get_backward_blocks_sizes called with from_height=" << from_height << ", blockchain height = " << m_blocks.size());
@@ -1012,7 +1026,7 @@ bool blockchain_storage::get_backward_blocks_sizes(size_t from_height, std::vect
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_last_n_blocks_sizes(std::vector<size_t>& sz, size_t count)
+bool blockchain_storage::get_last_n_blocks_sizes(std::vector<size_t>& sz, size_t count) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(!m_blocks.size())
@@ -1020,16 +1034,19 @@ bool blockchain_storage::get_last_n_blocks_sizes(std::vector<size_t>& sz, size_t
   return get_backward_blocks_sizes(m_blocks.size() -1, sz, count);
 }
 //------------------------------------------------------------------
-uint64_t blockchain_storage::get_current_comulative_blocksize_limit()
+uint64_t blockchain_storage::get_current_comulative_blocksize_limit() const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   return m_current_block_cumul_sz_limit;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::create_block_template(block& b, const account_public_address& miner_address, difficulty_type& diffic, uint64_t& height, const blobdata& ex_nonce, bool dpos_block)
+bool blockchain_storage::create_block_template(block& b, const account_public_address& miner_address, difficulty_type& diffic,
+                                               uint64_t& height, const blobdata& ex_nonce, bool dpos_block) const
 {
   size_t median_size;
   uint64_t already_generated_coins;
-  uint64_t fee_dpos, fee_pow;
+  uint64_t fee_dpos = 0; // suppress compiler warning
+  uint64_t fee_pow;
 
   CRITICAL_REGION_BEGIN(m_blockchain_lock);
   CHECK_AND_ASSERT_MES(!m_popping_block, false, "Shouldn't create_block_template while popping block");
@@ -1178,9 +1195,8 @@ bool blockchain_storage::create_block_template(block& b, const account_public_ad
   return false;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::complete_timestamps_vector(uint64_t start_top_height, std::vector<uint64_t>& timestamps)
+bool blockchain_storage::complete_timestamps_vector(uint64_t start_top_height, std::vector<uint64_t>& timestamps) const
 {
-
   if(timestamps.size() >= BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW)
     return true;
 
@@ -1209,7 +1225,7 @@ bool blockchain_storage::handle_alternative_block(const block& b, const crypto::
     bvc.m_verifivation_failed = true;
     return false;
   }
-  if (!m_checkpoints.is_alternative_block_allowed(get_current_blockchain_height(), block_height))
+  if (!m_checkpoints.is_alternative_block_allowed(get_current_blockchain_height() - 1, block_height))
   {
     LOG_PRINT_RED_L0("Block with id: " << id
       << ENDL << " can't be accepted for alternative chain, block height: " << block_height
@@ -1351,7 +1367,8 @@ bool blockchain_storage::handle_alternative_block(const block& b, const crypto::
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks, std::list<transaction>& txs)
+bool blockchain_storage::get_blocks(uint64_t start_offset, size_t count,
+                                    std::list<block>& blocks, std::list<transaction>& txs) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(start_offset >= m_blocks.size())
@@ -1367,7 +1384,7 @@ bool blockchain_storage::get_blocks(uint64_t start_offset, size_t count, std::li
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks)
+bool blockchain_storage::get_blocks(uint64_t start_offset, size_t count, std::list<block>& blocks) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(start_offset >= m_blocks.size())
@@ -1378,7 +1395,8 @@ bool blockchain_storage::get_blocks(uint64_t start_offset, size_t count, std::li
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::handle_get_objects(NOTIFY_REQUEST_GET_OBJECTS::request& arg, NOTIFY_RESPONSE_GET_OBJECTS::request& rsp)
+bool blockchain_storage::handle_get_objects(NOTIFY_REQUEST_GET_OBJECTS::request& arg,
+                                            NOTIFY_RESPONSE_GET_OBJECTS::request& rsp) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   rsp.current_blockchain_height = get_current_blockchain_height();
@@ -1436,7 +1454,7 @@ bool blockchain_storage::handle_get_objects(NOTIFY_REQUEST_GET_OBJECTS::request&
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_alternative_blocks(std::list<block>& blocks)
+bool blockchain_storage::get_alternative_blocks(std::list<block>& blocks) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
 
@@ -1447,21 +1465,23 @@ bool blockchain_storage::get_alternative_blocks(std::list<block>& blocks)
   return true;
 }
 //------------------------------------------------------------------
-size_t blockchain_storage::get_alternative_blocks_count()
+size_t blockchain_storage::get_alternative_blocks_count() const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   return m_alternative_chains.size();
 }
 //------------------------------------------------------------------
-bool blockchain_storage::add_out_to_get_random_outs(std::vector<std::pair<crypto::hash, size_t> >& amount_outs, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& result_outs, uint64_t amount, size_t i)
+bool blockchain_storage::add_out_to_get_random_outs(const std::vector<std::pair<crypto::hash, size_t> >& amount_outs,
+                                                    COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::outs_for_amount& result_outs,
+                                                    uint64_t amount, size_t i) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
-  transactions_container::iterator tx_it = m_transactions.find(amount_outs[i].first);
+  const auto tx_it = m_transactions.find(amount_outs[i].first);
   CHECK_AND_ASSERT_MES(tx_it != m_transactions.end(), false, "internal error: transaction with id " << amount_outs[i].first << ENDL <<
     ", used in mounts global index for amount=" << amount << ": i=" << i << "not found in transactions index");
   CHECK_AND_ASSERT_MES(tx_it->second.tx.outs().size() > amount_outs[i].second, false, "internal error: in global outs index, transaction out index="
     << amount_outs[i].second << " more than transaction outputs = " << tx_it->second.tx.outs().size() << ", for tx id = " << amount_outs[i].first);
-  transaction& tx = tx_it->second.tx;
+  const auto& tx = tx_it->second.tx;
   CHECK_AND_ASSERT_MES(tx.outs()[amount_outs[i].second].target.type() == typeid(txout_to_key), false, "unknown tx out type");
 
   //check if transaction is unlocked
@@ -1474,7 +1494,7 @@ bool blockchain_storage::add_out_to_get_random_outs(std::vector<std::pair<crypto
   return true;
 }
 //------------------------------------------------------------------
-size_t blockchain_storage::find_end_of_allowed_index(const std::vector<std::pair<crypto::hash, size_t> >& amount_outs)
+size_t blockchain_storage::find_end_of_allowed_index(const std::vector<std::pair<crypto::hash, size_t> >& amount_outs) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(!amount_outs.size())
@@ -1483,7 +1503,7 @@ size_t blockchain_storage::find_end_of_allowed_index(const std::vector<std::pair
   do
   {
     --i;
-    transactions_container::iterator it = m_transactions.find(amount_outs[i].first);
+    const auto it = m_transactions.find(amount_outs[i].first);
     CHECK_AND_ASSERT_MES(it != m_transactions.end(), 0, "internal error: failed to find transaction from outputs index with tx_id=" << amount_outs[i].first);
     if(it->second.m_keeper_block_height + CRYPTONOTE_MINED_MONEY_UNLOCK_WINDOW <= get_current_blockchain_height() )
       return i+1;
@@ -1491,7 +1511,8 @@ size_t blockchain_storage::find_end_of_allowed_index(const std::vector<std::pair
   return 0;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::request& req, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::response& res)
+bool blockchain_storage::get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::request& req,
+                                                     COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::response& res) const
 {
   srand(static_cast<unsigned int>(get_adjusted_time()));
   coin_type typ = CP_XPB; //res.type = req.type;
@@ -1507,7 +1528,7 @@ bool blockchain_storage::get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDO
       LOG_ERROR("COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS: not outs for amount " << amount << ", wallet should use some real outs when it lookup for some mix, so, at least one out for this amount should exist");
       continue;//actually this is strange situation, wallet should use some real outs when it lookup for some mix, so, at least one out for this amount should exist
     }
-    std::vector<std::pair<crypto::hash, size_t> >& amount_outs  = it->second;
+    const auto & amount_outs  = it->second;
     //it is not good idea to use top fresh outs, because it increases possibility of transaction canceling on split
     //lets find upper bound of not fresh outs
     size_t up_index_limit = find_end_of_allowed_index(amount_outs);
@@ -1536,7 +1557,23 @@ bool blockchain_storage::get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDO
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, uint64_t& starter_offset)
+bool blockchain_storage::get_key_image_seqs(const COMMAND_RPC_GET_KEY_IMAGE_SEQS::request& req,
+                                            COMMAND_RPC_GET_KEY_IMAGE_SEQS::response& res) const
+{
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
+  
+  res.image_seqs.clear();
+  for (const auto& image : req.images)
+  {
+    // default to vector of size 0, which is correct for no vote history
+    res.image_seqs[image] = const_get(m_vote_histories, image).size();
+  }
+  
+  return true;
+}
+//------------------------------------------------------------------
+bool blockchain_storage::find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids,
+                                                    uint64_t& starter_offset) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
 
@@ -1583,7 +1620,7 @@ bool blockchain_storage::find_blockchain_supplement(const std::list<crypto::hash
   return true;
 }
 //------------------------------------------------------------------
-uint64_t blockchain_storage::block_difficulty(size_t i)
+uint64_t blockchain_storage::block_difficulty(size_t i) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   CHECK_AND_ASSERT_MES(i < m_blocks.size(), false, "wrong block index i = " << i << " at blockchain_storage::block_difficulty()");
@@ -1593,14 +1630,14 @@ uint64_t blockchain_storage::block_difficulty(size_t i)
   return m_blocks[i].cumulative_difficulty - m_blocks[i-1].cumulative_difficulty;
 }
 //------------------------------------------------------------------
-uint64_t blockchain_storage::already_generated_coins(size_t i)
+uint64_t blockchain_storage::already_generated_coins(size_t i) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   CHECK_AND_ASSERT_MES(i < m_blocks.size(), false, "wrong block index i = " << i << " at blockchain_storage::block_difficulty()");
   return m_blocks[i].already_generated_coins;
 }
 //------------------------------------------------------------------
-uint64_t blockchain_storage::average_past_block_fees(uint64_t for_block_height)
+uint64_t blockchain_storage::average_past_block_fees(uint64_t for_block_height) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
@@ -1643,7 +1680,7 @@ uint64_t blockchain_storage::average_past_block_fees(uint64_t for_block_height)
   return fee_summaries / used_blocks;
 }
 //------------------------------------------------------------------
-void blockchain_storage::print_blockchain(uint64_t start_index, uint64_t end_index)
+void blockchain_storage::print_blockchain(uint64_t start_index, uint64_t end_index) const
 {
   std::stringstream ss;
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
@@ -1663,7 +1700,7 @@ void blockchain_storage::print_blockchain(uint64_t start_index, uint64_t end_ind
   LOG_PRINT_L0("Blockchain printed with log level 1");
 }
 //------------------------------------------------------------------
-void blockchain_storage::print_blockchain_index()
+void blockchain_storage::print_blockchain_index() const
 {
   std::stringstream ss;
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
@@ -1673,7 +1710,7 @@ void blockchain_storage::print_blockchain_index()
   LOG_PRINT_L0("Current blockchain index:" << ENDL << ss.str());
 }
 //------------------------------------------------------------------
-void blockchain_storage::print_blockchain_outs(const std::string& file)
+void blockchain_storage::print_blockchain_outs(const std::string& file) const
 {
   std::stringstream ss;
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
@@ -1698,7 +1735,8 @@ void blockchain_storage::print_blockchain_outs(const std::string& file)
   }
 }
 //------------------------------------------------------------------
-bool blockchain_storage::find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, NOTIFY_RESPONSE_CHAIN_ENTRY::request& resp)
+bool blockchain_storage::find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids,
+                                                    NOTIFY_RESPONSE_CHAIN_ENTRY::request& resp) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(!find_blockchain_supplement(qblock_ids, resp.start_height))
@@ -1711,7 +1749,9 @@ bool blockchain_storage::find_blockchain_supplement(const std::list<crypto::hash
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids, std::list<std::pair<block, std::list<transaction> > >& blocks, uint64_t& total_height, uint64_t& start_height, size_t max_count)
+bool blockchain_storage::find_blockchain_supplement(const std::list<crypto::hash>& qblock_ids,
+                                                    std::list<std::pair<block, std::list<transaction> > >& blocks,
+                                                    uint64_t& total_height, uint64_t& start_height, size_t max_count) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(!find_blockchain_supplement(qblock_ids, start_height))
@@ -1748,7 +1788,7 @@ bool blockchain_storage::add_block_as_invalid(const block_extended_info& bei, co
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::have_block(const crypto::hash& id)
+bool blockchain_storage::have_block(const crypto::hash& id) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(m_blocks_index.count(id))
@@ -1767,7 +1807,8 @@ bool blockchain_storage::handle_block_to_main_chain(const block& bl, block_verif
   return handle_block_to_main_chain(bl, id, bvc);
 }
 //------------------------------------------------------------------
-bool blockchain_storage::push_transaction_to_global_outs_index(const transaction& tx, const crypto::hash& tx_id, std::vector<uint64_t>& global_indexes)
+bool blockchain_storage::push_transaction_to_global_outs_index(const transaction& tx, const crypto::hash& tx_id,
+                                                               std::vector<uint64_t>& global_indexes)
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   size_t i = 0;
@@ -1781,14 +1822,14 @@ bool blockchain_storage::push_transaction_to_global_outs_index(const transaction
   return true;
 }
 //------------------------------------------------------------------
-size_t blockchain_storage::get_total_transactions()
+size_t blockchain_storage::get_total_transactions() const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   return m_transactions.size();
 }
 //------------------------------------------------------------------
 bool blockchain_storage::get_outs(coin_type type, uint64_t amount,
-                                  std::list<crypto::public_key>& pkeys)
+                                  std::list<crypto::public_key>& pkeys) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   auto it = m_outputs.find(std::make_pair(type, amount));
@@ -1826,7 +1867,7 @@ bool blockchain_storage::pop_transaction_from_global_index(const transaction& tx
 }
 //------------------------------------------------------------------
 bool blockchain_storage::check_tx_in_to_key(const transaction& tx, size_t i, const txin_to_key& inp,
-                                            const crypto::hash& tx_prefix_hash_, uint64_t* pmax_related_block_height)
+                                            const crypto::hash& tx_prefix_hash_, uint64_t* pmax_related_block_height) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
 
@@ -1845,10 +1886,10 @@ bool blockchain_storage::check_tx_in_to_key(const transaction& tx, size_t i, con
   struct outputs_visitor
   {
     std::vector<const crypto::public_key *>& m_results_collector;
-    blockchain_storage& m_bch;
+    const blockchain_storage& m_bch;
     coin_type m_type;
     
-    outputs_visitor(std::vector<const crypto::public_key *>& results_collector, blockchain_storage& bch, coin_type ct)
+    outputs_visitor(std::vector<const crypto::public_key *>& results_collector, const blockchain_storage& bch, coin_type ct)
         : m_results_collector(results_collector), m_bch(bch), m_type(ct) { }
     
     bool handle_output(const transaction& tx, size_t out_i, const tx_out& out)
@@ -1905,7 +1946,7 @@ bool blockchain_storage::check_tx_in_to_key(const transaction& tx, size_t i, con
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_in_mint(const transaction& tx, size_t i, const txin_mint& inp)
+bool blockchain_storage::check_tx_in_mint(const transaction& tx, size_t i, const txin_mint& inp) const
 {
   CHECK_AND_ASSERT_MES(inp.currency >= 256, false, "minting currency with invalid id <= 255");
   CHECK_AND_ASSERT_MES(tx.in_cp(i) == coin_type(inp.currency, NotContract, BACKED_BY_N_A), false,
@@ -1929,7 +1970,7 @@ bool blockchain_storage::check_tx_in_mint(const transaction& tx, size_t i, const
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_in_remint(const transaction& tx, size_t i, const txin_remint& inp)
+bool blockchain_storage::check_tx_in_remint(const transaction& tx, size_t i, const txin_remint& inp) const
 {
   CHECK_AND_ASSERT_MES(inp.currency >= 256, false, "reminting currency with invalid id <= 255");
   CHECK_AND_ASSERT_MES(tx.in_cp(i) == coin_type(inp.currency, NotContract, BACKED_BY_N_A), false,
@@ -1954,7 +1995,7 @@ bool blockchain_storage::check_tx_in_remint(const transaction& tx, size_t i, con
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_in_create_contract(const transaction& tx, size_t i, const txin_create_contract& inp)
+bool blockchain_storage::check_tx_in_create_contract(const transaction& tx, size_t i, const txin_create_contract& inp) const
 {
   CHECK_AND_ASSERT_MES(inp.contract >= 256, false, "creating contract with invalid id <= 255");
   CHECK_AND_ASSERT_MES(tx.in_cp(i) == CP_N_A, false,
@@ -1983,7 +2024,7 @@ bool blockchain_storage::check_tx_in_create_contract(const transaction& tx, size
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_in_mint_contract(const transaction& tx, size_t i, const txin_mint_contract& inp)
+bool blockchain_storage::check_tx_in_mint_contract(const transaction& tx, size_t i, const txin_mint_contract& inp) const
 {
   CHECK_AND_ASSERT_MES(tx.in_cp(i) == CP_N_A, false,
                        "minting contract with coin_type != CP_N_A");
@@ -1998,7 +2039,7 @@ bool blockchain_storage::check_tx_in_mint_contract(const transaction& tx, size_t
   CHECK_AND_ASSERT_MES(get_current_blockchain_height() < ci.expiry_block, false,
                        "minting contract that has expired: current height is " << get_current_blockchain_height()
                        << ", expiry_block is " << ci.expiry_block);
-  CHECK_AND_ASSERT_MES(!add_amount_would_overflow(ci.total_amount_minted[inp.backed_by_currency], inp.amount), false,
+  CHECK_AND_ASSERT_MES(!add_amount_would_overflow(const_get(ci.total_amount_minted, inp.backed_by_currency), inp.amount), false,
                        "Would overflow when keeping track of amounts minting contract " << inp.contract
                        << " backed by " << inp.backed_by_currency);
 
@@ -2020,7 +2061,7 @@ bool blockchain_storage::check_tx_in_mint_contract(const transaction& tx, size_t
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_in_grade_contract(const transaction& tx, size_t i, const txin_grade_contract& inp)
+bool blockchain_storage::check_tx_in_grade_contract(const transaction& tx, size_t i, const txin_grade_contract& inp) const
 {
   CHECK_AND_ASSERT_MES(tx.in_cp(i) == CP_N_A, false,
                        "grading contract with coin_type != CP_N_A");
@@ -2048,7 +2089,7 @@ bool blockchain_storage::check_tx_in_grade_contract(const transaction& tx, size_
   BOOST_FOREACH(const auto& item, inp.fee_amounts)
   {
     CHECK_AND_ASSERT_MES(item.second != 0, false, "Claiming fee of zero, shouldn't have an entry at all");
-    uint64_t allowed_fee = calculate_total_fee(ci.total_amount_minted[item.first], ci.fee_scale);
+    uint64_t allowed_fee = calculate_total_fee(const_get(ci.total_amount_minted, item.first), ci.fee_scale);
     coin_type fee_type(item.first, NotContract, BACKED_BY_N_A);
     CHECK_AND_ASSERT_MES(item.second == allowed_fee, false,
                          "Claiming fee of " << print_money(item.second, currency_decimals(fee_type))
@@ -2086,7 +2127,7 @@ bool get_grade_fee(const blockchain_storage::contract_info& ci, size_t current_b
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_in_resolve_bc_coins(const transaction& tx, size_t i, const txin_resolve_bc_coins& inp)
+bool blockchain_storage::check_tx_in_resolve_bc_coins(const transaction& tx, size_t i, const txin_resolve_bc_coins& inp) const
 {
   CHECK_AND_ASSERT_MES(tx.in_cp(i) == coin_type(inp.backing_currency, NotContract, BACKED_BY_N_A), false,
                        "in_cp doesn't match txin_resolve_bc_coins");
@@ -2119,7 +2160,7 @@ bool blockchain_storage::check_tx_in_resolve_bc_coins(const transaction& tx, siz
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_in_fuse_bc_coins(const transaction& tx, size_t i, const txin_fuse_bc_coins& inp)
+bool blockchain_storage::check_tx_in_fuse_bc_coins(const transaction& tx, size_t i, const txin_fuse_bc_coins& inp) const
 {
   CHECK_AND_ASSERT_MES(tx.in_cp(i) == coin_type(inp.backing_currency, NotContract, BACKED_BY_N_A), false,
                        "in_cp doesn't match txin_fuse_bc_coins");
@@ -2133,7 +2174,7 @@ bool blockchain_storage::check_tx_in_fuse_bc_coins(const transaction& tx, size_t
   CHECK_AND_ASSERT_MES(get_current_blockchain_height() < ci.expiry_block, false, "fusing expired contract");
 
   // should be impossible, but to be safe:
-  CHECK_AND_ASSERT_MES(!sub_amount_would_underflow(ci.total_amount_minted[inp.backing_currency], inp.amount), false,
+  CHECK_AND_ASSERT_MES(!sub_amount_would_underflow(const_get(ci.total_amount_minted, inp.backing_currency), inp.amount), false,
                        "Not enough coins were minted to be able to fuse them");
   
   // check_inputs_outputs() ensures there are enough backing & contract coins in the tx to fuse
@@ -2143,7 +2184,7 @@ bool blockchain_storage::check_tx_in_fuse_bc_coins(const transaction& tx, size_t
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_in_register_delegate(const transaction& tx, size_t i, const txin_register_delegate& inp)
+bool blockchain_storage::check_tx_in_register_delegate(const transaction& tx, size_t i, const txin_register_delegate& inp) const
 {
   CHECK_AND_ASSERT_MES(get_current_blockchain_height() >= cryptonote::config::dpos_registration_start_block, false,
                        "check_tx_in_register_delegate: can't register delegates at height "
@@ -2178,7 +2219,7 @@ bool blockchain_storage::check_tx_in_register_delegate(const transaction& tx, si
 }
 //------------------------------------------------------------------
 bool blockchain_storage::check_tx_in_vote(const transaction& tx, size_t i, const txin_vote& inp,
-                                          const crypto::hash& tx_prefix_hash_, uint64_t* pmax_related_block_height)
+                                          const crypto::hash& tx_prefix_hash_, uint64_t* pmax_related_block_height) const
 {
   CHECK_AND_ASSERT_MES(get_current_blockchain_height() >= cryptonote::config::dpos_registration_start_block, false,
                        "check_tx_in_vote: can't vote for delegates at height "
@@ -2198,8 +2239,8 @@ bool blockchain_storage::check_tx_in_vote(const transaction& tx, size_t i, const
                        "check_tx_in_vote: voting with spent key image");
 
   // check 'seq' matches
-  auto& hists = m_vote_histories[inp.ink.k_image];
-  CHECK_AND_ASSERT_MES(inp.seq == hists.size(), false, "check_tx_in_vote: invalid 'seq' of " << inp.seq << ", but hists.size()=" << hists.size());
+  size_t hists_size = const_get(m_vote_histories, inp.ink.k_image).size();
+  CHECK_AND_ASSERT_MES(inp.seq == hists_size, false, "check_tx_in_vote: invalid 'seq' of " << inp.seq << ", but hists.size()=" << hists_size);
   
   // check votes are for existing delegates and that would be no overflow
   BOOST_FOREACH(const auto& delegate_id, inp.votes)
@@ -2219,7 +2260,7 @@ bool blockchain_storage::check_tx_in_vote(const transaction& tx, size_t i, const
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_tx_out_to_key(const transaction& tx, size_t i, const txout_to_key& inp)
+bool blockchain_storage::check_tx_out_to_key(const transaction& tx, size_t i, const txout_to_key& inp) const
 {
   return true;
 }
@@ -2418,7 +2459,8 @@ namespace bs_visitor_detail {
     }
   };
 }
-bool blockchain_storage::add_transaction_from_block(const transaction& tx, const crypto::hash& tx_id, const crypto::hash& bl_id, uint64_t bl_height)
+bool blockchain_storage::add_transaction_from_block(const transaction& tx, const crypto::hash& tx_id,
+                                                    const crypto::hash& bl_id, uint64_t bl_height)
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
@@ -2490,7 +2532,7 @@ bool blockchain_storage::add_transaction_from_block(const transaction& tx, const
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_tx_outputs_gindexs(const crypto::hash& tx_id, std::vector<uint64_t>& indexs)
+bool blockchain_storage::get_tx_outputs_gindexs(const crypto::hash& tx_id, std::vector<uint64_t>& indexs) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   auto it = m_transactions.find(tx_id);
@@ -2510,12 +2552,12 @@ namespace bs_visitor_detail {
   {
     using tx_input_visitor_base::operator();
     
-    blockchain_storage& b;
+    const blockchain_storage& b;
     const transaction& tx;
     crypto::hash tx_prefix_hash;
     uint64_t* pmax_used_block_height;
     
-    check_tx_input_visitor(blockchain_storage& b_in, const transaction& tx_in,
+    check_tx_input_visitor(const blockchain_storage& b_in, const transaction& tx_in,
                            const crypto::hash& tx_prefix_hash_in,
                            uint64_t* pmax_used_block_height_in)
     : b(b_in), tx(tx_in), tx_prefix_hash(tx_prefix_hash_in), pmax_used_block_height(pmax_used_block_height_in) {}
@@ -2566,8 +2608,9 @@ namespace bs_visitor_detail {
     }
   };
 }
-bool blockchain_storage::check_tx_inputs(const transaction& tx, uint64_t* pmax_used_block_height)
+bool blockchain_storage::check_tx_inputs(const transaction& tx, uint64_t* pmax_used_block_height) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(pmax_used_block_height)
     *pmax_used_block_height = 0;
   
@@ -2580,10 +2623,10 @@ namespace {
   {
     using tx_output_visitor_base::operator();
     
-    blockchain_storage& b;
+    const blockchain_storage& b;
     const transaction& tx;
     
-    check_tx_output_visitor(blockchain_storage& b_in, const transaction& tx_in)
+    check_tx_output_visitor(const blockchain_storage& b_in, const transaction& tx_in)
     : b(b_in), tx(tx_in) {}
     
     bool operator()(const txout_to_key& inp)
@@ -2592,13 +2635,14 @@ namespace {
     }
   };
 }
-bool blockchain_storage::check_tx_outputs(const transaction& tx)
+bool blockchain_storage::check_tx_outputs(const transaction& tx) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   check_tx_output_visitor visitor(*this, tx);
   return tools::all_apply_visitor(visitor, tx.outs(), out_getter());
 }
 //------------------------------------------------------------------
-bool blockchain_storage::validate_tx(const transaction& tx, bool is_miner_tx, uint64_t *pmax_used_block_height)
+bool blockchain_storage::validate_tx(const transaction& tx, bool is_miner_tx, uint64_t *pmax_used_block_height) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
@@ -2615,8 +2659,9 @@ bool blockchain_storage::validate_tx(const transaction& tx, bool is_miner_tx, ui
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::is_tx_spendtime_unlocked(uint64_t unlock_time)
+bool blockchain_storage::is_tx_spendtime_unlocked(uint64_t unlock_time) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if(unlock_time < CRYPTONOTE_MAX_BLOCK_NUMBER)
   {
     //interpret as block index
@@ -2636,8 +2681,9 @@ bool blockchain_storage::is_tx_spendtime_unlocked(uint64_t unlock_time)
   return false;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::is_contract_resolved(uint64_t contract)
+bool blockchain_storage::is_contract_resolved(uint64_t contract) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   auto r = m_contracts.find(contract);
   if (r == m_contracts.end())
     throw std::runtime_error("is_contract_resolved passed a non-contract");
@@ -2651,12 +2697,12 @@ bool blockchain_storage::is_contract_resolved(uint64_t contract)
   return false;
 }
 //------------------------------------------------------------------
-uint64_t blockchain_storage::get_adjusted_time()
+uint64_t blockchain_storage::get_adjusted_time() const
 {
   return m_ntp_time.get_time();
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_block_timestamp_main(const block& b)
+bool blockchain_storage::check_block_timestamp_main(const block& b) const
 {
   uint64_t LIMIT = config::in_pos_era(get_block_height(b)) ? CRYPTONOTE_DPOS_BLOCK_FUTURE_TIME_LIMIT : CRYPTONOTE_BLOCK_FUTURE_TIME_LIMIT;
   
@@ -2666,6 +2712,7 @@ bool blockchain_storage::check_block_timestamp_main(const block& b)
     return false;
   }
 
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   std::vector<uint64_t> timestamps;
   size_t offset = m_blocks.size() <= BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW ? 0: m_blocks.size()- BLOCKCHAIN_TIMESTAMP_CHECK_WINDOW;
   for(;offset!= m_blocks.size(); ++offset)
@@ -2674,17 +2721,18 @@ bool blockchain_storage::check_block_timestamp_main(const block& b)
   return check_block_timestamp(std::move(timestamps), b);
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_block_timestamp(std::vector<uint64_t> timestamps, const block& b)
+bool blockchain_storage::check_block_timestamp(std::vector<uint64_t> timestamps, const block& b) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   if (config::in_pos_era(get_block_height(b)))
   {
     // timestamps must be strictly increasing, waiting at least CRYPTONOTE_DPOS_BLOCK_MINIMUM_BLOCK_SPACING seconds
     uint64_t prev_timestamp;
     
     if (m_blocks_index.count(b.prev_id))
-      prev_timestamp = m_blocks[m_blocks_index[b.prev_id]].bl.timestamp;
+      prev_timestamp = m_blocks[const_get(m_blocks_index, b.prev_id)].bl.timestamp;
     else if (m_alternative_chains.count(b.prev_id))
-      prev_timestamp = m_alternative_chains[b.prev_id].bl.timestamp;
+      prev_timestamp = const_get(m_alternative_chains, b.prev_id).bl.timestamp;
     else
     {
       LOG_ERROR("Could not find prev block when check_block_timestamp");
@@ -2712,7 +2760,7 @@ bool blockchain_storage::check_block_timestamp(std::vector<uint64_t> timestamps,
 }
 
 //------------------------------------------------------------------
-bool blockchain_storage::check_block_type(const block& bl)
+bool blockchain_storage::check_block_type(const block& bl) const
 {
   crypto::hash id = get_block_hash(bl);
   
@@ -2742,8 +2790,8 @@ bool blockchain_storage::check_block_type(const block& bl)
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::check_pow_pos(const block& bl, const difficulty_type& current_diffic, block_verification_context& bvc,
-                                       crypto::hash& proof_of_work)
+bool blockchain_storage::check_pow_pos(const block& bl, const difficulty_type& current_diffic,
+                                       block_verification_context& bvc, crypto::hash& proof_of_work) const
 {
   crypto::hash id = get_block_hash(bl);
   
@@ -2801,7 +2849,7 @@ bool blockchain_storage::check_pow_pos(const block& bl, const difficulty_type& c
     return false;
   }
   
-  if (!check_dpos_block_sig(bl, m_delegates[signing_delegate].public_address))
+  if (!check_dpos_block_sig(bl, const_get(m_delegates, signing_delegate).public_address))
   {
     LOG_ERROR("Block with id: " << id << ENDL << " have invalid signature for delegate " << signing_delegate);
     bvc.m_verifivation_failed = true;
@@ -3040,6 +3088,7 @@ bool blockchain_storage::handle_block_to_main_chain(const block& bl, const crypt
 //------------------------------------------------------------------
 bool blockchain_storage::update_next_comulative_size_limit()
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
   std::vector<size_t> sz;
   get_last_n_blocks_sizes(sz, CRYPTONOTE_REWARD_BLOCKS_WINDOW);
 
@@ -3084,6 +3133,8 @@ bool blockchain_storage::add_new_block(const block& bl_, block_verification_cont
 //------------------------------------------------------------------
 uint64_t blockchain_storage::currency_decimals(coin_type type) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
+  
   switch (type.contract_type) {
     case NotContract: {
       if (type.currency == CURRENCY_XPB)
@@ -3110,7 +3161,7 @@ uint64_t blockchain_storage::currency_decimals(coin_type type) const
   return 0;
 }
 //------------------------------------------------------------------
-uint64_t blockchain_storage::get_max_vote(uint64_t voting_for_height)
+uint64_t blockchain_storage::get_max_vote(uint64_t voting_for_height) const
 {
   // no more limitations on max vote
   return std::numeric_limits<uint64_t>::max();
@@ -3185,12 +3236,12 @@ bool blockchain_storage::apply_votes(uint64_t vote_amount, const delegate_votes&
   BOOST_FOREACH(const auto& delegate_id, for_delegates)
   {
     uint64_t effective_amount = vote_amount;
-    CHECK_AND_ASSERT_MES(!add_amount_would_overflow(m_delegates[delegate_id].total_votes, vote_amount), false,
+    CHECK_AND_ASSERT_MES(!add_amount_would_overflow(const_get(m_delegates, delegate_id).total_votes, vote_amount), false,
                          "apply_votes: apply vote would overflow");
     
-    if (m_delegates[delegate_id].total_votes + vote_amount > max_vote)
+    if (const_get(m_delegates, delegate_id).total_votes + vote_amount > max_vote)
     {
-      effective_amount = max_vote - m_delegates[delegate_id].total_votes;
+      effective_amount = max_vote - const_get(m_delegates, delegate_id).total_votes;
     }
     vote_inst.votes[delegate_id] = effective_amount;
     m_delegates[delegate_id].total_votes += effective_amount;
@@ -3238,7 +3289,7 @@ bool blockchain_storage::unapply_votes(const vote_instance& vote_inst, bool enfo
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::is_top_delegate(const delegate_id_t& delegate_id)
+bool blockchain_storage::is_top_delegate(const delegate_id_t& delegate_id) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
@@ -3363,15 +3414,17 @@ bool blockchain_storage::recalculate_top_delegates()
   return true;
 }
 //------------------------------------------------------------------
-delegate_id_t blockchain_storage::nth_delegate_after(const delegate_id_t& start, size_t n)
+delegate_id_t blockchain_storage::nth_delegate_after(const delegate_id_t& start, size_t n) const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
+  
   if (m_top_delegates.empty())
     throw std::runtime_error("Top delegates is empty");
   
   return nth_sorted_item_after(m_top_delegates, start, n);
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_signing_delegate(const block& block_prev, uint64_t for_timestamp, delegate_id_t& result)
+bool blockchain_storage::get_signing_delegate(const block& block_prev, uint64_t for_timestamp, delegate_id_t& result) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
@@ -3409,15 +3462,17 @@ bool blockchain_storage::get_signing_delegate(const block& block_prev, uint64_t 
   return true;
 }
 //------------------------------------------------------------------
-const delegate_votes& blockchain_storage::get_autovote_delegates()
+const delegate_votes& blockchain_storage::get_autovote_delegates() const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
   return m_autovote_delegates;
 }
 //------------------------------------------------------------------
-delegate_id_t blockchain_storage::pick_unused_delegate_id()
+delegate_id_t blockchain_storage::pick_unused_delegate_id() const
 {
+  CRITICAL_REGION_LOCAL(m_blockchain_lock);
+  
   srand(static_cast<unsigned int>(get_adjusted_time()));
   
   size_t count = 0;
@@ -3443,7 +3498,7 @@ delegate_id_t blockchain_storage::pick_unused_delegate_id()
   return result;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_dpos_register_info(cryptonote::delegate_id_t& unused_delegate_id, uint64_t& registration_fee)
+bool blockchain_storage::get_dpos_register_info(cryptonote::delegate_id_t& unused_delegate_id, uint64_t& registration_fee) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
@@ -3458,7 +3513,7 @@ bool blockchain_storage::get_dpos_register_info(cryptonote::delegate_id_t& unuse
   return true;
 }
 //------------------------------------------------------------------
-bool blockchain_storage::get_delegate_info(const cryptonote::account_public_address& addr, bs_delegate_info& res)
+bool blockchain_storage::get_delegate_info(const cryptonote::account_public_address& addr, bs_delegate_info& res) const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   
@@ -3474,7 +3529,7 @@ bool blockchain_storage::get_delegate_info(const cryptonote::account_public_addr
   return false;
 }
 //------------------------------------------------------------------
-std::vector<cryptonote::bs_delegate_info> blockchain_storage::get_delegate_infos()
+std::vector<cryptonote::bs_delegate_info> blockchain_storage::get_delegate_infos() const
 {
   CRITICAL_REGION_LOCAL(m_blockchain_lock);
   

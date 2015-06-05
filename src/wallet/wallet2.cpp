@@ -908,6 +908,11 @@ void wallet2::add_unconfirmed_tx(const cryptonote::transaction& tx, uint64_t cha
   utd.m_tx = tx;
 }
 //----------------------------------------------------------------------------------------------------
+template<typename T>
+inline void suppress_warning(const T& val)
+{
+}
+//----------------------------------------------------------------------------------------------------
 fake_outs_map wallet2::get_fake_outputs(const std::unordered_map<cryptonote::coin_type, std::list<uint64_t> >& amounts, uint64_t min_fake_outs, uint64_t fake_outputs_count)
 {
   fake_outs_map res = AUTO_VAL_INIT(res);
@@ -918,6 +923,7 @@ fake_outs_map wallet2::get_fake_outputs(const std::unordered_map<cryptonote::coi
     {
       BOOST_FOREACH(const auto& amt, item.second)
       {
+        suppress_warning(amt);
         res[item.first].push_back(std::list<out_entry>());
       }
     }
@@ -958,6 +964,24 @@ fake_outs_map wallet2::get_fake_outputs(const std::unordered_map<cryptonote::coi
   }
   
   return res;
+}
+//----------------------------------------------------------------------------------------------------
+key_image_seqs wallet2::get_key_image_seqs(const std::vector<crypto::key_image> key_images)
+{
+  cryptonote::COMMAND_RPC_GET_KEY_IMAGE_SEQS::request req = AUTO_VAL_INIT(req);
+  req.images = key_images;
+  
+  cryptonote::COMMAND_RPC_GET_KEY_IMAGE_SEQS::response resp;
+  
+  bool r = epee::net_utils::invoke_http_bin_remote_command2(m_daemon_address + "/getkeyimageseqs.bin", req, resp, *m_phttp_client, 200000);
+  THROW_WALLET_EXCEPTION_IF(!r, error::no_connection_to_daemon, "getkeyimageseqs.bin");
+  THROW_WALLET_EXCEPTION_IF(resp.status == CORE_RPC_STATUS_BUSY, error::daemon_busy, "getkeyimageseqs.bin");
+  THROW_WALLET_EXCEPTION_IF(resp.status != CORE_RPC_STATUS_OK, error::get_key_image_seqs_error, resp.status);
+  THROW_WALLET_EXCEPTION_IF(resp.image_seqs.size() != req.images.size(), error::wallet_internal_error,
+                            "daemon returned wrong response for getkeyimageseqs.bin, wrong amounts count = " +
+                            std::to_string(resp.image_seqs.size()) + ", expected " +  std::to_string(req.images.size()));
+  
+  return resp.image_seqs;
 }
 //----------------------------------------------------------------------------------------------------
 void wallet2::send_raw_tx_to_daemon(const cryptonote::transaction& tx)

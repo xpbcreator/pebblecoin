@@ -5,11 +5,10 @@
 #include <QLabel>
 #include <QVBoxLayout>
 
+#include "version.h"
 #include "common/util.h"
 
-#include "interface/clientversion.h"
 #include "interface/init.h"
-#include "bitcoin/util.h"
 
 #include "bitcoingui.h"
 #include "clientmodel.h"

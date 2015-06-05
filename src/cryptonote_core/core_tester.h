@@ -6,8 +6,6 @@
 
 #include "common/types.h"
 
-#include "delegate_types.h"
-
 namespace cryptonote
 {
   struct bs_delegate_info;

@@ -36,7 +36,7 @@ bool parse_binary(const std::string &blob, T &v)
 }
 
 template<class T>
-bool dump_binary(T& v, std::string& blob)
+bool dump_binary(const T& v, std::string& blob)
 {
   std::stringstream ostr;
   binary_archive<true> oar(ostr);

@@ -112,7 +112,7 @@ namespace math_helper
 		unsigned int m_base;
 		double m_last_avg_val;
 		std::list<value_type> m_list;
-		critical_section m_lock;
+		mutable critical_section m_lock;
 	};
 
 	
@@ -210,7 +210,7 @@ namespace math_helper
 		std::list<uint64_t> m_chicks;
 		uint64_t m_time_window;
 		size_t m_last_speed_value;
-		critical_section m_lock;
+		mutable critical_section m_lock;
 	};
 //#endif
 

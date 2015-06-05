@@ -68,6 +68,7 @@ namespace cryptonote
 
     --it;
     uint64_t checkpoint_height = it->first;
+    LOG_PRINT_L0("checkpoint_height: " << checkpoint_height << ", m_points.size(): " << m_points.size());
     return checkpoint_height < block_height;
   }
 }

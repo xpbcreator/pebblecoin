@@ -4,8 +4,9 @@
 
 #pragma once
 
+#include "serialization.h"
 #include "json_archive.h"
-#include "variant.h"
+#include "variant.inl"  // for variant_serialization_traits when included from crypto.inl
 
 template <bool W>
 struct debug_archive : public json_archive<W> {
@@ -17,7 +18,7 @@ struct debug_archive : public json_archive<W> {
 template <class T>
 struct serializer<debug_archive<true>, T>
 {
-  static void serialize(debug_archive<true> &ar, T &v)
+  static void serialize(debug_archive<true> &ar, const T &v)
   {
     ar.begin_object();
     ar.tag(variant_serialization_traits<debug_archive<true>, T>::get_tag());

@@ -10,7 +10,7 @@
 
 #include <boost/functional/hash.hpp>
 
-#include "common/pod-class.h"
+#include "common/types.h"
 
 #include "generic-ops.h"
 #include "hash.h"

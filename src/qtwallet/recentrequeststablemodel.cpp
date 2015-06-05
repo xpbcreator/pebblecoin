@@ -49,7 +49,7 @@ int RecentRequestsTableModel::columnCount(const QModelIndex &parent) const
 
 QVariant RecentRequestsTableModel::data(const QModelIndex &index, int role) const
 {
-    if(!index.isValid() || index.row() >= list.length())
+    /*if(!index.isValid() || index.row() >= list.length())
         return QVariant();
 
     const RecentRequestEntry *rec = &list[index.row()];
@@ -84,7 +84,7 @@ QVariant RecentRequestsTableModel::data(const QModelIndex &index, int role) cons
             else
                 return BitcoinUnits::format(walletModel->getOptionsModel()->getDisplayUnit(), rec->recipient.amount);
         }
-    }
+    }*/
     return QVariant();
 }
 
@@ -95,13 +95,13 @@ bool RecentRequestsTableModel::setData(const QModelIndex &index, const QVariant 
 
 QVariant RecentRequestsTableModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
-    if(orientation == Qt::Horizontal)
+    /*if(orientation == Qt::Horizontal)
     {
         if(role == Qt::DisplayRole && section < columns.size())
         {
             return columns[section];
         }
-    }
+    }*/
     return QVariant();
 }
 
@@ -116,7 +116,7 @@ bool RecentRequestsTableModel::removeRows(int row, int count, const QModelIndex 
 {
     Q_UNUSED(parent);
 
-    if(count > 0 && row >= 0 && (row+count) <= list.size())
+    /*if(count > 0 && row >= 0 && (row+count) <= list.size())
     {
         const RecentRequestEntry *rec;
         for (int i = 0; i < count; ++i)
@@ -130,7 +130,7 @@ bool RecentRequestsTableModel::removeRows(int row, int count, const QModelIndex 
         list.erase(list.begin() + row, list.begin() + row + count);
         endRemoveRows();
         return true;
-    } else {
+    } else*/ {
         return false;
     }
 }
@@ -143,7 +143,7 @@ Qt::ItemFlags RecentRequestsTableModel::flags(const QModelIndex &index) const
 // called when adding a request from the GUI
 void RecentRequestsTableModel::addNewRequest(const SendCoinsRecipient &recipient)
 {
-    RecentRequestEntry newEntry;
+    /*RecentRequestEntry newEntry;
     newEntry.id = ++nReceiveRequestsMaxId;
     newEntry.date = QDateTime::currentDateTime();
     newEntry.recipient = recipient;
@@ -154,13 +154,13 @@ void RecentRequestsTableModel::addNewRequest(const SendCoinsRecipient &recipient
     if (!walletModel->saveReceiveRequest(recipient.address.toStdString(), newEntry.id, ss.str()))
         return;
 
-    addNewRequest(newEntry);
+    addNewRequest(newEntry);*/
 }
 
 // called from ctor when loading from wallet
 void RecentRequestsTableModel::addNewRequest(const std::string &recipient)
 {
-    std::vector<char> data(recipient.begin(), recipient.end());
+    /*std::vector<char> data(recipient.begin(), recipient.end());
     CDataStream ss(data, SER_DISK, CLIENT_VERSION);
 
     RecentRequestEntry entry;
@@ -172,21 +172,21 @@ void RecentRequestsTableModel::addNewRequest(const std::string &recipient)
     if (entry.id > nReceiveRequestsMaxId)
         nReceiveRequestsMaxId = entry.id;
 
-    addNewRequest(entry);
+    addNewRequest(entry);*/
 }
 
 // actually add to table in GUI
 void RecentRequestsTableModel::addNewRequest(RecentRequestEntry &recipient)
 {
-    beginInsertRows(QModelIndex(), 0, 0);
+    /*beginInsertRows(QModelIndex(), 0, 0);
     list.prepend(recipient);
-    endInsertRows();
+    endInsertRows();*/
 }
 
 void RecentRequestsTableModel::sort(int column, Qt::SortOrder order)
 {
-    qSort(list.begin(), list.end(), RecentRequestEntryLessThan(column, order));
-    emit dataChanged(index(0, 0, QModelIndex()), index(list.size() - 1, NUMBER_OF_COLUMNS - 1, QModelIndex()));
+    /*qSort(list.begin(), list.end(), RecentRequestEntryLessThan(column, order));
+    emit dataChanged(index(0, 0, QModelIndex()), index(list.size() - 1, NUMBER_OF_COLUMNS - 1, QModelIndex()));*/
 }
 
 bool RecentRequestEntryLessThan::operator()(RecentRequestEntry &left, RecentRequestEntry &right) const

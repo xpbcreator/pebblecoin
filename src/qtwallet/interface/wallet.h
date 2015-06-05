@@ -136,7 +136,7 @@ public:
   void on_tx_removed(const crypto::hash& tx_hash, const cryptonote::transaction& tx);
   
   /** Serialization */
-  bool StoreCWallet();
+  bool StoreCWallet() const;
   bool LoadCWallet();
   
   BEGIN_SERIALIZE_OBJECT()

@@ -2,36 +2,30 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "clientmodel.h"
-
-#include "guiconstants.h"
-
-//#include "alert.h"
-//#include "chainparams.h"
-//#include "checkpoints.h"
-//#include "main.h"
-//#include "net.h"
-#include "bitcoin/util.h"
-#include "bitcoin/sync.h"
-#include "interface/main.h"
-#include "interface/init.h"
-#include "interface/qtversion.h"
-#include "interface/wallet.h"
-
-#include "common/ui_interface.h"
-#include "crypto/hash.h"
-#include "cryptonote_core/cryptonote_core.h"
-#include "p2p/net_node.h"
-#include "cryptonote_protocol/cryptonote_protocol_handler.h"
-
 #include <stdint.h>
+
 #include <list>
 
 #include <QDateTime>
 #include <QDebug>
 #include <QTimer>
 
-#include <boost/foreach.hpp>
+#include "version.h"
+#include "common/ui_interface.h"
+#include "crypto/hash.h"
+#include "cryptonote_core/cryptonote_core.h"
+#include "p2p/net_node.h"
+#include "cryptonote_protocol/cryptonote_protocol_handler.h"
+
+#include "bitcoin/util.h"
+#include "bitcoin/sync.h"
+#include "interface/main.h"
+#include "interface/init.h"
+#include "interface/wallet.h"
+#include "interface/qtversion.h"
+
+#include "clientmodel.h"
+#include "guiconstants.h"
 
 static const int64_t nClientStartupTime = GetTime();
 
@@ -80,12 +74,12 @@ int ClientModel::getNumConnections(unsigned int flags) const
     return res;
 }
 
-int ClientModel::getWalletProcessedHeight() const
+int64_t ClientModel::getWalletProcessedHeight() const
 {
     return WalletProcessedHeight();
 }
 
-int ClientModel::getDaemonProcessedHeight() const
+int64_t ClientModel::getDaemonProcessedHeight() const
 {
     return DaemonProcessedHeight();
 }
@@ -130,9 +124,9 @@ QDateTime ClientModel::getLastWalletBlockDate() const
 
 double ClientModel::getVerificationProgress() const
 {
-    int wallet = getWalletProcessedHeight();
-    int daemon = getDaemonProcessedHeight();
-    int total = getNumBlocksOfPeers();
+    int64_t wallet = getWalletProcessedHeight();
+    int64_t daemon = getDaemonProcessedHeight();
+    int64_t total = getNumBlocksOfPeers();
     
     total = std::max(std::max(wallet, daemon), total);
     
@@ -156,9 +150,9 @@ void ClientModel::updateTimer()
         return;
     // Some quantities (such as number of blocks) change so fast that we don't want to be notified for each change.
     // Periodically check and update with a timer.
-    int newWalletBlocks = getWalletProcessedHeight();
-    int newDaemonBlocks = getDaemonProcessedHeight();
-    int newNumBlocksOfPeers = getNumBlocksOfPeers();
+    int64_t newWalletBlocks = getWalletProcessedHeight();
+    int64_t newDaemonBlocks = getDaemonProcessedHeight();
+    int64_t newNumBlocksOfPeers = getNumBlocksOfPeers();
 
     // check for changed number of blocks we have, number of blocks peers claim to have, reindexing state and importing state
     if (cachedNumBlocksOfPeers != newNumBlocksOfPeers ||
@@ -251,7 +245,7 @@ QString ClientModel::formatBuildDate() const
 
 bool ClientModel::isReleaseVersion() const
 {
-    return CLIENT_VERSION_IS_RELEASE;
+    return PROJECT_VERSION_IS_RELEASE;
 }
 
 QString ClientModel::clientName() const

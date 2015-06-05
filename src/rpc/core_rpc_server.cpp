@@ -152,6 +152,21 @@ namespace cryptonote
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------------
+  bool core_rpc_server::on_get_key_image_seqs(const COMMAND_RPC_GET_KEY_IMAGE_SEQS::request& req, COMMAND_RPC_GET_KEY_IMAGE_SEQS::response& res, connection_context& cntx)
+  {
+    CHECK_CORE_READY();
+    res.status = "Failed";
+    
+    if(!m_core.get_key_image_seqs(req, res))
+    {
+      return true;
+    }
+    
+    LOG_PRINT_L2("COMMAND_RPC_GET_KEY_IMAGE_SEQS: " << ENDL);
+    res.status = CORE_RPC_STATUS_OK;
+    return true;
+  }
+  //------------------------------------------------------------------------------------------------------------------------------
   bool core_rpc_server::on_get_indexes(const COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::request& req, COMMAND_RPC_GET_TX_GLOBAL_OUTPUTS_INDEXES::response& res, connection_context& cntx)
   {
     CHECK_CORE_READY();
@@ -447,6 +462,20 @@ namespace cryptonote
     responce.difficulty = m_core.get_blockchain_storage().block_difficulty(height);
     responce.reward = get_block_reward(blk);
     responce.already_generated_coins = m_core.get_blockchain_storage().already_generated_coins(height);
+    responce.signing_delegate_id = blk.signing_delegate_id;
+    return true;
+  }
+  //------------------------------------------------------------------------------------------------------------------------------
+  bool core_rpc_server::fill_delegate_info_responce(const bs_delegate_info& info, cryptonote::delegate_info_responce &responce)
+  {
+    responce.delegate_id = info.delegate_id;
+    responce.public_address = info.address_as_string;
+    responce.total_votes = info.total_votes;
+    responce.processed_blocks = info.processed_blocks;
+    responce.missed_blocks = info.missed_blocks;
+    responce.fees_received = info.fees_received;
+    responce.vote_rank = info.cached_vote_rank;
+    responce.autoselect_rank = info.cached_autoselect_rank;
     return true;
   }
   //------------------------------------------------------------------------------------------------------------------------------
@@ -601,6 +630,36 @@ namespace cryptonote
     const auto& set_delegates = m_core.get_blockchain_storage().get_autovote_delegates();
     
     res.autovote_delegates = std::vector<delegate_id_t>(set_delegates.begin(), set_delegates.end());
+    res.status = CORE_RPC_STATUS_OK;
+    
+    return true;
+  }
+  //------------------------------------------------------------------------------------------------------------------------------
+  bool core_rpc_server::on_getdelegateinfos(const COMMAND_RPC_GET_DELEGATE_INFOS::request &req, COMMAND_RPC_GET_DELEGATE_INFOS::response &res, epee::json_rpc::error &error_resp, connection_context &cntx)
+  {
+    if (!check_core_ready())
+    {
+      error_resp.code = CORE_RPC_ERROR_CODE_CORE_BUSY;
+      error_resp.message = "Core is busy.";
+      return false;
+    }
+    
+    res.delegate_infos.clear();
+    
+    account_public_address delegate_addr;
+    bs_delegate_info info;
+    delegate_info_responce info_resp;
+    BOOST_FOREACH(const auto& delegate_id, req.delegate_ids)
+    {
+      if (!m_core.get_blockchain_storage().get_delegate_address(delegate_id, delegate_addr))
+        continue;
+      if (!m_core.get_blockchain_storage().get_delegate_info(delegate_addr, info))
+        continue;
+      if (!fill_delegate_info_responce(info, info_resp))
+        continue;
+      res.delegate_infos.push_back(info_resp);
+    }
+    
     res.status = CORE_RPC_STATUS_OK;
     
     return true;

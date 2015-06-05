@@ -388,8 +388,8 @@ bool TransactionRecord::statusUpdateNeeded()
         return false;
     if (!pwalletMain)
         return false;
-    return status.cur_daemon_blocks != DaemonProcessedHeight() ||
-           status.cur_wallet_blocks != WalletProcessedHeight();
+    return (int64_t)status.cur_daemon_blocks != DaemonProcessedHeight() ||
+           (int64_t)status.cur_wallet_blocks != WalletProcessedHeight();
 }
 
 QString TransactionRecord::getTxID() const

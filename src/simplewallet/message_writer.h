@@ -8,9 +8,9 @@
 #include <string>
 #include <sstream>
 
-#include "common/pod-class.h"
-
 #include "include_base_utils.h"
+
+#include "common/types.h"
 
 namespace crypto { POD_CLASS hash; }
 

@@ -133,7 +133,7 @@ namespace cryptonote
     return true;
   }
   //---------------------------------------------------------------------------------
-  bool tx_memory_pool::check_can_add_inp(const txin_v& inp)
+  bool tx_memory_pool::check_can_add_inp(const txin_v& inp) const
   {
     detail::txin_info info;
     CHECK_AND_ASSERT(detail::get_txin_info(inp, info), false);
@@ -283,13 +283,13 @@ namespace cryptonote
     return true;
   }
   //---------------------------------------------------------------------------------
-  size_t tx_memory_pool::get_transactions_count()
+  size_t tx_memory_pool::get_transactions_count() const
   {
     CRITICAL_REGION_LOCAL(m_transactions_lock);
     return m_transactions.size();
   }
   //---------------------------------------------------------------------------------
-  bool tx_memory_pool::get_transactions(std::list<transaction>& txs)
+  bool tx_memory_pool::get_transactions(std::list<transaction>& txs) const
   {
     CRITICAL_REGION_LOCAL(m_transactions_lock);
     BOOST_FOREACH(const auto& tx_vt, m_transactions)
@@ -298,7 +298,7 @@ namespace cryptonote
     return true;
   }
   //---------------------------------------------------------------------------------
-  bool tx_memory_pool::get_transaction(const crypto::hash& id, transaction& tx)
+  bool tx_memory_pool::get_transaction(const crypto::hash& id, transaction& tx) const
   {
     CRITICAL_REGION_LOCAL(m_transactions_lock);
     auto it = m_transactions.find(id);
@@ -318,7 +318,7 @@ namespace cryptonote
     return true;
   }
   //---------------------------------------------------------------------------------
-  bool tx_memory_pool::have_tx(const crypto::hash &id)
+  bool tx_memory_pool::have_tx(const crypto::hash &id) const
   {
     CRITICAL_REGION_LOCAL(m_transactions_lock);
     if(m_transactions.count(id))
@@ -326,7 +326,7 @@ namespace cryptonote
     return false;
   }
   //---------------------------------------------------------------------------------
-  bool tx_memory_pool::check_can_add_tx(const transaction& tx)
+  bool tx_memory_pool::check_can_add_tx(const transaction& tx) const
   {
     // Additional checks besides blockchain_storage::validate_tx, e.g.
     // no double-spend within txs in the mempool, no conflicting currencies/contracts
@@ -341,17 +341,17 @@ namespace cryptonote
     return true;
   }
   //---------------------------------------------------------------------------------
-  void tx_memory_pool::lock()
+  void tx_memory_pool::lock() const
   {
     m_transactions_lock.lock();
   }
   //---------------------------------------------------------------------------------
-  void tx_memory_pool::unlock()
+  void tx_memory_pool::unlock() const
   {
     m_transactions_lock.unlock();
   }
   //---------------------------------------------------------------------------------
-  bool tx_memory_pool::is_transaction_ready_to_go(tx_details& txd)
+  bool tx_memory_pool::is_transaction_ready_to_go(tx_details& txd) const
   {
     // see if we can avoid doing the input checks
     if (txd.max_used_block_id == null_hash)
@@ -391,11 +391,11 @@ namespace cryptonote
   {
     std::stringstream ss;
     CRITICAL_REGION_LOCAL(m_transactions_lock);
-    BOOST_FOREACH(transactions_container::value_type& txe,  m_transactions)
+    BOOST_FOREACH(auto& txe, m_transactions)
     {
       if(short_format)
       {
-        tx_details& txd = txe.second;
+        const auto& txd = txe.second;
         ss << "id: " << txe.first << ENDL
           << "blob_size: " << txd.blob_size << ENDL
           << "fee: " << txd.fee << ENDL
@@ -406,7 +406,7 @@ namespace cryptonote
           << "last_failed_id: " << txd.last_failed_id << ENDL;
       }else
       {
-        tx_details& txd = txe.second;
+        auto& txd = txe.second;
         ss << "id: " << txe.first << ENDL
           <<  obj_to_json_str(txd.tx) << ENDL
           << "blob_size: " << txd.blob_size << ENDL
@@ -435,7 +435,8 @@ namespace cryptonote
     };
   }
   
-  bool tx_memory_pool::fill_block_template(block &bl, size_t median_size, uint64_t already_generated_coins, size_t &total_size, uint64_t &fee)
+  bool tx_memory_pool::fill_block_template(block &bl, size_t median_size, uint64_t already_generated_coins,
+                                           size_t &total_size, uint64_t &fee)
   {
     CRITICAL_REGION_LOCAL(m_transactions_lock);
 
@@ -453,25 +454,25 @@ namespace cryptonote
     while (true)
     {
       bool only_grading = pass == 0;
-      BOOST_FOREACH(transactions_container::value_type& tx, m_transactions)
+      BOOST_FOREACH(auto& txe, m_transactions)
       {
-        if (added_txs.count(tx.first) > 0) //already added it
+        if (added_txs.count(txe.first) > 0) //already added it
           continue;
         
-        if (max_total_size < total_size + tx.second.blob_size)
+        if (max_total_size < total_size + txe.second.blob_size)
           continue;
         
-        if (only_grading && !tools::any_apply_visitor(detail::has_grade_visitor(), tx.second.tx.ins()))
+        if (only_grading && !tools::any_apply_visitor(detail::has_grade_visitor(), txe.second.tx.ins()))
           continue;
 
-        if (!is_transaction_ready_to_go(tx.second) ||!icc.can_add_tx(tx.second.tx))
+        if (!is_transaction_ready_to_go(txe.second) ||!icc.can_add_tx(txe.second.tx))
           continue;
 
-        bl.tx_hashes.push_back(tx.first);
-        added_txs.insert(tx.first);
-        total_size += tx.second.blob_size;
-        fee += tx.second.fee;
-        icc.add_tx(tx.second.tx);
+        bl.tx_hashes.push_back(txe.first);
+        added_txs.insert(txe.first);
+        total_size += txe.second.blob_size;
+        fee += txe.second.fee;
+        icc.add_tx(txe.second.tx);
       }
       
       pass++;

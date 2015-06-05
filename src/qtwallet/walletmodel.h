@@ -5,18 +5,17 @@
 #ifndef WALLETMODEL_H
 #define WALLETMODEL_H
 
-#include "paymentrequestplus.h"
-#include "walletmodeltransaction.h"
-
-#include "bitcoin/allocators.h" /* for SecureString */
-#include "bitcoin/serialize.h"
-
 #include <map>
 #include <vector>
 #include <string>
 #include <memory>
 
 #include <QObject>
+
+#include "bitcoin/allocators.h" /* for SecureString */
+
+#include "paymentrequestplus.h"
+#include "walletmodeltransaction.h"
 
 class AddressTableModel;
 class OptionsModel;
@@ -66,7 +65,7 @@ public:
     static const int CURRENT_VERSION = 1;
     int nVersion;
 
-    IMPLEMENT_SERIALIZE
+    /*IMPLEMENT_SERIALIZE
     (
         SendCoinsRecipient* pthis = const_cast<SendCoinsRecipient*>(this);
 
@@ -96,7 +95,7 @@ public:
                 pthis->paymentRequest.parse(QByteArray::fromRawData(sPaymentRequest.data(), sPaymentRequest.size()));
             pthis->authenticatedMerchant = QString::fromStdString(sAuthenticatedMerchant);
         }
-    )
+    )*/
 };
 
 /** Interface to Bitcoin wallet from Qt view code. */
@@ -231,7 +230,7 @@ private:
     qint64 cachedNumTransactions;
     std::unique_ptr<cryptonote::bs_delegate_info> cachedDelegateInfo;
     EncryptionStatus cachedEncryptionStatus;
-    int cachedNumBlocks;
+    int64_t cachedNumBlocks;
 
     QTimer *pollTimer;
 

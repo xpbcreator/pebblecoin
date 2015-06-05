@@ -4,12 +4,12 @@
 
 #pragma once
 
-#include <boost/noncopyable.hpp>
-
 #include <cstddef>
 #include <vector>
 
-#include "cryptonote_core/delegate_types.h"
+#include <boost/noncopyable.hpp>
+
+#include "common/types.h"
 
 namespace cryptonote
 {

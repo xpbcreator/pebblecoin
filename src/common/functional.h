@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <iterator>
+
 #include <boost/foreach.hpp>
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/lexical_cast.hpp>
@@ -150,4 +152,32 @@ namespace tools
   {
     return str_join(c, identity());
   }
+  
+  template <class Container, class MapFunc, class FilterFunc>
+  auto map_filter(MapFunc&& m, const Container& c, FilterFunc&& f) -> std::vector<decltype(m(*std::begin(c)))>
+  {
+    std::vector<decltype(m(*std::begin(c)))> res;
+    for (const auto& element : c)
+    {
+      if (f(element)) res.push_back(m(element));
+    }
+    return res;
+  }
+  
+  template <class Container, class MapFunc>
+  auto sum(const Container& c, MapFunc&& m) -> decltype(m(*std::begin(c)))
+  {
+    decltype(m(*std::begin(c))) res = 0;
+    for (const auto& element : c)
+    {
+      res += m(element);
+    }
+    
+    return res;
+  }
+  template <class Container>
+  auto sum(const Container& c) -> decltype(*std::begin(c))
+  {
+    return sum(c, identity());
+  }  
 }

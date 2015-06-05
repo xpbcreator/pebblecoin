@@ -64,7 +64,7 @@ namespace crypto
     return true;
   }
   
-  bool hash_cache::store()
+  bool hash_cache::store() const
   {
     LOG_PRINT_L0("Storing hash cache...");
     if (!tools::create_directories_if_necessary(m_config_folder))
@@ -85,7 +85,7 @@ namespace crypto
     return true;
   }
   
-  bool hash_cache::deinit()
+  bool hash_cache::deinit() const
   {
     return store();
   }
@@ -116,7 +116,7 @@ namespace crypto
   }
   
 
-  bool hash_cache::get_cached_longhash(const crypto::hash& block_id, crypto::hash& work_hash)
+  bool hash_cache::get_cached_longhash(const crypto::hash& block_id, crypto::hash& work_hash) const
   {
     CRITICAL_REGION_LOCAL(m_hashes_lock);
     const auto& mi = m_hash_cache.find(block_id);
@@ -134,7 +134,7 @@ namespace crypto
     return true;
   }
   
-  bool hash_cache::get_signed_longhash_entry(const crypto::hash& block_id, signed_hash_entry& entry)
+  bool hash_cache::get_signed_longhash_entry(const crypto::hash& block_id, signed_hash_entry& entry) const
   {
     CRITICAL_REGION_LOCAL(m_hashes_lock);
     const auto& mi = m_signed_hash_cache.find(block_id);
@@ -146,7 +146,7 @@ namespace crypto
     return true;
   }
   
-  bool hash_cache::get_signed_longhash(const crypto::hash& block_id, crypto::hash& work_hash)
+  bool hash_cache::get_signed_longhash(const crypto::hash& block_id, crypto::hash& work_hash) const
   {
     signed_hash_entry e;
     
@@ -157,7 +157,7 @@ namespace crypto
     return true;
   }
 
-  bool hash_cache::have_signed_longhash_for(const crypto::hash& block_id)
+  bool hash_cache::have_signed_longhash_for(const crypto::hash& block_id) const
   {
     CRITICAL_REGION_LOCAL(m_hashes_lock);
     return m_signed_hash_cache.find(block_id) != m_signed_hash_cache.end();

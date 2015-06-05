@@ -7,10 +7,10 @@
 
 #include <stdint.h>
 
+#include "common/types.h"
 #include "cryptonote_protocol/blobdatatype.h"
 
 #include "difficulty.h"
-#include "delegate_types.h"
 
 namespace cryptonote
 {

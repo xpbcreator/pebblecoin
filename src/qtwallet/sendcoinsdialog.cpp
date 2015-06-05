@@ -13,7 +13,6 @@
 #include "cryptonote_core/cryptonote_format_utils.h"
 
 #include "interface/base58.h"
-#include "bitcoin/util.h"
 #include "addresstablemodel.h"
 #include "bitcoinunits.h"
 #include "coincontroldialog.h"

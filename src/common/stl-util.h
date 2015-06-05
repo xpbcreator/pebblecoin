@@ -7,6 +7,10 @@
 #include <algorithm>
 #include <numeric>
 
+#include <boost/utility/value_init.hpp>
+
+#include "common/functional.h"
+
 #pragma once
 
 namespace tools
@@ -68,11 +72,31 @@ bool contains(const Container& c, const Item& i)
 }
 
 template <class Map>
-typename Map::mapped_type const_get(const Map& m, const typename Map::key_type& k)
+const typename Map::mapped_type& const_get(const Map& m, const typename Map::key_type& k)
 {
+  static typename Map::mapped_type _default = boost::value_initialized<decltype(_default)>();
+  
   auto it = m.find(k);
-  if (it == m.end()) return typename Map::mapped_type();
+  if (it == m.end()) return _default;
   return it->second;
 }
 
+template <class Map>
+std::vector<typename Map::key_type> map_keys(const Map& m)
+{
+  std::vector<typename Map::key_type> res;
+  for (const auto& p : m)
+    res.push_back(p.first);
+  return res;
+}
+
+template <class Map>
+std::vector<typename Map::mapped_type> map_values(const Map& m)
+{
+  std::vector<typename Map::mapped_type> res;
+  for (const auto& p : m)
+    res.push_back(p.second);
+  return res;
+}
+  
 }

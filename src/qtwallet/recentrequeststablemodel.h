@@ -24,7 +24,7 @@ public:
     QDateTime date;
     SendCoinsRecipient recipient;
 
-    IMPLEMENT_SERIALIZE
+    /*IMPLEMENT_SERIALIZE
     (
         RecentRequestEntry* pthis = const_cast<RecentRequestEntry*>(this);
 
@@ -38,7 +38,7 @@ public:
 
         if (fRead)
             pthis->date = QDateTime::fromTime_t(nDate);
-    )
+    )*/
 };
 
 class RecentRequestEntryLessThan

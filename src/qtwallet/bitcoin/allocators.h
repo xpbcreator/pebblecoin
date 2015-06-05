@@ -6,9 +6,10 @@
 #ifndef BITCOIN_ALLOCATORS_H
 #define BITCOIN_ALLOCATORS_H
 
+#include <string.h>
+
 #include <map>
 #include <string>
-#include <string.h>
 
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/once.hpp>

@@ -91,6 +91,7 @@ namespace cryptonote
      bool get_tx_outputs_gindexs(const crypto::hash& tx_id, std::vector<uint64_t>& indexs);
      crypto::hash get_tail_id();
      bool get_random_outs_for_amounts(const COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::request& req, COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::response& res);
+     bool get_key_image_seqs(const COMMAND_RPC_GET_KEY_IMAGE_SEQS::request& req, COMMAND_RPC_GET_KEY_IMAGE_SEQS::response& res);
      void pause_mine();
      void resume_mine();
      blockchain_storage& get_blockchain_storage();
@@ -133,7 +134,7 @@ namespace cryptonote
      blockchain_storage& m_blockchain_storage;
      tx_memory_pool m_mempool;
      i_cryptonote_protocol* m_pprotocol;
-     epee::critical_section m_incoming_tx_lock;
+     mutable epee::critical_section m_incoming_tx_lock;
      //m_miner and m_miner_addres are probably temporary here
      miner m_miner;
      account_public_address m_miner_address;

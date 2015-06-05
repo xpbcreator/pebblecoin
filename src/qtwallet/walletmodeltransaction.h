@@ -9,7 +9,7 @@
 #include <QObject>
 #include <QString>
 
-#include "cryptonote_core/delegate_types.h"
+#include "common/types.h"
 
 #include "walletmodel.h"
 

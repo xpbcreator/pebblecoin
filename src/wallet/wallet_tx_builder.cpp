@@ -5,21 +5,25 @@
 #include <vector>
 #include <utility>
 #include <list>
+#include <functional>
 
 #include "include_base_utils.h"
 #include "misc_language.h"
 
+#include "common/functional.h"
 #include "common/stl-util.h"
+#include "common/types.h"
 #include "crypto/crypto.h"
 #include "crypto/crypto_basic_impl.h"
 #include "cryptonote_core/tx_builder.h"
 #include "cryptonote_core/cryptonote_format_utils.h"
 #include "cryptonote_core/coin_type.h"
-#include "cryptonote_core/delegate_types.h"
 
 #include "wallet2.h"
 #include "wallet_errors.h"
 #include "wallet_tx_builder.h"
+
+using tools::map_filter;
 
 namespace {
 //----------------------------------------------------------------------------------------------------
@@ -99,6 +103,7 @@ public:
   uint64_t add_votes(size_t min_fake_outs, size_t fake_outputs_count, const tx_dust_policy& dust_policy,
                      uint64_t num_votes, const cryptonote::delegate_votes& desired_votes,
                      uint64_t delegates_per_vote);
+  void replace_seqs(cryptonote::transaction& tx);
   void finalize(cryptonote::transaction& tx);
   void process_transaction_sent();
   
@@ -107,6 +112,7 @@ private:
   bool batch_being_spent(size_t i) const;
   
   // for voting
+  size_t pop_random_weighted_transfer(std::vector<size_t>& indices);
   uint64_t select_batches_for_votes(uint64_t num_votes, uint64_t dust, const cryptonote::delegate_votes& voting_set,
                                     std::list<size_t>& batch_is);
   uint64_t select_transfers_for_votes(uint64_t num_votes, uint64_t dust, std::list<size_t>& transfer_is, size_t min_fake_outs);
@@ -200,6 +206,31 @@ size_t wallet_tx_builder::impl::filter_scanty_outs(std::vector<size_t>& transfer
   return num_filtered;
 }
 //----------------------------------------------------------------------------------------------------
+size_t wallet_tx_builder::impl::pop_random_weighted_transfer(std::vector<size_t>& indices)
+{
+  if (indices.empty())
+    throw std::runtime_error("Can't get random from empty list");
+  
+  uint64_t sum = tools::sum(indices, [this](size_t i) { return this->m_wallet.m_transfers[i].amount(); });
+  
+  auto choice = crypto::rand<uint64_t>() % sum;
+  size_t vec_i = 0;
+  for (size_t vec_i = 0; vec_i < indices.size(); ++vec_i)
+  {
+    auto amt = m_wallet.m_transfers[indices[vec_i]].amount();
+    if (choice <= amt)
+    {
+      auto res = indices[vec_i];
+      indices.erase(indices.begin() + vec_i);
+      return res;
+    }
+    choice -= amt;
+    vec_i += 1;
+  }
+  // should never reach here
+  return 0;
+}
+//----------------------------------------------------------------------------------------------------
 uint64_t wallet_tx_builder::impl::select_transfers_for_votes(uint64_t num_votes, uint64_t dust,
                                                              std::list<size_t>& transfer_is, size_t min_fake_outs)
 {
@@ -232,10 +263,12 @@ uint64_t wallet_tx_builder::impl::select_transfers_for_votes(uint64_t num_votes,
   uint64_t found_votes = 0;
   while (found_votes < num_votes && !unused_transfers_indices.empty())
   {
-    size_t idx = pop_random_value(unused_transfers_indices);
+    size_t idx = pop_random_weighted_transfer(unused_transfers_indices);
     
     transfer_is.push_back(idx);
     found_votes += m_wallet.m_transfers[idx].amount();
+    if (transfer_is.size() >= MAX_VOTE_INPUTS_PER_TX)
+      break;
   }
   
   return found_votes;
@@ -763,6 +796,19 @@ uint64_t wallet_tx_builder::impl::add_votes(size_t min_fake_outs, size_t fake_ou
   return result;
 }
 //----------------------------------------------------------------------------------------------------
+void wallet_tx_builder::impl::replace_seqs(cryptonote::transaction& tx)
+{
+  using namespace cryptonote;
+  auto k_imgs = map_filter([](const txin_v& inp) { return boost::get<txin_vote>(inp).ink.k_image; },
+                           tx.ins(),
+                           [](const txin_v& inp) { return inp.type() == typeid(txin_vote); });
+  
+  auto key_image_seqs = m_wallet.get_key_image_seqs(k_imgs);
+  
+  tx.replace_vote_seqs(key_image_seqs);
+}
+
+//----------------------------------------------------------------------------------------------------
 void wallet_tx_builder::impl::finalize(cryptonote::transaction& tx)
 {
   THROW_WALLET_EXCEPTION_IF(m_state != InProgress, error::wallet_internal_error, "wallet tx is not in progress");
@@ -802,8 +848,10 @@ void wallet_tx_builder::impl::finalize(cryptonote::transaction& tx)
     }
   }
   
+  // replace the seqs with what they should be from the daemon
+  
   bool r = true;
-  r = r && m_txb.finalize();
+  r = r && m_txb.finalize([this](cryptonote::transaction& tx) { return this->replace_seqs(tx); });
   r = r && m_txb.get_finalized_tx(m_finalized_tx);
   THROW_WALLET_EXCEPTION_IF(!r, error::wallet_internal_error, "Could not finalize tx");
   

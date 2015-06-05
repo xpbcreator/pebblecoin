@@ -61,8 +61,8 @@ public:
     /**@}*/
 
     /** Current number of blocks (to know whether cached status is still valid) */
-    uint64_t cur_daemon_blocks;
-    uint64_t cur_wallet_blocks;
+    int64_t cur_daemon_blocks;
+    int64_t cur_wallet_blocks;
 };
 
 /** UI model for a transaction. A core transaction can be represented by multiple UI transactions if it has

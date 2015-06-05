@@ -6,7 +6,7 @@
 
 #include <stddef.h>
 
-#include "common/pod-class.h"
+#include "common/types.h"
 #include "generic-ops.h"
 #include "misc_log_ex.h"
 

@@ -1,4 +1,24 @@
-#define BUILD_COMMIT_ID "@VERSION@"
-#define PROJECT_VERSION "0.4.2"
-#define PROJECT_VERSION_BUILD_NO "2"
-#define PROJECT_VERSION_LONG PROJECT_VERSION "." PROJECT_VERSION_BUILD_NO "(" BUILD_COMMIT_ID ")"
+#ifndef PEBBLECOIN_VERSION_H
+#define PEBBLECOIN_VERSION_H
+
+// Converts the parameter X to a string after macro replacement on X has been performed.
+// Don't merge these into one macro!
+#define DO_STRINGIZE(X) #X
+#define BC_STRINGIZE(X) DO_STRINGIZE(X)
+
+#define BUILD_COMMIT_ID "@COMMIT_ID@"
+#define PROJECT_VERSION_MAJOR    0
+#define PROJECT_VERSION_MINOR    4
+#define PROJECT_VERSION_REVISION 3
+#define PROJECT_VERSION_BUILD    1
+#define PROJECT_VERSION_LONG     BC_STRINGIZE(PROJECT_VERSION_MAJOR) "." BC_STRINGIZE(PROJECT_VERSION_MINOR) "." \
+                                 BC_STRINGIZE(PROJECT_VERSION_REVISION) "." BC_STRINGIZE(PROJECT_VERSION_BUILD) \
+                                 " (" BUILD_COMMIT_ID ")"
+
+// Set to true for release, false for prerelease or test build
+#define PROJECT_VERSION_IS_RELEASE  true
+
+// Copyright year (2009-this)
+#define COPYRIGHT_YEAR 2015
+
+#endif

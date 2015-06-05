@@ -52,14 +52,14 @@ namespace crypto {
     inline bool is_hash_signing_key_set() const { return m_priv_key_set; }
     
     bool init(const std::string& config_folder);
-    bool store();
-    bool deinit();
+    bool store() const;
+    bool deinit() const;
     
-    bool get_cached_longhash(const crypto::hash& block_id, crypto::hash& work_hash);
+    bool get_cached_longhash(const crypto::hash& block_id, crypto::hash& work_hash) const;
     bool add_cached_longhash(const crypto::hash& block_id, const crypto::hash& work_hash);
-    bool get_signed_longhash_entry(const crypto::hash& block_id, crypto::hash_cache::signed_hash_entry& entry);
-    bool get_signed_longhash(const crypto::hash& block_id, crypto::hash& work_hash);
-    bool have_signed_longhash_for(const crypto::hash& block_id);
+    bool get_signed_longhash_entry(const crypto::hash& block_id, crypto::hash_cache::signed_hash_entry& entry) const;
+    bool get_signed_longhash(const crypto::hash& block_id, crypto::hash& work_hash) const;
+    bool have_signed_longhash_for(const crypto::hash& block_id) const;
     
     bool add_signed_longhash(const crypto::hash_cache::signed_hash_entry& entry);
     bool create_signed_hash(const crypto::hash& block_id, const crypto::hash& work_hash, crypto::signature& sig);
@@ -75,11 +75,10 @@ namespace crypto {
     
     std::unordered_map<crypto::hash, crypto::hash> m_hash_cache;
     std::unordered_map<crypto::hash, signed_hash_entry> m_signed_hash_cache;
-    epee::critical_section m_hashes_lock;
+    mutable epee::critical_section m_hashes_lock;
     
     std::string m_config_folder;
   };
   
   extern hash_cache g_hash_cache;
 }
-

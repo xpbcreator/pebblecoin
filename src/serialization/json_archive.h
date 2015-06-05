@@ -8,10 +8,11 @@
 
 #pragma once
 
-#include "serialization.h"
 #include <cassert>
 #include <iostream>
 #include <iomanip>
+
+#include "serialization.h"
 
 template <class Stream, bool IsSaving>
 struct json_archive_base
@@ -88,7 +89,7 @@ struct json_archive<true> : public json_archive_base<std::ostream, true>
     stream_ << std::dec << promote_to_printable_integer_type(v);
   }
 
-  void serialize_blob(void *buf, size_t len, const char *delimiter="\"") {
+  void serialize_blob(const void *buf, size_t len, const char *delimiter="\"") {
     begin_string(delimiter);
     for (size_t i = 0; i < len; i++) {
       unsigned char c = ((unsigned char *)buf)[i];

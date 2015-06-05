@@ -2,19 +2,19 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "splashscreen.h"
+#include <QApplication>
+#include <QPainter>
 
-#include "interface/clientversion.h"
+#include "version.h"
+#include "common/ui_interface.h"
+
 #include "interface/init.h"
 #include "bitcoin/util.h"
 #ifdef ENABLE_WALLET
 #include "interface/wallet.h"
 #endif
 
-#include "common/ui_interface.h"
-
-#include <QApplication>
-#include <QPainter>
+#include "splashscreen.h"
 
 SplashScreen::SplashScreen(const QPixmap &pixmap, Qt::WindowFlags f, bool isTestNet) :
     QSplashScreen(pixmap, f)

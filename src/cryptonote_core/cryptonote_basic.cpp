@@ -1,10 +1,14 @@
-// Copyright (c) 2014 The Pebblecoin developers
+// Copyright (c) 2014-2015 The Pebblecoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+#include "common/stl-util.h"
 
 #include "cryptonote_basic.h"
 #include "cryptonote_basic_impl.h"
 #include "visitors.h"
+
+using tools::const_get;
 
 namespace cryptonote {
   namespace {
@@ -104,6 +108,23 @@ namespace cryptonote {
   {
     vout.clear();
     vout_coin_types.clear();
+  }
+
+  void transaction_prefix::replace_vote_seqs(const std::map<crypto::key_image, uint64_t> &key_image_seqs)
+  {
+    for (auto& inp : vin)
+    {
+      if (inp.type() == typeid(txin_vote))
+      {
+        auto& inv = boost::get<txin_vote>(inp);
+        uint64_t new_seq = const_get(key_image_seqs, inv.ink.k_image);
+        if (inv.seq != new_seq)
+        {
+          LOG_PRINT_YELLOW("WARNING: Wallet generated wrong vote sequence number", LOG_LEVEL_0);
+        }
+        inv.seq = new_seq;
+      }
+    }
   }
   
   transaction::transaction()

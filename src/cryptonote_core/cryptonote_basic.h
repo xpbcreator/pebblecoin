@@ -14,18 +14,16 @@
 #include "serialization/keyvalue_serialization.h" // eepe named serialization
 
 #include "serialization/serialization.h"
-#include "serialization/variant.h"
-#include "serialization/vector.h"
 #include "serialization/binary_archive.h"
 #include "serialization/json_archive.h"
 #include "serialization/debug_archive.h"
 
+#include "common/types.h"
 #include "crypto/crypto.h"
 #include "crypto/hash.h"
 
 #include "tx_extra.h"
 #include "account.h"
-#include "delegate_types.h"
 #include "coin_type.h"
 #include "tx_versions.h"
 
@@ -378,6 +376,8 @@ namespace cryptonote
       
       return vout_coin_types[vout_index];
     }
+    
+    void replace_vote_seqs(const std::map<crypto::key_image, uint64_t>& key_image_seqs);
     
   public:
     BEGIN_SERIALIZE()

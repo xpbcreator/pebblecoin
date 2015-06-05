@@ -10,6 +10,7 @@
 #include <cassert>
 #include <iostream>
 #include <iterator>
+
 #include <boost/type_traits/make_unsigned.hpp>
 
 #include "common/varint.h"
@@ -75,7 +76,7 @@ struct binary_archive<false> : public binary_archive_base<std::istream, false>
     }
     v = ret;
   }
-  void serialize_blob(void *buf, size_t len, const char *delimiter="") { stream_.read((char *)buf, len); }
+  void serialize_blob(const void *buf, size_t len, const char *delimiter="") { stream_.read((char *)buf, len); }
 
   template <class T>
   void serialize_varint(T &v)
@@ -136,7 +137,7 @@ struct binary_archive<true> : public binary_archive_base<std::ostream, true>
       }
     }
   }
-  void serialize_blob(void *buf, size_t len, const char *delimiter="") { stream_.write((char *)buf, len); }
+  void serialize_blob(const void *buf, size_t len, const char *delimiter="") { stream_.write((char *)buf, len); }
 
   template <class T>
   void serialize_varint(T &v)

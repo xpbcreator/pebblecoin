@@ -3,6 +3,9 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "crypto/crypto_basic_impl.h"
+#include "cryptonote_core/checkpoints.h"
+
 #include "chaingen.h"
 #include "chain_switch_1.h"
 
@@ -238,6 +241,94 @@ bool gen_chainswitch_invalid_2::generate(std::vector<test_event_entry>& events) 
  
   DO_CALLBACK(events, "mark_invalid_block");
   MAKE_NEXT_BLOCK(events, b_blk_5, b_blk_4, miner_account); // 21 - fail to reorg
+  
+  return true;
+}
+
+bool gen_chainswitch_invalid_checkpoint_rollback::generate(std::vector<test_event_entry>& events) const
+{
+  uint64_t ts_start = 1338224400;
+  GENERATE_ACCOUNT(miner_account);
+  GENERATE_ACCOUNT(alice);
+  GENERATE_ACCOUNT(bob);
+  MAKE_STARTING_BLOCKS(events, blk_0, miner_account, ts_start);
+  
+  REWIND_BLOCKS_N(events, blk_1r, blk_0, miner_account, 20);
+  
+  // checkpoint latest block
+  const auto& last_block = boost::get<const cryptonote::block&>(events.back());
+  uint64_t last_block_height = get_block_height(last_block);
+  crypto::hash last_block_hash = get_block_hash(last_block);
+  
+  do_callback_func(events, [=](core_t& c, size_t ev_index) {
+    cryptonote::checkpoints checkpoints;
+    CHECK_AND_ASSERT_MES(checkpoints.add_checkpoint(last_block_height,
+                                                    dump_hash256(last_block_hash)),
+                         false, "Could not add checkpoint");
+    c.set_checkpoints(std::move(checkpoints));
+    return true;
+  });
+  
+  // should not be able to start an alt chain
+  DO_CALLBACK(events, "mark_invalid_block");
+  MAKE_NEXT_BLOCK(events, blk_alt_1, blk_0, miner_account);
+  
+  do_callback_func(events, [=](core_t& c, size_t ev_index) {
+    CHECK_AND_ASSERT_MES(c.get_tail_id() == last_block_hash, false,
+                         "no longer on correct chain");
+    return true;
+  });
+  
+  return true;
+}
+
+bool gen_chainswitch_invalid_new_altchain::generate(std::vector<test_event_entry>& events) const
+{
+  uint64_t ts_start = 1338224400;
+  GENERATE_ACCOUNT(miner_account);
+  GENERATE_ACCOUNT(alice);
+  GENERATE_ACCOUNT(bob);
+  MAKE_STARTING_BLOCKS(events, blk_0, miner_account, ts_start);
+  
+  REWIND_BLOCKS_N(events, blk_1r, blk_0, miner_account, 5);
+  
+  // checkpoint latest block
+  uint64_t last_block_height;
+  crypto::hash last_block_hash;
+  {
+    const auto& last_block = boost::get<const cryptonote::block&>(events.back());
+    last_block_height = get_block_height(last_block);
+    last_block_hash = get_block_hash(last_block);
+  }
+  
+  // wipe out this chain
+  std::vector<test_event_entry> good_chain(events.end() - 5, events.end());
+  events.erase(events.end() - 5, events.end());
+  
+  // checkpoint what would've been the end
+  do_callback_func(events, [=](core_t& c, size_t ev_index) {
+    cryptonote::checkpoints checkpoints;
+    CHECK_AND_ASSERT_MES(checkpoints.add_checkpoint(last_block_height,
+                                                    dump_hash256(last_block_hash)),
+                         false, "Could not add checkpoint");
+    c.set_checkpoints(std::move(checkpoints));
+    return true;
+  });
+  
+  // new chain should not work - checkpoint should fail
+  SET_EVENT_VISITOR_SETT(events, event_visitor_settings::set_check_can_create_block_from_template, false);
+  REWIND_BLOCKS_N(events, blk_alt_4, blk_0, miner_account, 4);
+  DO_CALLBACK(events, "mark_invalid_block");
+  MAKE_NEXT_BLOCK(events, blk_alt_5, blk_alt_4, miner_account);
+  
+  // good chain should work
+  events.insert(events.end(), good_chain.begin(), good_chain.end());
+  
+  do_callback_func(events, [=](core_t& c, size_t ev_index) {
+    CHECK_AND_ASSERT_MES(c.get_tail_id() == last_block_hash, false,
+                         "no longer on correct chain");
+    return true;
+  });
   
   return true;
 }

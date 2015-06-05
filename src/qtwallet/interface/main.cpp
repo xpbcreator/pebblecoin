@@ -1,17 +1,16 @@
-#include "main.h"
-#include "wallet.h"
+#include <set>
 
+#include "common/types.h"
 #include "crypto/hash.h"
 #include "cryptonote_config.h"
 #include "cryptonote_core/blockchain_storage.h"
 #include "cryptonote_core/cryptonote_core.h"
-#include "cryptonote_core/delegate_types.h"
 #include "cryptonote_protocol/cryptonote_protocol_handler.h"
 #include "p2p/p2p_protocol_defs.h"
 #include "p2p/net_node.h"
 
-#include <set>
-
+#include "main.h"
+#include "wallet.h"
 
 CCriticalSection cs_main;
 
@@ -27,17 +26,17 @@ node_server_t *pnodeSrv = NULL;
 CWallet *pwalletMain = NULL;
 
 
-int WalletProcessedHeight()
+int64_t WalletProcessedHeight()
 {
   LOCK(cs_main);
   if (!pcore)
     return 0;
   if (!pwalletMain)
     return 0;
-  return pwalletMain->GetWallet2()->get_blockchain_current_height() - 1;
+  return (int64_t)(pwalletMain->GetWallet2()->get_blockchain_current_height() - 1);
 }
 
-int DaemonProcessedHeight()
+int64_t DaemonProcessedHeight()
 {
   LOCK(cs_main);
   if (!pcore)
@@ -46,10 +45,10 @@ int DaemonProcessedHeight()
   uint64_t current_height;
   crypto::hash top_id;
   pcore->get_blockchain_top(current_height, top_id);
-  return (int)current_height;
+  return (int64_t)current_height;
 }
 
-int NumBlocksOfPeers()
+int64_t NumBlocksOfPeers()
 {
   LOCK(cs_main);
   if (!pnodeSrv)
@@ -64,7 +63,7 @@ int NumBlocksOfPeers()
   
   auto it = block_heights.begin();
   std::advance(it, block_heights.size() / 2);
-  return (int)(*it);
+  return (int64_t)(*it);
 }
 
 bool GetDposRegisterInfo(cryptonote::delegate_id_t& unused_delegate_id, uint64_t& registration_fee)

@@ -23,7 +23,6 @@
 #include "interface/wallet.h"
 #include "interface/placeholders.h"
 #include "bitcoin/sync.h"
-#include "bitcoin/util.h"
 //#include "db.h"
 //#include "keystore.h"
 //#include "walletdb.h" // for BackupWallet
@@ -115,7 +114,7 @@ void WalletModel::updateStatus()
 
 void WalletModel::pollBalanceChanged()
 {
-    static int cachedWalletBlocks = 0;
+    static int64_t cachedWalletBlocks = 0;
     
     // Get required locks upfront. This avoids the GUI from getting stuck on
     // periodical polls if the core is holding the locks for a longer time -
@@ -130,8 +129,8 @@ void WalletModel::pollBalanceChanged()
     if(!lockWallet)
         return;
     
-    int walletBlocks = WalletProcessedHeight();
-    int daemonBlocks = DaemonProcessedHeight();
+    int64_t walletBlocks = WalletProcessedHeight();
+    int64_t daemonBlocks = DaemonProcessedHeight();
   
     if (daemonBlocks != cachedNumBlocks || walletBlocks != cachedWalletBlocks)
     {
@@ -312,7 +311,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     if (!processPaymentId(transaction.getPaymentId(), extra))
         return InvalidPaymentId;
     
-    int64_t nFeeRequired = nTransactionFee < DEFAULT_FEE ? DEFAULT_FEE : nTransactionFee;
+    int64_t nFeeRequired = nTransactionFee < (int64_t)DEFAULT_FEE ? (int64_t)DEFAULT_FEE : nTransactionFee;
     transaction.setTransactionFee(nFeeRequired);
 
     /*{

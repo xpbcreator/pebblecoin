@@ -167,7 +167,7 @@ namespace cryptonote
   {
     std::stringstream ss;
     binary_archive<true> ba(ss);
-    bool r = ::serialization::serialize(ba, const_cast<t_object&>(to));
+    bool r = ::serialization::serialize(ba, to);
     b_blob = ss.str();
     return r;
   }
@@ -219,7 +219,7 @@ namespace cryptonote
   }
   //---------------------------------------------------------------
   template <typename T>
-  std::string obj_to_json_str(T& obj)
+  std::string obj_to_json_str(const T& obj)
   {
     std::stringstream ss;
     json_archive<true> ar(ss, true);

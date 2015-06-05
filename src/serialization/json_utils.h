@@ -3,12 +3,13 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <sstream>
+
 #include "json_archive.h"
 
 namespace serialization {
 
 template<class T>
-std::string dump_json(T &v)
+std::string dump_json(const T &v)
 {
   std::stringstream ostr;
   json_archive<true> oar(ostr);

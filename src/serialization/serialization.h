@@ -8,12 +8,15 @@
  * Simple templated serialization API */
 
 #pragma once
+
 #include <vector>
+
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/type_traits/integral_constant.hpp>
 
 template <class T>
 struct is_blob_type { typedef boost::false_type type; };
+
 template <class T>
 struct has_free_serializer { typedef boost::true_type type; };
 
@@ -42,6 +45,13 @@ inline bool do_serialize(Archive &ar, T &v)
   return ::serializer<Archive, T>::serialize(ar, v);
 }
 
+// Allow removing const when saving
+template <template <bool> class Archive, class T>
+inline bool do_serialize(Archive<true> &ar, const T &v)
+{
+  return do_serialize(ar, const_cast<T &>(v));
+}
+
 #ifndef __GNUC__
 #ifndef constexpr
 #define constexpr
@@ -49,9 +59,11 @@ inline bool do_serialize(Archive &ar, T &v)
 #endif
 
 #define BLOB_SERIALIZER(T) \
-  template<> struct is_blob_type<T> { typedef boost::true_type type; }
+  template<> struct is_blob_type<T> { typedef boost::true_type type; }; \
+  template<> struct is_blob_type<const T> { typedef boost::true_type type; }
 #define FREE_SERIALIZER(T) \
-  template<> struct has_free_serializer<T> { typedef boost::true_type type; }
+  template<> struct has_free_serializer<T> { typedef boost::true_type type; }; \
+  template<> struct has_free_serializer<const T> { typedef boost::true_type type; }
 #define VARIANT_TAG(A, T, Tg) \
   template <bool W> struct variant_serialization_traits<A<W>, T> { static inline typename A<W>::variant_tag_type get_tag() { return Tg; } }
 #define BEGIN_SERIALIZE() \
@@ -60,9 +72,7 @@ inline bool do_serialize(Archive &ar, T &v)
   template <bool W, template <bool> class Archive> bool do_serialize(Archive<W> &ar) { ar.begin_object(); bool r = do_serialize_object(ar); ar.end_object(); return r; } \
   template <bool W, template <bool> class Archive> bool do_serialize_object(Archive<W> &ar){
 #define PREPARE_CUSTOM_VECTOR_SERIALIZATION(size, vec) ::serialization::detail::prepare_custom_vector_serialization(size, vec, typename Archive<W>::is_saving())
-
 #define END_SERIALIZE() return true;}
-
 
 #define VALUE(f) \
   do { \
@@ -150,10 +160,12 @@ namespace serialization {
   }
 }
 
-#include "string.h"
-#include "pair.h"
-#include "vector.h"
-#include "set.h"
-#include "map.h"
-#include "crypto.h"
-#include "tuple.h"
+#include "string.inl"
+#include "pair.inl"
+#include "vector.inl"
+#include "set.inl"
+#include "map.inl"
+#include "crypto.inl"
+#include "tuple.inl"
+#include "variant.inl"
+

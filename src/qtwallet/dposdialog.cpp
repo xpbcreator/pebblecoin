@@ -136,7 +136,7 @@ void DposDialog::amountUnvotedChanged()
     ui->labelUnvoted->setText(BitcoinUnits::formatWithUnit(unit, model->getVotingTableModel()->amountUnvoted()));
     
     // always fired on each block update, so just cheat and update here
-    if (model->getCachedNumBlocks() < cryptonote::config::dpos_registration_start_block)
+    if (model->getCachedNumBlocks() < (int)cryptonote::config::dpos_registration_start_block)
     {
         ui->labelDelegateId->setText(tr("Delegate registration starts in %1 blocks").arg(
             cryptonote::config::dpos_registration_start_block - model->getCachedNumBlocks()));

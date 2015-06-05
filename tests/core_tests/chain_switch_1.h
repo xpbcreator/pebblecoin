@@ -73,11 +73,7 @@ private:
   size_t m_invalid_block_index;
 };
 
-#define DEFINE_TEST__(TEST_NAME) \
-  struct TEST_NAME : public chain_switch_1_base \
-  { \
-    virtual bool generate(std::vector<test_event_entry>& events) const; \
-  };
-
-DEFINE_TEST__(gen_chainswitch_invalid_1);
-DEFINE_TEST__(gen_chainswitch_invalid_2);
+DEFINE_TEST(gen_chainswitch_invalid_1, chain_switch_1_base);
+DEFINE_TEST(gen_chainswitch_invalid_2, chain_switch_1_base);
+DEFINE_TEST(gen_chainswitch_invalid_checkpoint_rollback, chain_switch_1_base);
+DEFINE_TEST(gen_chainswitch_invalid_new_altchain, chain_switch_1_base);

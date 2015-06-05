@@ -9,7 +9,6 @@
 
 #ifndef Q_MOC_RUN
 #include "common/command_line.h"
-#include "bitcoin/util.h"
 #endif
 
 #include <string>

@@ -554,7 +554,7 @@ void CWallet::on_tx_removed(const crypto::hash& tx_hash, const cryptonote::trans
 }
 
 
-bool CWallet::StoreCWallet()
+bool CWallet::StoreCWallet() const
 {
   LOG_PRINT_L4("LOCK(cs_wallet) StoreCWallet");
   LOCK(cs_wallet); // mapWallet, mapAddressBook

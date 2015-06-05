@@ -45,8 +45,8 @@ public:
 
     //! Return number of connections, default is in- and outbound (total)
     int getNumConnections(unsigned int flags = CONNECTIONS_ALL) const;
-    int getWalletProcessedHeight() const;
-    int getDaemonProcessedHeight() const;
+    int64_t getWalletProcessedHeight() const;
+    int64_t getDaemonProcessedHeight() const;
     //int getNumBlocksAtStartup();
 
     quint64 getTotalBytesRecv() const;
@@ -76,9 +76,9 @@ public:
 private:
     OptionsModel *optionsModel;
 
-    int cachedNumWalletBlocks;
-    int cachedNumDaemonBlocks;
-    int cachedNumBlocksOfPeers;
+    int64_t cachedNumWalletBlocks;
+    int64_t cachedNumDaemonBlocks;
+    int64_t cachedNumBlocksOfPeers;
     bool cachedReindexing;
     bool cachedImporting;
 

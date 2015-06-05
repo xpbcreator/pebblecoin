@@ -83,13 +83,15 @@ namespace tools
     const char* const failed_rpc_request_messages[] = {
       "failed to get blocks",
       "failed to get out indices",
-      "failed to get random outs"
+      "failed to get random outs",
+      "failed to get key image seqs"
     };
     enum failed_rpc_request_message_indices
     {
       get_blocks_error_message_index,
       get_out_indices_error_message_index,
-      get_random_outs_error_message_index
+      get_random_outs_error_message_index,
+      get_key_image_seqs_error_message_index
     };
 
     template<typename Base, int msg_index>
@@ -288,6 +290,7 @@ namespace tools
     };
     //----------------------------------------------------------------------------------------------------
     typedef failed_rpc_request<transfer_error, get_random_outs_error_message_index> get_random_outs_error;
+    typedef failed_rpc_request<transfer_error, get_key_image_seqs_error_message_index> get_key_image_seqs_error;
     //----------------------------------------------------------------------------------------------------
     struct mint_currency_exists : public transfer_error
     {

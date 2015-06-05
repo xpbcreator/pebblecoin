@@ -7,13 +7,13 @@
 
 #include <atomic>
 
+#include "common/types.h"
 #include "crypto/hash.h"
 #include "cryptonote_config.h"
 #include "cryptonote_core/account.h"
 #include "cryptonote_core/cryptonote_basic.h"
 #include "cryptonote_core/cryptonote_format_utils.h"
 #include "cryptonote_core/keypair.h"
-#include "cryptonote_core/delegate_types.h"
 #include "rpc/core_rpc_server_commands_defs.h"
 
 #include "i_wallet2_callback.h"
@@ -21,6 +21,7 @@
 
 #define DEFAULT_TX_SPENDABLE_AGE                               10
 #define WALLET_DEFAULT_RCP_CONNECTION_TIMEOUT                  200000
+#define MAX_VOTE_INPUTS_PER_TX                                 10
 
 namespace epee
 {
@@ -38,6 +39,7 @@ namespace tools
   typedef cryptonote::COMMAND_RPC_GET_RANDOM_OUTPUTS_FOR_AMOUNTS::out_entry out_entry;
   typedef std::vector<std::list<out_entry> > fake_outs_container;
   typedef std::unordered_map<cryptonote::coin_type, fake_outs_container> fake_outs_map;
+  typedef std::map<crypto::key_image, uint64_t> key_image_seqs;
   
   class wallet2;
   class wallet_tx_builder;
@@ -228,6 +230,7 @@ namespace tools
     
     fake_outs_map get_fake_outputs(const std::unordered_map<cryptonote::coin_type, std::list<uint64_t> >& amounts,
                                    uint64_t min_fake_outs, uint64_t fake_outputs_count);
+    key_image_seqs get_key_image_seqs(const std::vector<crypto::key_image> key_images);
     
     void send_raw_tx_to_daemon(const cryptonote::transaction& tx);
     

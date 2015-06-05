@@ -1,5 +1,5 @@
-// Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2010 Satoshi Nakamoto
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -36,6 +36,19 @@
 #include <shlobj.h>
 #endif
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/algorithm/string/case_conv.hpp> // for to_lower()
+#include <boost/algorithm/string/join.hpp>
+#include <boost/algorithm/string/predicate.hpp> // for startswith() and endswith()
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/foreach.hpp>
+#include <boost/program_options/detail/config_file.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/thread/once.hpp>
+#include <openssl/crypto.h>
+#include <openssl/rand.h>
+
 #include "include_base_utils.h"
 
 #include "common/command_line.h"
@@ -49,19 +62,6 @@
 #include "interface/qtversion.h"
 #include "sync.h"
 #include "qt_options.h"
-
-#include <boost/date_time/posix_time/posix_time.hpp>
-#include <boost/algorithm/string/case_conv.hpp> // for to_lower()
-#include <boost/algorithm/string/join.hpp>
-#include <boost/algorithm/string/predicate.hpp> // for startswith() and endswith()
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-#include <boost/foreach.hpp>
-#include <boost/program_options/detail/config_file.hpp>
-#include <boost/program_options/parsers.hpp>
-#include <openssl/crypto.h>
-#include <openssl/rand.h>
-
 #include "util.h"
 
 using namespace epee;
@@ -196,158 +196,6 @@ int LogPrintStr(const std::string &str)
 
     return ret;
 }
-
-string FormatMoney(int64_t n, bool fPlus)
-{
-    // Note: not using straight sprintf here because we do NOT want
-    // localized number formatting.
-    int64_t n_abs = (n > 0 ? n : -n);
-    int64_t quotient = n_abs/ICOIN;
-    int64_t remainder = n_abs%ICOIN;
-    string str = strprintf("%d.%08d", quotient, remainder);
-
-    // Right-trim excess zeros before the decimal point:
-    int nTrim = 0;
-    for (int i = str.size()-1; (str[i] == '0' && isdigit(str[i-2])); --i)
-        ++nTrim;
-    if (nTrim)
-        str.erase(str.size()-nTrim, nTrim);
-
-    if (n < 0)
-        str.insert((unsigned int)0, 1, '-');
-    else if (fPlus && n > 0)
-        str.insert((unsigned int)0, 1, '+');
-    return str;
-}
-
-
-bool ParseMoney(const string& str, int64_t& nRet)
-{
-    return ParseMoney(str.c_str(), nRet);
-}
-
-bool ParseMoney(const char* pszIn, int64_t& nRet)
-{
-    string strWhole;
-    int64_t nUnits = 0;
-    const char* p = pszIn;
-    while (isspace(*p))
-        p++;
-    for (; *p; p++)
-    {
-        if (*p == '.')
-        {
-            p++;
-            int64_t nMult = ICENT*10;
-            while (isdigit(*p) && (nMult > 0))
-            {
-                nUnits += nMult * (*p++ - '0');
-                nMult /= 10;
-            }
-            break;
-        }
-        if (isspace(*p))
-            break;
-        if (!isdigit(*p))
-            return false;
-        strWhole.insert(strWhole.end(), *p);
-    }
-    for (; *p; p++)
-        if (!isspace(*p))
-            return false;
-    if (strWhole.size() > 10) // guard against 63 bit overflow
-        return false;
-    if (nUnits < 0 || nUnits > ICOIN)
-        return false;
-    int64_t nWhole = atoi64(strWhole);
-    int64_t nValue = nWhole*ICOIN + nUnits;
-
-    nRet = nValue;
-    return true;
-}
-
-// safeChars chosen to allow simple messages/URLs/email addresses, but avoid anything
-// even possibly remotely dangerous like & or >
-static string safeChars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890 .,;_/:?@");
-string SanitizeString(const string& str)
-{
-    string strResult;
-    for (std::string::size_type i = 0; i < str.size(); i++)
-    {
-        if (safeChars.find(str[i]) != std::string::npos)
-            strResult.push_back(str[i]);
-    }
-    return strResult;
-}
-
-const signed char p_util_hexdigit[256] =
-{ -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  0,1,2,3,4,5,6,7,8,9,-1,-1,-1,-1,-1,-1,
-  -1,0xa,0xb,0xc,0xd,0xe,0xf,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,0xa,0xb,0xc,0xd,0xe,0xf,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
-  -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1, };
-
-bool IsHex(const string& str)
-{
-    BOOST_FOREACH(char c, str)
-    {
-        if (HexDigit(c) < 0)
-            return false;
-    }
-    return (str.size() > 0) && (str.size()%2 == 0);
-}
-
-vector<unsigned char> ParseHex(const char* psz)
-{
-    // convert hex dump to vector
-    vector<unsigned char> vch;
-    while (true)
-    {
-        while (isspace(*psz))
-            psz++;
-        signed char c = HexDigit(*psz++);
-        if (c == (signed char)-1)
-            break;
-        unsigned char n = (c << 4);
-        c = HexDigit(*psz++);
-        if (c == (signed char)-1)
-            break;
-        n |= c;
-        vch.push_back(n);
-    }
-    return vch;
-}
-
-vector<unsigned char> ParseHex(const string& str)
-{
-    return ParseHex(str.c_str());
-}
-
-/*static void InterpretNegativeSetting(string name, map<string, string>& mapSettingsRet)
-{
-    // interpret -nofoo as -foo=0 (and -nofoo=0 as -foo=1) as long as -foo not set
-    if (name.find("-no") == 0)
-    {
-        std::string positive("-");
-        positive.append(name.begin()+3, name.end());
-        if (mapSettingsRet.count(positive) == 0)
-        {
-            bool value = !GetArg(name, false);
-            mapSettingsRet[positive] = (value ? "1" : "0");
-        }
-    }
-}*/
 
 string EncodeBase64(const unsigned char* pch, size_t len)
 {
@@ -489,194 +337,6 @@ string DecodeBase64(const string& str)
     return string((const char*)&vchRet[0], vchRet.size());
 }
 
-string EncodeBase32(const unsigned char* pch, size_t len)
-{
-    static const char *pbase32 = "abcdefghijklmnopqrstuvwxyz234567";
-
-    string strRet="";
-    strRet.reserve((len+4)/5*8);
-
-    int mode=0, left=0;
-    const unsigned char *pchEnd = pch+len;
-
-    while (pch<pchEnd)
-    {
-        int enc = *(pch++);
-        switch (mode)
-        {
-            case 0: // we have no bits
-                strRet += pbase32[enc >> 3];
-                left = (enc & 7) << 2;
-                mode = 1;
-                break;
-
-            case 1: // we have three bits
-                strRet += pbase32[left | (enc >> 6)];
-                strRet += pbase32[(enc >> 1) & 31];
-                left = (enc & 1) << 4;
-                mode = 2;
-                break;
-
-            case 2: // we have one bit
-                strRet += pbase32[left | (enc >> 4)];
-                left = (enc & 15) << 1;
-                mode = 3;
-                break;
-
-            case 3: // we have four bits
-                strRet += pbase32[left | (enc >> 7)];
-                strRet += pbase32[(enc >> 2) & 31];
-                left = (enc & 3) << 3;
-                mode = 4;
-                break;
-
-            case 4: // we have two bits
-                strRet += pbase32[left | (enc >> 5)];
-                strRet += pbase32[enc & 31];
-                mode = 0;
-        }
-    }
-
-    static const int nPadding[5] = {0, 6, 4, 3, 1};
-    if (mode)
-    {
-        strRet += pbase32[left];
-        for (int n=0; n<nPadding[mode]; n++)
-             strRet += '=';
-    }
-
-    return strRet;
-}
-
-string EncodeBase32(const string& str)
-{
-    return EncodeBase32((const unsigned char*)str.c_str(), str.size());
-}
-
-vector<unsigned char> DecodeBase32(const char* p, bool* pfInvalid)
-{
-    static const int decode32_table[256] =
-    {
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 26, 27, 28, 29, 30, 31, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1, -1,  0,  1,  2,
-         3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
-        23, 24, 25, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-        -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
-    };
-
-    if (pfInvalid)
-        *pfInvalid = false;
-
-    vector<unsigned char> vchRet;
-    vchRet.reserve((strlen(p))*5/8);
-
-    int mode = 0;
-    int left = 0;
-
-    while (1)
-    {
-         int dec = decode32_table[(unsigned char)*p];
-         if (dec == -1) break;
-         p++;
-         switch (mode)
-         {
-             case 0: // we have no bits and get 5
-                 left = dec;
-                 mode = 1;
-                 break;
-
-              case 1: // we have 5 bits and keep 2
-                  vchRet.push_back((left<<3) | (dec>>2));
-                  left = dec & 3;
-                  mode = 2;
-                  break;
-
-             case 2: // we have 2 bits and keep 7
-                 left = left << 5 | dec;
-                 mode = 3;
-                 break;
-
-             case 3: // we have 7 bits and keep 4
-                 vchRet.push_back((left<<1) | (dec>>4));
-                 left = dec & 15;
-                 mode = 4;
-                 break;
-
-             case 4: // we have 4 bits, and keep 1
-                 vchRet.push_back((left<<4) | (dec>>1));
-                 left = dec & 1;
-                 mode = 5;
-                 break;
-
-             case 5: // we have 1 bit, and keep 6
-                 left = left << 5 | dec;
-                 mode = 6;
-                 break;
-
-             case 6: // we have 6 bits, and keep 3
-                 vchRet.push_back((left<<2) | (dec>>3));
-                 left = dec & 7;
-                 mode = 7;
-                 break;
-
-             case 7: // we have 3 bits, and keep 0
-                 vchRet.push_back((left<<5) | dec);
-                 mode = 0;
-                 break;
-         }
-    }
-
-    if (pfInvalid)
-        switch (mode)
-        {
-            case 0: // 8n base32 characters processed: ok
-                break;
-
-            case 1: // 8n+1 base32 characters processed: impossible
-            case 3: //   +3
-            case 6: //   +6
-                *pfInvalid = true;
-                break;
-
-            case 2: // 8n+2 base32 characters processed: require '======'
-                if (left || p[0] != '=' || p[1] != '=' || p[2] != '=' || p[3] != '=' || p[4] != '=' || p[5] != '=' || decode32_table[(unsigned char)p[6]] != -1)
-                    *pfInvalid = true;
-                break;
-
-            case 4: // 8n+4 base32 characters processed: require '===='
-                if (left || p[0] != '=' || p[1] != '=' || p[2] != '=' || p[3] != '=' || decode32_table[(unsigned char)p[4]] != -1)
-                    *pfInvalid = true;
-                break;
-
-            case 5: // 8n+5 base32 characters processed: require '==='
-                if (left || p[0] != '=' || p[1] != '=' || p[2] != '=' || decode32_table[(unsigned char)p[3]] != -1)
-                    *pfInvalid = true;
-                break;
-
-            case 7: // 8n+7 base32 characters processed: require '='
-                if (left || p[0] != '=' || decode32_table[(unsigned char)p[1]] != -1)
-                    *pfInvalid = true;
-                break;
-        }
-
-    return vchRet;
-}
-
-string DecodeBase32(const string& str)
-{
-    vector<unsigned char> vchRet = DecodeBase32(str.c_str());
-    return string((const char*)&vchRet[0], vchRet.size());
-}
-
-
 bool ParseParameters(int argc, const char*const argv[], const po::options_description& desc_options)
 {
     return command_line::handle_error_helper(desc_options, [&]()
@@ -686,42 +346,6 @@ bool ParseParameters(int argc, const char*const argv[], const po::options_descri
         return true;
     });
 }
-
-
-bool WildcardMatch(const char* psz, const char* mask)
-{
-    while (true)
-    {
-        switch (*mask)
-        {
-        case '\0':
-            return (*psz == '\0');
-        case '*':
-            return WildcardMatch(psz, mask+1) || (*psz && WildcardMatch(psz+1, mask));
-        case '?':
-            if (*psz == '\0')
-                return false;
-            break;
-        default:
-            if (*psz != *mask)
-                return false;
-            break;
-        }
-        psz++;
-        mask++;
-    }
-}
-
-bool WildcardMatch(const string& str, const string& mask)
-{
-    return WildcardMatch(str.c_str(), mask.c_str());
-}
-
-
-
-
-
-
 
 
 static std::string FormatException(std::exception* pex, const char* pszThread)
@@ -738,12 +362,6 @@ static std::string FormatException(std::exception* pex, const char* pszThread)
     else
         return strprintf(
             "UNKNOWN EXCEPTION       \n%s in %s       \n", pszModule, pszThread);
-}
-
-void LogException(std::exception* pex, const char* pszThread)
-{
-    std::string message = FormatException(pex, pszThread);
-    LogPrintf("\n%s", message);
 }
 
 void PrintExceptionContinue(std::exception* pex, const char* pszThread)
@@ -826,16 +444,6 @@ bool ReadConfigFile(const boost::program_options::options_description& desc_opti
     });
 }
 
-boost::filesystem::path GetPidFile()
-{
-    boost::filesystem::path pathPidFile(GetArg(daemon_opt::arg_pid_file));
-    if (!pathPidFile.is_complete())
-    {
-        pathPidFile = GetDataDir() / pathPidFile;
-    }
-    return pathPidFile;
-}
-
 boost::filesystem::path GetIrcConfigFile()
 {
     boost::filesystem::path pathIrcConfigFile("irc.ini");
@@ -845,18 +453,6 @@ boost::filesystem::path GetIrcConfigFile()
     }
     return pathIrcConfigFile;
 }
-
-#ifndef WIN32
-void CreatePidFile(const boost::filesystem::path &path, pid_t pid)
-{
-    FILE* file = fopen(path.string().c_str(), "w");
-    if (file)
-    {
-        fprintf(file, "%d\n", pid);
-        fclose(file);
-    }
-}
-#endif
 
 boost::filesystem::path GetWalletFile()
 {
@@ -869,18 +465,6 @@ boost::filesystem::path GetWalletFile()
     
     return wallet_path;
 }
-
-bool RenameOver(boost::filesystem::path src, boost::filesystem::path dest)
-{
-#ifdef WIN32
-    return MoveFileExA(src.string().c_str(), dest.string().c_str(),
-                      MOVEFILE_REPLACE_EXISTING);
-#else
-    int rc = std::rename(src.string().c_str(), dest.string().c_str());
-    return (rc == 0);
-#endif /* WIN32 */
-}
-
 
 // Ignores exceptions thrown by boost's create_directory if the requested directory exists.
 //   Specifically handles case where path p exists, but it wasn't possible for the user to write to the parent directory.
@@ -896,120 +480,6 @@ bool TryCreateDirectory(const boost::filesystem::path& p)
 
     // create_directory didn't create the directory, it had to have existed already
     return false;
-}
-
-void FileCommit(FILE *fileout)
-{
-    fflush(fileout); // harmless if redundantly called
-#ifdef WIN32
-    HANDLE hFile = (HANDLE)_get_osfhandle(_fileno(fileout));
-    FlushFileBuffers(hFile);
-#else
-    #if defined(__linux__) || defined(__NetBSD__)
-    fdatasync(fileno(fileout));
-    #elif defined(__APPLE__) && defined(F_FULLFSYNC)
-    fcntl(fileno(fileout), F_FULLFSYNC, 0);
-    #else
-    fsync(fileno(fileout));
-    #endif
-#endif
-}
-
-bool TruncateFile(FILE *file, unsigned int length) {
-#if defined(WIN32)
-    return _chsize(_fileno(file), length) == 0;
-#else
-    return ftruncate(fileno(file), length) == 0;
-#endif
-}
-
-// this function tries to raise the file descriptor limit to the requested number.
-// It returns the actual file descriptor limit (which may be more or less than nMinFD)
-int RaiseFileDescriptorLimit(int nMinFD) {
-#if defined(WIN32)
-    return 2048;
-#else
-    struct rlimit limitFD;
-    if (getrlimit(RLIMIT_NOFILE, &limitFD) != -1) {
-        if (limitFD.rlim_cur < (rlim_t)nMinFD) {
-            limitFD.rlim_cur = nMinFD;
-            if (limitFD.rlim_cur > limitFD.rlim_max)
-                limitFD.rlim_cur = limitFD.rlim_max;
-            setrlimit(RLIMIT_NOFILE, &limitFD);
-            getrlimit(RLIMIT_NOFILE, &limitFD);
-        }
-        return limitFD.rlim_cur;
-    }
-    return nMinFD; // getrlimit failed, assume it's fine
-#endif
-}
-
-// this function tries to make a particular range of a file allocated (corresponding to disk space)
-// it is advisory, and the range specified in the arguments will never contain live data
-void AllocateFileRange(FILE *file, unsigned int offset, unsigned int length) {
-#if defined(WIN32)
-    // Windows-specific version
-    HANDLE hFile = (HANDLE)_get_osfhandle(_fileno(file));
-    LARGE_INTEGER nFileSize;
-    int64_t nEndPos = (int64_t)offset + length;
-    nFileSize.u.LowPart = nEndPos & 0xFFFFFFFF;
-    nFileSize.u.HighPart = nEndPos >> 32;
-    SetFilePointerEx(hFile, nFileSize, 0, FILE_BEGIN);
-    SetEndOfFile(hFile);
-#elif defined(MAC_OSX)
-    // OSX specific version
-    fstore_t fst;
-    fst.fst_flags = F_ALLOCATECONTIG;
-    fst.fst_posmode = F_PEOFPOSMODE;
-    fst.fst_offset = 0;
-    fst.fst_length = (off_t)offset + length;
-    fst.fst_bytesalloc = 0;
-    if (fcntl(fileno(file), F_PREALLOCATE, &fst) == -1) {
-        fst.fst_flags = F_ALLOCATEALL;
-        fcntl(fileno(file), F_PREALLOCATE, &fst);
-    }
-    ftruncate(fileno(file), fst.fst_length);
-#elif defined(__linux__)
-    // Version using posix_fallocate
-    off_t nEndPos = (off_t)offset + length;
-    posix_fallocate(fileno(file), 0, nEndPos);
-#else
-    // Fallback version
-    // TODO: just write one byte per block
-    static const char buf[65536] = {};
-    fseek(file, offset, SEEK_SET);
-    while (length > 0) {
-        unsigned int now = 65536;
-        if (length < now)
-            now = length;
-        fwrite(buf, 1, now, file); // allowed to fail; this function is advisory anyway
-        length -= now;
-    }
-#endif
-}
-
-void ShrinkDebugFile()
-{
-    // Scroll debug.log if it's getting too big
-    boost::filesystem::path pathLog = GetDataDir() / "debug.log";
-    FILE* file = fopen(pathLog.string().c_str(), "r");
-    if (file && boost::filesystem::file_size(pathLog) > 10 * 1000000)
-    {
-        // Restart the file with some of the end
-        char pch[200000];
-        fseek(file, -sizeof(pch), SEEK_END);
-        int nBytes = fread(pch, 1, sizeof(pch), file);
-        fclose(file);
-
-        file = fopen(pathLog.string().c_str(), "w");
-        if (file)
-        {
-            fwrite(pch, 1, nBytes, file);
-            fclose(file);
-        }
-    }
-    else if (file != NULL)
-        fclose(file);
 }
 
 //
@@ -1028,11 +498,6 @@ int64_t GetTime()
     return time(NULL);
 }
 
-void SetMockTime(int64_t nMockTimeIn)
-{
-    nMockTime = nMockTimeIn;
-}
-
 static CCriticalSection cs_nTimeOffset;
 static int64_t nTimeOffset = 0;
 
@@ -1045,27 +510,6 @@ int64_t GetTimeOffset()
 int64_t GetAdjustedTime()
 {
     return GetTime() + GetTimeOffset();
-}
-
-uint32_t insecure_rand_Rz = 11;
-uint32_t insecure_rand_Rw = 11;
-void seed_insecure_rand(bool fDeterministic)
-{
-    //The seed values have some unlikely fixed points which we avoid.
-    if(fDeterministic)
-    {
-        insecure_rand_Rz = insecure_rand_Rw = 11;
-    } else {
-        uint32_t tmp;
-        do {
-            RAND_bytes((unsigned char*)&tmp, 4);
-        } while(tmp == 0 || tmp == 0x9068ffffU);
-        insecure_rand_Rz = tmp;
-        do {
-            RAND_bytes((unsigned char*)&tmp, 4);
-        } while(tmp == 0 || tmp == 0x464fffffU);
-        insecure_rand_Rw = tmp;
-    }
 }
 
 string FormatVersion(int nVersion)
@@ -1091,59 +535,6 @@ std::string FormatSubVersion(const std::string& name, int nClientVersion, const 
         ss << "(" << boost::algorithm::join(comments, "; ") << ")";
     ss << "/";
     return ss.str();
-}
-
-boost::filesystem::path GetTempPath() {
-#if BOOST_FILESYSTEM_VERSION == 3
-    return boost::filesystem::temp_directory_path();
-#else
-    // TODO: remove when we don't support filesystem v2 anymore
-    boost::filesystem::path path;
-#ifdef WIN32
-    char pszPath[MAX_PATH] = "";
-
-    if (GetTempPathA(MAX_PATH, pszPath))
-        path = boost::filesystem::path(pszPath);
-#else
-    path = boost::filesystem::path("/tmp");
-#endif
-    if (path.empty() || !boost::filesystem::is_directory(path)) {
-        LogPrintf("GetTempPath(): failed to find temp path\n");
-        return boost::filesystem::path("");
-    }
-    return path;
-#endif
-}
-
-void runCommand(std::string strCommand)
-{
-    int nErr = ::system(strCommand.c_str());
-    if (nErr)
-        LogPrintf("runCommand error: system(%s) returned %d\n", strCommand, nErr);
-}
-
-void RenameThread(const char* name)
-{
-#if defined(PR_SET_NAME)
-    // Only the first 15 characters are used (16 - NUL terminator)
-    ::prctl(PR_SET_NAME, name, 0, 0, 0);
-#elif 0 && (defined(__FreeBSD__) || defined(__OpenBSD__))
-    // TODO: This is currently disabled because it needs to be verified to work
-    //       on FreeBSD or OpenBSD first. When verified the '0 &&' part can be
-    //       removed.
-    pthread_set_name_np(pthread_self(), name);
-
-#elif defined(MAC_OSX) && defined(__MAC_OS_X_VERSION_MAX_ALLOWED)
-
-// pthread_setname_np is XCode 10.6-and-later
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 1060
-    pthread_setname_np(name);
-#endif
-
-#else
-    // Prevent warnings for unused parameters...
-    (void)name;
-#endif
 }
 
 void SetupEnvironment()

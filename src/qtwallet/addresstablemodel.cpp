@@ -11,7 +11,6 @@
 #include "common/types.h"
 #include "cryptonote_core/cryptonote_basic_impl.h"
 
-#include "bitcoin/util.h"
 #include "interface/base58.h"
 #include "interface/wallet.h"
 #include "interface/script.h"
@@ -87,7 +86,7 @@ public:
             LOG_PRINT_L4("LOCK(cs_wallet) refreshAddressTable");
             LOCK(wallet->cs_wallet); // mapWallet
             LOG_PRINT_L4("LOCK(cs_wallet) refreshAddressTable acquired");
-            BOOST_FOREACH(const PAIRTYPE(address_t, CAddressBookData)& item, wallet->mapAddressBook)
+            BOOST_FOREACH(const auto& item, wallet->mapAddressBook)
             {
                 const address_t& address = item.first;
                 bool fMine = IsMine(*wallet, address);

@@ -253,7 +253,7 @@ namespace cryptonote
     return true;
   }
   //-----------------------------------------------------------------------------------------------------
-  bool miner::is_mining()
+  bool miner::is_mining() const
   {
     return !m_stop;
   }
@@ -314,7 +314,7 @@ namespace cryptonote
   }
   //-----------------------------------------------------------------------------------------------------
   //-----------------------------------------------------------------------------------------------------
-  uint64_t miner::get_speed()
+  uint64_t miner::get_speed() const
   {
     if(is_mining())
       return m_current_hash_rate;

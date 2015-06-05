@@ -121,7 +121,7 @@ namespace tools
       m_check_update_thread.join();
     }
     
-    bool should_update()
+    bool should_update() const
     {
       CRITICAL_REGION_LOCAL(m_time_lock);
       return time(NULL) - m_last_refresh >= m_refresh_time;
@@ -132,10 +132,10 @@ namespace tools
       auto last = std::chrono::high_resolution_clock::now();
       while (m_run)
       {
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
         auto now = std::chrono::high_resolution_clock::now();
         
-        if (now < last || now - last > std::chrono::milliseconds(300))
+        if (now < last || now - last > std::chrono::milliseconds(1500))
         {
           LOG_PRINT_YELLOW("System clock change detected, will update ntp time", LOG_LEVEL_0);
           CRITICAL_REGION_LOCAL(m_time_lock);
@@ -156,7 +156,7 @@ namespace tools
     
     time_t m_ntp_timeout_ms;
     
-    epee::critical_section m_time_lock;
+    mutable epee::critical_section m_time_lock;
     
     std::atomic<bool> m_run;
     std::thread m_check_update_thread;

@@ -5,7 +5,6 @@
 #include <map>
 
 #include "common/types.h"
-#include "cryptonote_core/delegate_types.h"
 
 #include "bitcoin/sync.h"
 
@@ -29,9 +28,9 @@ extern node_server_t *pnodeSrv;
 extern CWallet *pwalletMain;
 
 
-int WalletProcessedHeight();
-int DaemonProcessedHeight();
-int NumBlocksOfPeers();
+int64_t WalletProcessedHeight();
+int64_t DaemonProcessedHeight();
+int64_t NumBlocksOfPeers();
 
 bool GetDposRegisterInfo(cryptonote::delegate_id_t& unused_delegate_id, uint64_t& registration_fee);
 bool GetDelegateInfo(const cryptonote::account_public_address& addr, cryptonote::bs_delegate_info& info);
