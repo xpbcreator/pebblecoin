@@ -21,7 +21,7 @@
 
 #define DEFAULT_TX_SPENDABLE_AGE                               10
 #define WALLET_DEFAULT_RCP_CONNECTION_TIMEOUT                  200000
-#define MAX_VOTE_INPUTS_PER_TX                                 29
+#define MAX_VOTE_INPUTS_PER_TX                                 30
 
 namespace epee
 {
