@@ -220,15 +220,14 @@ size_t wallet_tx_builder::impl::pop_random_weighted_transfer(std::vector<size_t>
     auto amt = m_wallet.m_transfers[indices[vec_i]].amount();
     if (choice <= amt)
     {
-      auto res = indices[vec_i];
+      size_t res = indices[vec_i];
       indices.erase(indices.begin() + vec_i);
       return res;
     }
     choice -= amt;
-    vec_i += 1;
   }
   // should never reach here
-  return 0;
+  throw std::runtime_error("pop_random_weighted_transfer logic failed");
 }
 //----------------------------------------------------------------------------------------------------
 uint64_t wallet_tx_builder::impl::select_transfers_for_votes(uint64_t num_votes, uint64_t dust,
@@ -953,12 +952,14 @@ void wallet_tx_builder::impl::process_transaction_sent()
                << "Unlocked: " << cryptonote::print_moneys(m_wallet.unlocked_balance()) << ENDL
                << "Please, wait for confirmation for your balance to be unlocked.");
   
+  LOG_PRINT_L0("Transaction was: " << ENDL << obj_to_json_str(m_finalized_tx));
+  
   if (m_kd.m_delegate_id_registered != 0)
   {
     LOG_PRINT_L0("Transaction registered delegate " << m_kd.m_delegate_id_registered
                  << " with address " << m_kd.m_delegate_address_registered);
   }
-  
+
   m_state = ProcessedSent;
   
   return;

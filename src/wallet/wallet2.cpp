@@ -977,9 +977,6 @@ key_image_seqs wallet2::get_key_image_seqs(const std::vector<crypto::key_image>&
   THROW_WALLET_EXCEPTION_IF(!r, error::no_connection_to_daemon, "getkeyimageseqs.bin");
   THROW_WALLET_EXCEPTION_IF(resp.status == CORE_RPC_STATUS_BUSY, error::daemon_busy, "getkeyimageseqs.bin");
   THROW_WALLET_EXCEPTION_IF(resp.status != CORE_RPC_STATUS_OK, error::get_key_image_seqs_error, resp.status);
-  THROW_WALLET_EXCEPTION_IF(resp.image_seqs.size() != req.images.size(), error::wallet_internal_error,
-                            "daemon returned wrong response for getkeyimageseqs.bin, wrong amounts count = " +
-                            std::to_string(resp.image_seqs.size()) + ", expected " +  std::to_string(req.images.size()));
   
   return resp.image_seqs;
 }

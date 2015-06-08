@@ -4,6 +4,8 @@
 
 #include "common/stl-util.h"
 
+#include "include_base_utils.h"
+
 #include "cryptonote_basic.h"
 #include "cryptonote_basic_impl.h"
 #include "visitors.h"
