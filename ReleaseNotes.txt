@@ -1,3 +1,33 @@
+Release Notes 0.4.3.1
+- RPC calls for DPOS:
+  - getdelegateinfos RPC call
+  - get kimageseqs RPC call
+  - block header contains signing_delegate_id
+- fix checkpoint rollback bug
+- fix inability to send coins if voting history was lost
+
+Release Notes 0.4.2.2
+- Payment ID support in the QT Wallet
+- Windows installer
+- Updated logos
+- Improved DPOS tab
+- Sync issues fully fixed
+- Fix rare crash bug
+- Fix min out 0 bug
+- Fix debit display
+- Fix GUI not updating
+- Updated hard-coded seed nodes
+
+Release Notes 0.4.1.2
+- All clients adjust internal clocks using ntp
+- Added testnet support
+- DPOS registartion starts Block 83120 (~April 21st)
+- DPOS phase starts block 85300 (~April 24th)
+- Default fee bumped to 0.10 XPB
+- Low-free transactions no longer get relayed by default
+- Significantly improved wallet sync
+- Checkpoint at Block 79000
+
 Release Notes 0.3.0.2
 - Add more seed nodes
 - Add transaction description to Qt Wallet
