@@ -966,7 +966,7 @@ fake_outs_map wallet2::get_fake_outputs(const std::unordered_map<cryptonote::coi
   return res;
 }
 //----------------------------------------------------------------------------------------------------
-key_image_seqs wallet2::get_key_image_seqs(const std::vector<crypto::key_image> key_images)
+key_image_seqs wallet2::get_key_image_seqs(const std::vector<crypto::key_image>& key_images)
 {
   cryptonote::COMMAND_RPC_GET_KEY_IMAGE_SEQS::request req = AUTO_VAL_INIT(req);
   req.images = key_images;

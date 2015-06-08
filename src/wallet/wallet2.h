@@ -230,7 +230,7 @@ namespace tools
     
     fake_outs_map get_fake_outputs(const std::unordered_map<cryptonote::coin_type, std::list<uint64_t> >& amounts,
                                    uint64_t min_fake_outs, uint64_t fake_outputs_count);
-    key_image_seqs get_key_image_seqs(const std::vector<crypto::key_image> key_images);
+    key_image_seqs get_key_image_seqs(const std::vector<crypto::key_image>& key_images);
     
     void send_raw_tx_to_daemon(const cryptonote::transaction& tx);
     

@@ -799,13 +799,14 @@ uint64_t wallet_tx_builder::impl::add_votes(size_t min_fake_outs, size_t fake_ou
 void wallet_tx_builder::impl::replace_seqs(cryptonote::transaction& tx)
 {
   using namespace cryptonote;
-  auto k_imgs = map_filter([](const txin_v& inp) { return boost::get<txin_vote>(inp).ink.k_image; },
-                           tx.ins(),
+
+  // return type needed in lambda for MSVC 2012
+  auto k_imgs = map_filter([](const txin_v& inp) -> crypto::key_image { return boost::get<txin_vote>(inp).ink.k_image; },
+	                       tx.ins(),
                            [](const txin_v& inp) { return inp.type() == typeid(txin_vote); });
   
-  auto key_image_seqs = m_wallet.get_key_image_seqs(k_imgs);
-  
-  tx.replace_vote_seqs(key_image_seqs);
+  auto im_seqs = m_wallet.get_key_image_seqs(k_imgs);
+  tx.replace_vote_seqs(im_seqs);
 }
 
 //----------------------------------------------------------------------------------------------------

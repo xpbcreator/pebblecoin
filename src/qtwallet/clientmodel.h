@@ -5,6 +5,8 @@
 #ifndef CLIENTMODEL_H
 #define CLIENTMODEL_H
 
+#include <cstdint>
+
 #include <QObject>
 
 class AddressTableModel;

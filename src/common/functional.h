@@ -5,6 +5,7 @@
 #pragma once
 
 #include <iterator>
+#include <vector>
 
 #include <boost/foreach.hpp>
 #include <boost/variant/apply_visitor.hpp>

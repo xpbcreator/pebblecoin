@@ -168,7 +168,7 @@ namespace cryptonote
     {
       std::vector<crypto::key_image> images;
       BEGIN_KV_SERIALIZE_MAP()
-        KV_SERIALIZE_CONTAINER_POD_AS_BLOB(images)
+        KV_SERIALIZE_CONTAINER_POD_AS_BLOB_FORCE(images) // MSVC 2012 bug thinks crypto::key_image is not POD type
       END_KV_SERIALIZE_MAP()
     };
 
