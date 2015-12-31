@@ -34,8 +34,9 @@ tests/coretests
 
 # Create zip file
 VERSION=`src/print_version`
-BRANCH=`git branch -r --contains HEAD | cut -d/ -f2`
-ARCHIVE=pebblecoin-all-$PLATFORM_NAME-v$VERSION-$BRANCH-$BUILD_NUMBER.tar.gz
+REPO=`git remote`
+BRANCH=`git branch -r --contains HEAD | tail -n 1 | cut -d/ -f2`
+ARCHIVE=pebblecoin-all-$PLATFORM_NAME-v$VERSION-$REPO-$BRANCH-$BUILD_NUMBER.tar.gz
 
 cd src
 strip pebblecoind

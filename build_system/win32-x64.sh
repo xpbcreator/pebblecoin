@@ -34,8 +34,9 @@ tests\\Release\\coretests.exe
 
 # Create zip file
 VERSION=`src\\\\Release\\\\print_version`
-BRANCH=`git branch -r --contains HEAD | cut -d/ -f2`
-ARCHIVE=pebblecoin-all-$PLATFORM_NAME-v$VERSION-$BRANCH-$BUILD_NUMBER.zip
+REPO=`git remote`
+BRANCH=`git branch -r --contains HEAD | tail -n 1 | cut -d/ -f2`
+ARCHIVE=pebblecoin-all-$PLATFORM_NAME-v$VERSION-$REPO-$BRANCH-$BUILD_NUMBER.zip
 
 rm -rf dist
 mkdir -p dist
