@@ -1,0 +1,3 @@
+[submodule "external/stxxl"]
+	path = external/stxxl_repo
+	url = https://github.com/stxxl/stxxl.git
