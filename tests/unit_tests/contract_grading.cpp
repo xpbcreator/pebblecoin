@@ -142,7 +142,11 @@ std::vector<uint64_t> split_amount(uint64_t amount, size_t num_elements) {
   return result;
 }
 
-#ifndef _MSC_VER // doesn't support initializer lists
+#if defined(_MSC_VER) && _MSC_VER < 1900
+
+// doesn't support initializer lists
+
+#else
 
 TEST(contract_grading, all_contract_grading_ok)
 {

@@ -38,6 +38,7 @@ add_library(rpc ${RPC})
 add_library(wallet ${WALLET})
 add_library(p2p ${P2P})
 target_link_libraries(wallet crypto_core crypto ${Boost_LIBRARIES})
+target_link_libraries(cryptonote_core sqlite3 stxxl)
 add_executable(daemon ${DAEMON} ${CRYPTONOTE_PROTOCOL})
 add_executable(connectivity_tool ${CONN_TOOL})
 add_executable(simpleminer ${MINER})
@@ -79,17 +80,11 @@ if (QT4_FOUND)
   add_definitions(${QT_DEFINITIONS})
   set(CMAKE_AUTOMOC TRUE)  
 
-  include(FindProtobuf)
-  find_package(Protobuf REQUIRED)
-  include_directories(${PROTOBUF_INCLUDE_DIR})
-
   SET(OLD_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
   if(STATIC)
     SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
   endif()
-  find_package(OpenSSL REQUIRED)
   SET(CMAKE_FIND_LIBRARY_SUFFIXES ${OLD_SUFFIXES})
-  include_directories(${OPENSSL_INCLUDE_DIR})
 
   file(GLOB_RECURSE QTWALLET qtwallet/*)
   list(APPEND QTWALLET daemon/daemon_options.cpp)
@@ -110,12 +105,10 @@ if (QT4_FOUND)
   source_group(qtwallet FILES ${QTWALLET})
 
   file(GLOB_RECURSE QTWALLET_FORM_FILES qtwallet/forms/*)
-  file(GLOB_RECURSE QTWALLET_PROTO_FILES qtwallet/*.proto)
   #file(GLOB_RECURSE QTWALLET_QRC_FILES qtwallet/*.qrc)
   set(QTWALLET_QRC_FILES qtwallet/bitcoin.qrc)
 
   qt4_wrap_ui(QTWALLET_FORM_HEADERS ${QTWALLET_FORM_FILES})
-  protobuf_generate_cpp(QTWALLET_PROTO_SOURCES QTWALLET_PROTO_HEADERS ${QTWALLET_PROTO_FILES})
 
   # Deal with the translations
   # Manually generate one qm file for each ts file
@@ -158,8 +151,8 @@ if (QT4_FOUND)
   include_directories(qtwallet) # for the ui_*.h files to include custom widgets
   include_directories(qtwallet/irc) # for the irc includes to work (was a separate module)
 
-  add_executable(qtwallet ${QTWALLET} ${CRYPTONOTE_PROTOCOL} ${QTWALLET_FORM_HEADERS} ${QTWALLET_PROTO_SOURCES} ${QTWALLET_PROTO_HEADERS} ${QTWALLET_QRC_SOURCES} ${QTWALLET_LANG_SOURCES} ${QTWALLET_TRANS_OUTFILE})
-  target_link_libraries(qtwallet p2p wallet rpc cryptonote_core wallet crypto common crypto_core upnpc-static epee ${Boost_LIBRARIES} ${QT_LIBRARIES} ${PROTOBUF_LIBRARY} ${OPENSSL_LIBRARIES})
+  add_executable(qtwallet ${QTWALLET} ${CRYPTONOTE_PROTOCOL} ${QTWALLET_FORM_HEADERS} ${QTWALLET_QRC_SOURCES} ${QTWALLET_LANG_SOURCES} ${QTWALLET_TRANS_OUTFILE})
+  target_link_libraries(qtwallet p2p wallet rpc cryptonote_core wallet crypto common crypto_core upnpc-static epee ${Boost_LIBRARIES} ${QT_LIBRARIES})
   set_property(TARGET qtwallet PROPERTY OUTPUT_NAME "pebblecoin-qt")
   
   if (WIN32)
@@ -171,3 +164,7 @@ if (QT4_FOUND)
   cotire(qtwallet)
   add_dependencies(qtwallet_unity qtwallet_automoc)
 endif()
+
+# add program which just outputs the version
+add_executable(print_version print_version.cpp)
+add_dependencies(print_version version)

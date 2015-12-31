@@ -34,6 +34,7 @@
 #include "serialization/keyvalue_serialization.h"
 #include "storages/portable_storage.h"
 #include "storages/portable_storage_template_helper.h"
+#include "packing.h"
 
 namespace epee
 {
@@ -49,13 +50,11 @@ namespace epee
       END_KV_SERIALIZE_MAP()
     };
 
-#pragma pack (push, 1)
-    struct some_pod_struct
+    PACK(struct some_pod_struct
     {
       uint64_t a;
       int32_t b;
-    };
-#pragma pack(pop)
+    })
 
     struct port_test_struct
     {      

@@ -31,15 +31,15 @@
 
 #include "net_utils_base.h"
 
+#include "packing.h"
+
 #define LEVIN_SIGNATURE  0x0101010101012101LL  //Bender's nightmare
 
 namespace epee
 {
 namespace levin
 {
-#pragma pack(push)
-#pragma pack(1)
-	struct bucket_head
+	PACK(struct bucket_head
 	{
 		uint64_t m_signature;
 		uint64_t m_cb;
@@ -48,13 +48,10 @@ namespace levin
 		int32_t  m_return_code;
 		uint32_t m_reservedA; //probably some flags in future
 		uint32_t m_reservedB; //probably some check sum in future
-	};
-#pragma pack(pop)
+	})
 
 
-#pragma pack(push)
-#pragma pack(1)
-  struct bucket_head2
+  PACK(struct bucket_head2
   {
     uint64_t m_signature;
     uint64_t m_cb;
@@ -63,8 +60,7 @@ namespace levin
     int32_t  m_return_code;
     uint32_t m_flags;
     uint32_t m_protocol_version;
-  };
-#pragma pack(pop)
+  })
 
 
 #define LEVIN_DEFAULT_TIMEOUT_PRECONFIGURED 0

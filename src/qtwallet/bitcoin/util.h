@@ -36,7 +36,11 @@ namespace cryptonote
   class transaction;
 }
 
-#ifndef WIN32
+#if defined(WIN32)
+#elif defined(__MACH__)
+#include <sys/syslimits.h>
+#define MAX_PATH PATH_MAX
+#else
 #include <linux/limits.h>
 #define MAX_PATH PATH_MAX
 #endif

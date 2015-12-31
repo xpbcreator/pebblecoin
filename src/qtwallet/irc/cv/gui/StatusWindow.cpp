@@ -308,7 +308,7 @@ void StatusWindow::onServerConnectFailed(Event *pEvt)
             reason = "Connection timed out";
             break;
         default:
-            reason = "Unknown connection error: " + error;
+            reason = QString("Unknown connection error: ") + error;
     }
 
     QString textToPrint = GET_STRING("message.connectFailed")

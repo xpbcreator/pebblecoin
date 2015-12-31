@@ -12,9 +12,6 @@
 
 #include <QObject>
 
-#include "bitcoin/allocators.h" /* for SecureString */
-
-#include "paymentrequestplus.h"
 #include "walletmodeltransaction.h"
 
 class AddressTableModel;
@@ -57,45 +54,11 @@ public:
     // If from a payment request, this is used for storing the memo
     QString message;
 
-    // If from a payment request, paymentRequest.IsInitialized() will be true
-    PaymentRequestPlus paymentRequest;
     // Empty if no authentication or invalid signature/cert/etc.
     QString authenticatedMerchant;
 
     static const int CURRENT_VERSION = 1;
     int nVersion;
-
-    /*IMPLEMENT_SERIALIZE
-    (
-        SendCoinsRecipient* pthis = const_cast<SendCoinsRecipient*>(this);
-
-        std::string sAddress = pthis->address.toStdString();
-        std::string sLabel = pthis->label.toStdString();
-        std::string sMessage = pthis->message.toStdString();
-        std::string sPaymentRequest;
-        if (!fRead && pthis->paymentRequest.IsInitialized())
-            pthis->paymentRequest.SerializeToString(&sPaymentRequest);
-        std::string sAuthenticatedMerchant = pthis->authenticatedMerchant.toStdString();
-
-        READWRITE(pthis->nVersion);
-        nVersion = pthis->nVersion;
-        READWRITE(sAddress);
-        READWRITE(sLabel);
-        READWRITE(amount);
-        READWRITE(sMessage);
-        READWRITE(sPaymentRequest);
-        READWRITE(sAuthenticatedMerchant);
-
-        if (fRead)
-        {
-            pthis->address = QString::fromStdString(sAddress);
-            pthis->label = QString::fromStdString(sLabel);
-            pthis->message = QString::fromStdString(sMessage);
-            if (!sPaymentRequest.empty())
-                pthis->paymentRequest.parse(QByteArray::fromRawData(sPaymentRequest.data(), sPaymentRequest.size()));
-            pthis->authenticatedMerchant = QString::fromStdString(sAuthenticatedMerchant);
-        }
-    )*/
 };
 
 /** Interface to Bitcoin wallet from Qt view code. */
@@ -166,10 +129,10 @@ public:
     void processSendCoinsReturn(const SendCoinsReturn &sendCoinsReturn, const QString &msgArg = QString());
     
     // Wallet encryption
-    bool setWalletEncrypted(bool encrypted, const SecureString &passphrase);
+    bool setWalletEncrypted(bool encrypted, const std::string &passphrase);
     // Passphrase only needed when unlocking
-    bool setWalletLocked(bool locked, const SecureString &passPhrase=SecureString());
-    bool changePassphrase(const SecureString &oldPass, const SecureString &newPass);
+    bool setWalletLocked(bool locked, const std::string &passPhrase="");
+    bool changePassphrase(const std::string &oldPass, const std::string &newPass);
     // Wallet backup
     bool backupWallet(const QString &filename);
 

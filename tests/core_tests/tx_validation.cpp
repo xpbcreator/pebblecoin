@@ -740,7 +740,10 @@ bool gen_tx_signatures_are_invalid::generate(std::vector<test_event_entry>& even
   // Tx with nmix = 0 have a few inputs, and too many signatures
   DO_CALLBACK(events, "mark_invalid_tx");
   sr_tx = t_serializable_object_to_blob(tx_0);
-  sr_tx.insert(sr_tx.end(), sr_tx.end() - sizeof(crypto::signature), sr_tx.end());
+  {
+    auto cp = sr_tx;
+    sr_tx.insert(sr_tx.end(), cp.end() - sizeof(crypto::signature), cp.end());
+  }
   events.push_back(serialized_transaction(sr_tx));
 
   // Tx with nmix = 1 without signatures
@@ -757,7 +760,10 @@ bool gen_tx_signatures_are_invalid::generate(std::vector<test_event_entry>& even
   // Tx with nmix = 1 have too many signatures
   DO_CALLBACK(events, "mark_invalid_tx");
   sr_tx = t_serializable_object_to_blob(tx_1);
-  sr_tx.insert(sr_tx.end(), sr_tx.end() - sizeof(crypto::signature), sr_tx.end());
+  {
+    auto cp = sr_tx;
+    sr_tx.insert(sr_tx.end(), cp.end() - sizeof(crypto::signature), cp.end());
+  }
   events.push_back(serialized_transaction(sr_tx));
 
   return true;

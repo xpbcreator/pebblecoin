@@ -1,38 +1,52 @@
-- Get MSVC 2012 express ( http://www.microsoft.com/en-us/download/details.aspx?id=34673 )
-- Get cmake ( http://www.cmake.org/download/ ) 
+- Get MSVC express ( http://www.microsoft.com/en-us/download/details.aspx?id=34673 )
+
+- Get cmake ( http://www.cmake.org/download/ )
+
 - Get boost 1.55 for windows ( http://www.boost.org/users/history/version_1_55_0.html )
-  - set BOOST_LIBRARYDIR to C:\local\boost_1_55_0\lib64-msvc-11.0
-  - set BOOST_ROOT to C:\local\boost_1_55_0
-  
+  - (for MSVC 2015, get boost 1.59)
+  - Extract PREBUILT binaries to C:\local\boost_1_55_0:
+    - set BOOST_LIBRARYDIR to C:\local\boost_1_55_0\lib64-msvc-??.0
+    - set BOOST_ROOT to C:\local\boost_1_55_0
   - OR build boost manually:
-    - Start "VS2012 x64 Native Tools Command Prompt"
+    - Extract to C:\local\boost_1_55_0
+    - Start the Visual Studio "x64 Native Tools Command Prompt"
     - bootstrap.bat
-    - b2 --build-type=complete --build-dir=build --stagedir=lib64-msvc-11.0-md toolset=msvc-11.0 address-model=64 variant=release link=static threading=multi runtime-link=shared stage
-    - copy lib64-msvc-11.0-md\lib into lib64-msvc-11.0-md
-    - set BOOST_LIBRARYDIR to C:\local\boost_1_55_0\lib64-msvc-11.0-md
+    - b2 --build-type=complete --build-dir=build --stagedir=stage toolset=msvc-14.0 address-model=64 variant=release link=static threading=multi runtime-link=shared stage
+      - Adjust toolset as needed (e.g. msvc-11.0 )
+      - May have to edit project-config.jam and change "using msvc ;" to e.g. "using msvc : 14.0 ;"
+
+    - set BOOST_LIBRARYDIR to C:\local\boost_1_55_0\stage\lib
     - set BOOST_ROOT to C:\local\boost_1_55_0
   
-- Get protobuf 2.5.0
-  - open with MSVC 2012, change config to x64, build
-  - set CMAKE_INCLUDE_PATH to c:\protobuf-2.5.0\src
-  - set CMAKE_LIBRARY_PATH to C:\protobuf-2.5.0\vsprojects\x64\Release
-  - add to PATH: C:\protobuf-2.5.0\vsprojects\x64\Release
-
-- Get OpenSSL ( http://slproweb.com/products/Win32OpenSSL.html ), *64 bit version*
-  - set OPENSSL_ROOT_DIR to C:\OpenSSL-Win64
-  - for static linkage: copy lib\VC\static to lib\VC
-
-- Download latest Qt 4.8
-  - Replace qt-everywhere-opensource-src-4.8.3-x64\src\3rdparty\webkit\Source\JavaScriptCore\wtf\HashSet.h by this HashSet.h ( https://bitbucket.org/Vertexwahn/bluego/src/56dbe84212222ec6954d8d327a5e443106bcc447/deploy/BlueGo0.0.4/qt4.8.3vs2012patch/HashSet.h?at=default ).
-  - Start "VS2012 x64 Native Tools Command Prompt"
-  - Switch to Qt 4.8.3 source directory (the directory that contains configure.exe)
-  - configure -release -opensource -confirm-license -static -platform win32-msvc2012 -no-sql-sqlite -no-opengl -qt-zlib -qt-libpng -qt-libjpeg -no-freetype -openssl -I "C:\OpenSSL-Win32\include" -L "C:\OpenSSL-Win32\lib" -no-dbus -no-phonon -no-phonon-backend -no-audio-backend -nomake demos -nomake examples -mp 
+- Download latest Qt 4.8 everywhere from https://download.qt.io/official_releases/qt/4.8/
+  - Extract, move the extracted folder to C:\qt\4.8.6-vs2012 (as appropriate)
+  - For 4.8.3 and maybe others:
+    - Replace qt-everywhere-opensource-src-4.8.3-x64\src\3rdparty\webkit\Source\JavaScriptCore\wtf\HashSet.h by this HashSet.h ( https://bitbucket.org/Vertexwahn/bluego/src/56dbe84212222ec6954d8d327a5e443106bcc447/deploy/BlueGo0.0.4/qt4.8.3vs2012patch/HashSet.h?at=default ).
+  - For 4.8.6/7:
+    - apply the diff https://fami.codefreak.ru/mirrors/qt/unofficial_builds/qt4.8.7-msvc2015/02-fix_build_with_msvc2015-45e8f4ee.diff
+  - Start the "x64 Native Tools Command Prompt"
+  - Switch to the Qt 4.8 root directory (the directory that contains configure.exe)
+  - configure -release -opensource -confirm-license -static -platform win32-msvc2012 -no-sql-sqlite -no-opengl -qt-zlib -qt-libpng -qt-libjpeg -no-freetype -no-dbus -no-phonon -no-phonon-backend -no-audio-backend -nomake demos -nomake examples -mp
+    - or -platform win32-msvc-2013, -platform win32-msvc-2015, etc.
+  - SET CL=/MP
   - nmake
   - add to PATH: C:\qt\4.8.6-vs2012\bin
 
-- Go to pebblecoin root dir
-- mkdir build/release
-- cd build/release
-- cmake -D STATIC=1 -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 11 Win64" ../..
-- open the Project.sln file, build/compile whatever is needed
+- Build the code
+  - open "MSBuild Command Prompt for VS2015"
+  - Go to pebblecoin root dir
+  - mkdir build/release
+  - cd build/release
+  - cmake -D STATIC=1 -D CMAKE_BUILD_TYPE=Release -G "Visual Studio 14 Win64" -Wno-dev ../..
+    - if boost libraries aren't found...
+      - try -DBoost_DEBUG=1 to see where it is looking
+      - try -DBoost_COMPILER=-vc  , replace "-vc" with the tag on the actual library files
+  - run tests:
+    - msbuild /property:Configuration=Release /property:Platform=x64 tests\RUN_TESTS.vxcproj
+  - compile daemon, simplewallet, qtwallet:
+    - msbuild /property:Configuration=Release /property:Platform=x64 src\daemon.vxcproj
+    - msbuild /property:Configuration=Release /property:Platform=x64 src\simplewallet.vxcproj
+    - msbuild /property:Configuration=Release /property:Platform=x64 src\qtwallet.vxcproj
 
+- Release
+  - include msvcp*.dll and msvcr*.dll in the release

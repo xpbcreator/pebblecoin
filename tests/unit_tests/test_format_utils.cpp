@@ -177,7 +177,11 @@ TEST(validate_parse_amount_case, validate_parse_amount)
   ASSERT_FALSE(r);
 }
 
-#ifndef _MSC_VER // no initializer lists
+#if defined(_MSC_VER) && _MSC_VER < 1900
+
+// no initializer lists
+
+#else
 
 TEST(nth_sorted_item_after, nth_sorted_item_after_vanilla)
 {

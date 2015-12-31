@@ -127,16 +127,23 @@ struct binary_archive<true> : public binary_archive_base<std::ostream, true>
   {
     serialize_uint(static_cast<typename boost::make_unsigned<T>::type>(v));
   }
+  
+  // split into two cases to avoid warnings with `v >>= 8` for 1-byte types on clang
   template <class T>
-  void serialize_uint(T v)
+  typename std::enable_if<(sizeof(T) == 1)>::type serialize_uint(T v)
+  {
+    stream_.put((char)(v & 0xff));
+  }
+  
+  template <class T>
+  typename std::enable_if<(sizeof(T) > 1)>::type serialize_uint(T v)
   {
     for (size_t i = 0; i < sizeof(T); i++) {
       stream_.put((char)(v & 0xff));
-      if (1 < sizeof(T)) {
-        v >>= 8;
-      }
+      v >>= 8;
     }
   }
+  
   void serialize_blob(const void *buf, size_t len, const char *delimiter="") { stream_.write((char *)buf, len); }
 
   template <class T>

@@ -11,6 +11,7 @@
 #include "common/int-util.h"
 #include "hash-ops.h"
 #include "oaes_lib.h"
+#include "packing.h"
 
 static void (*const extra_hashes[4])(const void *, size_t, char *) = {
   hash_extra_blake, hash_extra_groestl, hash_extra_jh, hash_extra_skein
@@ -73,18 +74,19 @@ static void mul_sum_xor_dst(const uint8_t* a, uint8_t* c, uint8_t* dst) {
   copy_block(dst, product);
 }
 
-#pragma pack(push, 1)
-union cn_slow_hash_state {
+PACK(union cn_slow_hash_state {
   union hash_state hs;
-  struct {
+  PACK(struct {
     uint8_t k[64];
     uint8_t init[INIT_SIZE_BYTE];
-  };
-};
-#pragma pack(pop)
+  })
+})
+static_assert(sizeof(union cn_slow_hash_state) == (INIT_SIZE_BYTE + 64) ||
+              sizeof(union cn_slow_hash_state) == sizeof(union hash_state), "Invalid structure size");
 
 void cn_slow_hash(const void *data, size_t length, char *hash) {
-  uint8_t long_state[MEMORY];
+  //uint8_t long_state[MEMORY];
+  uint8_t *long_state = malloc(MEMORY * sizeof(uint8_t)); // avoid large stack allocation
   union cn_slow_hash_state state;
   uint8_t text[INIT_SIZE_BYTE];
   uint8_t a[AES_BLOCK_SIZE];
@@ -139,4 +141,6 @@ void cn_slow_hash(const void *data, size_t length, char *hash) {
   hash_permutation(&state.hs);
   extra_hashes[state.hs.b[0] & 3](&state, 200, hash);
   oaes_free((OAES_CTX **)&aes_ctx);
+  
+  free(long_state);
 }

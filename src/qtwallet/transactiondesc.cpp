@@ -10,7 +10,6 @@
 #include "interface/base58.h"
 //#include "db.h"
 #include "interface/main.h"
-#include "paymentserver.h"
 #include "transactionrecord.h"
 #include "interface/wallet.h"
 

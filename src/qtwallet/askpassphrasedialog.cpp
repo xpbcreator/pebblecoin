@@ -8,8 +8,6 @@
 #include "guiconstants.h"
 #include "walletmodel.h"
 
-#include "bitcoin/allocators.h"
-
 #include <QKeyEvent>
 #include <QMessageBox>
 #include <QPushButton>
@@ -84,7 +82,7 @@ void AskPassphraseDialog::setModel(WalletModel *model)
 
 void AskPassphraseDialog::accept()
 {
-    SecureString oldpass, newpass1, newpass2;
+    std::string oldpass, newpass1, newpass2;
     if(!model)
         return;
     oldpass.reserve(MAX_PASSPHRASE_SIZE);

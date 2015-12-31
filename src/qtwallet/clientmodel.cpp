@@ -69,7 +69,7 @@ int ClientModel::getNumConnections(unsigned int flags) const
     if (flags & CONNECTIONS_OUT)
         res += nOut;
     
-    LOG_PRINT_L0("getNumConnections: flag is " << flags << ", in=" << nIn << ", out=" << nOut << ", res=" << res);
+    // LOG_PRINT_L0("getNumConnections: flag is " << flags << ", in=" << nIn << ", out=" << nOut << ", res=" << res);
     
     return res;
 }

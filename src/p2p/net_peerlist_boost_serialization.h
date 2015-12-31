@@ -12,17 +12,33 @@ namespace boost
     template <class Archive, class ver_type>
     inline void serialize(Archive &a,  nodetool::net_address& na, const ver_type ver)
     {
-      a & na.ip;
-      a & na.port;
+      // work around packed struct
+      auto ip = na.ip;
+      auto port = na.port;
+      
+      a & ip;
+      a & port;
+      
+      na.ip = ip;
+      na.port = port;
     }
 
 
     template <class Archive, class ver_type>
     inline void serialize(Archive &a,  nodetool::peerlist_entry& pl, const ver_type ver)
     {
-      a & pl.adr;
-      a & pl.id;
-      a & pl.last_seen;
+      // work around packed struct
+      auto adr = pl.adr;
+      auto id = pl.id;
+      auto last_seen = pl.last_seen;
+      
+      a & adr;
+      a & id;
+      a & last_seen;
+      
+      pl.adr = adr;
+      pl.id = id;
+      pl.last_seen = last_seen;
     }    
   }
 }

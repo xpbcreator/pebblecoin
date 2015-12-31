@@ -520,8 +520,8 @@ void BitcoinGUI::createTrayIconMenu()
     trayIconMenu = new QMenu(this);
     trayIcon->setContextMenu(trayIconMenu);
 
-    connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
-            this, SLOT(trayIconActivated(QSystemTrayIcon::ActivationReason)));
+    /*connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
+            this, SLOT(trayIconActivated(QSystemTrayIcon::ActivationReason)));*/
 #else
     // Note: On Mac, the dock icon is used to provide the tray's functionality.
     MacDockIconHandler *dockIconHandler = MacDockIconHandler::instance();
@@ -546,7 +546,7 @@ void BitcoinGUI::createTrayIconMenu()
 #endif
 }
 
-#ifndef Q_OS_MAC
+/*#ifndef Q_OS_MAC
 void BitcoinGUI::trayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
     if(reason == QSystemTrayIcon::Trigger)
@@ -555,7 +555,7 @@ void BitcoinGUI::trayIconActivated(QSystemTrayIcon::ActivationReason reason)
         toggleHideAction->trigger();
     }
 }
-#endif
+#endif*/
 
 void BitcoinGUI::optionsClicked()
 {
@@ -951,19 +951,6 @@ bool BitcoinGUI::eventFilter(QObject *object, QEvent *event)
 }
 
 #ifdef ENABLE_WALLET
-bool BitcoinGUI::handlePaymentRequest(const SendCoinsRecipient& recipient)
-{
-    // URI has to be valid
-    if (walletFrame && walletFrame->handlePaymentRequest(recipient))
-    {
-        showNormalIfMinimized();
-        gotoSendCoinsPage();
-        return true;
-    }
-    else
-        return false;
-}
-
 void BitcoinGUI::setEncryptionStatus(int status)
 {
     switch(status)

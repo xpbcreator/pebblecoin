@@ -10,6 +10,8 @@
 #include "generic-ops.h"
 #include "misc_log_ex.h"
 
+#include "packing.h"
+
 #include <boost/program_options/variables_map.hpp>
 
 namespace crypto {
@@ -17,11 +19,9 @@ namespace crypto {
 #include "crypto_core/hash-ops.h"
   }
 
-#pragma pack(push, 1)
-  POD_CLASS hash {
+  PACK(POD_CLASS hash {
     char data[HASH_SIZE];
-  };
-#pragma pack(pop)
+  })
 
   static_assert(sizeof(hash) == HASH_SIZE, "Invalid structure size");
 

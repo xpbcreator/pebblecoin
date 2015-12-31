@@ -11,6 +11,7 @@
 #include "cryptonote_protocol/cryptonote_protocol_defs.h"
 #include "cryptonote_core/cryptonote_basic.h"
 #include "cryptonote_core/difficulty.h"
+#include "packing.h"
 
 namespace cryptonote
 {
@@ -130,13 +131,11 @@ namespace cryptonote
       END_KV_SERIALIZE_MAP()
     };
 
-#pragma pack (push, 1)
-    struct out_entry
+    PACK(struct out_entry
     {
       uint64_t global_amount_index;
       crypto::public_key out_key;
-    };
-#pragma pack(pop)
+    })
 
     struct outs_for_amount
     {
@@ -194,7 +193,7 @@ namespace cryptonote
           // const_cast so can compile for serialize calls
           auto& non_const_this = const_cast<typename std::remove_const<this_type>::type&>(this_ref);
           non_const_this.image_seqs.clear();
-          for (int i=0; i < image_seq_keys.size(); i++)
+          for (size_t i=0; i < image_seq_keys.size(); i++)
           {
             non_const_this.image_seqs[image_seq_keys[i]] = image_seq_values[i];
           }

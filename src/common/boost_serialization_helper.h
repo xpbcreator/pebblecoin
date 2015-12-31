@@ -82,6 +82,43 @@ namespace tools
     return !data_file.fail();
     CATCH_ENTRY_L0("unserialize_obj_from_file", false);
   }
+  
+  template<typename T>
+  std::string boost_serialize_to_string(const T& obj)
+  {
+    try {
+    
+      std::stringstream ss;
+      
+      boost::archive::binary_oarchive o(ss);
+      o << const_cast<T&>(obj); // hack remove const for boost serialization
+      
+      return ss.str();
+      
+    } catch (...) {
+      LOG_ERROR("error in boost_serialize_to_string()");
+      throw;
+    }
+  }
+  
+  template <typename T>
+  T boost_unserialize_from_string(const std::string& str)
+  {
+    try {
+      
+      std::stringstream ss(str);
+      
+      boost::archive::binary_iarchive i(ss);
+      T loaded_val;
+      i >> loaded_val;
+      
+      return loaded_val;
+      
+    } catch (...) {
+      LOG_ERROR("error in boost_unserialize_from_string()");
+      throw;
+    }
+  }
 }
 
 #include <tuple>

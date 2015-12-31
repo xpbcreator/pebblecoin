@@ -18,6 +18,13 @@ const char *P2P_NET_DATA_FILENAME                   = "p2pstate.bin";
 const char *MINER_CONFIG_FILE_NAME                  = "miner_conf.json";
 const char *CRYPTONOTE_HASHCACHEDATA_FILENAME       = "hashcache.bin";
 
+const char *CRYPTONOTE_BLOCKCHAINDB_ENTRIES_FILENAME = "blockchaindb_entries.bin";
+const char *CRYPTONOTE_BLOCKCHAINDB_ALT_ENTRIES_FILENAME = "blockchaindb_alt_entries.bin";
+const char *CRYPTONOTE_BLOCKCHAINDB_INVALID_ENTRIES_FILENAME = "blockchaindb_invalid_entries.bin";
+const char *CRYPTONOTE_BLOCKCHAINDB_BLOCKS_FILENAME = "blockchaindb_blocks.bin";
+const char *CRYPTONOTE_BLOCKCHAINDB_INDEX_FILENAME = "blockchaindb_index.bin";
+const char *CRYPTONOTE_BLOCKCHAINDB_TXS_FILENAME = "blockchaindb_txs.bin";
+
 uint64_t DEFAULT_FEE = UINT64_C(10000000); // 0.10 XPB
 
 namespace cryptonote {

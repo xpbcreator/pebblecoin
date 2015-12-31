@@ -908,11 +908,6 @@ void wallet2::add_unconfirmed_tx(const cryptonote::transaction& tx, uint64_t cha
   utd.m_tx = tx;
 }
 //----------------------------------------------------------------------------------------------------
-template<typename T>
-inline void suppress_warning(const T& val)
-{
-}
-//----------------------------------------------------------------------------------------------------
 fake_outs_map wallet2::get_fake_outputs(const std::unordered_map<cryptonote::coin_type, std::list<uint64_t> >& amounts, uint64_t min_fake_outs, uint64_t fake_outputs_count)
 {
   fake_outs_map res = AUTO_VAL_INIT(res);

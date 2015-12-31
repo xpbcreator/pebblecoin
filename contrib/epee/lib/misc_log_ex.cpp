@@ -27,6 +27,8 @@
 #include "../include/misc_log_ex.h"
 #include "../include/syncobj.h"
 
+#include "../include/packing.h"
+
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 

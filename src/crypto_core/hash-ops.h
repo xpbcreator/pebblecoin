@@ -14,6 +14,8 @@
 #include "common/int-util.h"
 #include "warnings.h"
 
+#include "packing.h"
+
 static inline void *padd(void *p, size_t i) {
   return (char *) p + i;
 }
@@ -34,12 +36,10 @@ static inline void place_length(uint8_t *buffer, size_t bufsize, size_t length) 
 }
 POP_WARNINGS
 
-#pragma pack(push, 1)
-union hash_state {
+PACK(union hash_state {
   uint8_t b[200];
   uint64_t w[25];
-};
-#pragma pack(pop)
+})
 static_assert(sizeof(union hash_state) == 200, "Invalid structure size");
 
 void hash_permutation(union hash_state *state);

@@ -213,7 +213,7 @@ namespace cryptonote
       s.append("txin_grade_contract sig");
       s.append(reinterpret_cast<const char*>(&contract), sizeof(contract));
       s.append(reinterpret_cast<const char*>(&grade), sizeof(grade));
-      BOOST_FOREACH(const auto& item, fee_amounts) {
+      for (const auto& item : fee_amounts) {
         s.append(reinterpret_cast<const char*>(&item.first), sizeof(item.first));
         s.append(reinterpret_cast<const char*>(&item.second), sizeof(item.first));
       }
@@ -409,10 +409,14 @@ namespace cryptonote
           {
             vin_coin_types.clear();
             vout_coin_types.clear();
-            BOOST_FOREACH(const auto& inp, vin)
+            for (const auto& inp : vin) {
+              (void)inp;
               vin_coin_types.push_back(CP_XPB);
-            BOOST_FOREACH(const auto& inp, vout)
+            }
+            for (const auto& outp : vout) {
+              (void)outp;
               vout_coin_types.push_back(CP_XPB);
+            }
           }
         } break;
           
@@ -421,9 +425,9 @@ namespace cryptonote
           std::vector<uint64_t> in_currencies, out_currencies;
           if (typename Archive<W>::is_saving())
           {
-            BOOST_FOREACH(const auto& ct, vin_coin_types)
+            for (const auto& ct : vin_coin_types)
               in_currencies.push_back(ct.currency);
-            BOOST_FOREACH(const auto& ct, vout_coin_types)
+            for (const auto& ct : vout_coin_types)
               out_currencies.push_back(ct.currency);
             FIELD(in_currencies);
             FIELD(out_currencies);
@@ -434,9 +438,9 @@ namespace cryptonote
             FIELD(out_currencies);
             vin_coin_types.clear();
             vout_coin_types.clear();
-            BOOST_FOREACH(const auto& currency, in_currencies)
+            for (const auto& currency : in_currencies)
               vin_coin_types.push_back(coin_type(currency, NotContract, BACKED_BY_N_A));
-            BOOST_FOREACH(const auto& currency, out_currencies)
+            for (const auto& currency : out_currencies)
               vout_coin_types.push_back(coin_type(currency, NotContract, BACKED_BY_N_A));
           }
         } break;
@@ -547,10 +551,14 @@ namespace cryptonote
           }
           else
           {
-            BOOST_FOREACH(const auto& inp, vin)
+            for (const auto& inp : vin) {
+              (void)inp;
               vin_coin_types.push_back(CP_XPB);
-            BOOST_FOREACH(const auto& inp, vout)
+            }
+            for (const auto& outp : vout) {
+              (void)outp;
               vout_coin_types.push_back(CP_XPB);
+            }
           }
         } break;
           
@@ -559,9 +567,9 @@ namespace cryptonote
           std::vector<uint64_t> in_currencies, out_currencies;
           if (typename Archive::is_saving())
           {
-            BOOST_FOREACH(const auto& ct, vin_coin_types)
+            for (const auto& ct : vin_coin_types)
               in_currencies.push_back(ct.currency);
-            BOOST_FOREACH(const auto& ct, vout_coin_types)
+            for (const auto& ct : vout_coin_types)
               out_currencies.push_back(ct.currency);
             a & in_currencies;
             a & out_currencies;
@@ -570,9 +578,9 @@ namespace cryptonote
           {
             a & in_currencies;
             a & out_currencies;
-            BOOST_FOREACH(const auto& currency, in_currencies)
+            for (const auto& currency : in_currencies)
               vin_coin_types.push_back(coin_type(currency, NotContract, BACKED_BY_N_A));
-            BOOST_FOREACH(const auto& currency, out_currencies)
+            for (const auto& currency : out_currencies)
               vout_coin_types.push_back(coin_type(currency, NotContract, BACKED_BY_N_A));
           }
         } break;

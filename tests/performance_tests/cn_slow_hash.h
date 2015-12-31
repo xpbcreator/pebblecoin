@@ -7,17 +7,17 @@
 #include "crypto/crypto.h"
 #include "cryptonote_core/cryptonote_basic.h"
 
+#include "packing.h"
+
 class test_cn_slow_hash
 {
 public:
   static const size_t loop_count = 10;
 
-#pragma pack(push, 1)
-  struct data_t
+  PACK(struct data_t
   {
     char data[13];
-  };
-#pragma pack(pop)
+  })
 
   static_assert(13 == sizeof(data_t), "Invalid structure size");
 

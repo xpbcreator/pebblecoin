@@ -8,9 +8,11 @@
 
 #include "crypto/crypto.h"
 
+#include "packing.h"
+
 namespace cryptonote
 {
-  struct account_public_address
+  PACK(struct account_public_address
   {
     crypto::public_key m_spend_public_key;
     crypto::public_key m_view_public_key;
@@ -24,7 +26,7 @@ namespace cryptonote
       KV_SERIALIZE_VAL_POD_AS_BLOB_FORCE(m_spend_public_key)
       KV_SERIALIZE_VAL_POD_AS_BLOB_FORCE(m_view_public_key)
     END_KV_SERIALIZE_MAP()
-  };
+  })
 
   struct account_keys
   {
@@ -74,14 +76,12 @@ namespace cryptonote
     uint64_t m_creation_timestamp;
   };
   
-#pragma pack(push, 1)
-  struct public_address_outer_blob
+  PACK(struct public_address_outer_blob
   {
     uint8_t m_ver;
     account_public_address m_address;
     uint8_t check_sum;
-  };
-#pragma pack (pop)
+  })
   
   bool operator ==(const cryptonote::account_public_address& a, const cryptonote::account_public_address& b);
   bool operator !=(const cryptonote::account_public_address& a, const cryptonote::account_public_address& b);

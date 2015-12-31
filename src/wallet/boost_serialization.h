@@ -120,8 +120,15 @@ namespace boost
     template <class Archive>
     inline void serialize(Archive &a, tools::out_entry &x, const boost::serialization::version_type ver)
     {
-      a & x.global_amount_index;
-      a & x.out_key;
+      // work around packed struct
+      auto global_amount_index = x.global_amount_index;
+      auto out_key = x.out_key;
+      
+      a & global_amount_index;
+      a & out_key;
+      
+      x.global_amount_index = global_amount_index;
+      x.out_key = out_key;
     }
     
     template <class Archive>

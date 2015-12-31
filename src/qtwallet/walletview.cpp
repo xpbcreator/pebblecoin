@@ -227,11 +227,6 @@ void WalletView::gotoVerifyMessageTab(QString addr)
         signVerifyMessageDialog->setAddress_VM(addr);
 }
 
-bool WalletView::handlePaymentRequest(const SendCoinsRecipient& recipient)
-{
-    return sendCoinsPage->handlePaymentRequest(recipient);
-}
-
 void WalletView::showOutOfSyncWarning(bool fShow)
 {
     overviewPage->showOutOfSyncWarning(fShow);

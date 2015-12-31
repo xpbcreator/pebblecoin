@@ -214,7 +214,6 @@ size_t wallet_tx_builder::impl::pop_random_weighted_transfer(std::vector<size_t>
   uint64_t sum = tools::sum(indices, [this](size_t i) { return this->m_wallet.m_transfers[i].amount(); });
   
   auto choice = crypto::rand<uint64_t>() % sum;
-  size_t vec_i = 0;
   for (size_t vec_i = 0; vec_i < indices.size(); ++vec_i)
   {
     auto amt = m_wallet.m_transfers[indices[vec_i]].amount();

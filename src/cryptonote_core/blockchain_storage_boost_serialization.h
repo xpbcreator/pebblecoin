@@ -20,16 +20,6 @@ namespace boost
     }
 
     template<class archive_t>
-    void serialize(archive_t & ar, cryptonote::blockchain_storage::block_extended_info& ei, const unsigned int version)
-    {
-      ar & ei.bl;
-      ar & ei.height;
-      ar & ei.cumulative_difficulty;
-      ar & ei.block_cumulative_size;
-      ar & ei.already_generated_coins;
-    }
-
-    template<class archive_t>
     void serialize(archive_t & ar, cryptonote::blockchain_storage::currency_info& ci, const unsigned int version)
     {
       ar & ci.currency;

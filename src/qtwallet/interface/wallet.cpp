@@ -33,21 +33,22 @@ void CWalletTx::CheckUpdateHeight()
   if (!pcore)
     return;
   
-  const cryptonote::blockchain_storage::transaction_chain_entry *ce = pcore->get_blockchain_storage().get_tx_chain_entry(GetCryptoHash(txHash));
-  
-  if (ce)
-  {
-    nBlockHeight = ce->m_keeper_block_height;
-    
-    crypto::hash blk_hash = pcore->get_blockchain_storage().get_block_id_by_height(nBlockHeight);
-    blockHash = GetStrHash(blk_hash);
-    
-    cryptonote::block blk;
-    if (!pcore->get_blockchain_storage().get_block_by_hash(blk_hash, blk))
-      throw std::runtime_error("Couldn't find the block the tx is part of");
-    
-    nTimestamp = blk.timestamp;
+  if (!pcore->get_blockchain_storage().have_tx(GetCryptoHash(txHash))) {
+    return;
   }
+  
+  auto ce = pcore->get_blockchain_storage().get_tx_chain_entry(GetCryptoHash(txHash));
+  
+  nBlockHeight = ce.m_keeper_block_height;
+  
+  crypto::hash blk_hash = pcore->get_blockchain_storage().get_block_id_by_height(nBlockHeight);
+  blockHash = GetStrHash(blk_hash);
+  
+  cryptonote::block blk;
+  if (!pcore->get_blockchain_storage().get_block_by_hash(blk_hash, blk))
+    throw std::runtime_error("Couldn't find the block the tx is part of");
+  
+  nTimestamp = blk.timestamp;
 }
 
 bool CWalletTx::IsCoinBase() const

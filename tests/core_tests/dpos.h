@@ -180,3 +180,4 @@ DEFINE_TEST(gen_dpos_receives_fees, dpos_base);
 DEFINE_TEST(gen_dpos_altchain_voting_2, dpos_base);
 DEFINE_TEST(gen_dpos_altchain_voting_3, dpos_base);
 DEFINE_TEST(gen_dpos_altchain_voting_4, dpos_base);
+DEFINE_TEST(gen_dpos_speed_test, dpos_base);

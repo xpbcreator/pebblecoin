@@ -12,7 +12,6 @@
 //#include "rpcclient.h"
 
 //#include "json/json_spirit_value.h"
-#include <openssl/crypto.h>
 #include <QKeyEvent>
 #include <QScrollBar>
 #include <QThread>
@@ -217,7 +216,7 @@ RPCConsole::RPCConsole(QWidget *parent) :
     connect(ui->btnClearTrafficGraph, SIGNAL(clicked()), ui->trafficGraph, SLOT(clear()));
 
     // set OpenSSL version label
-    ui->openSSLVersion->setText(SSLeay_version(SSLEAY_VERSION));
+    ui->openSSLVersion->setText("N/A");
 
     startExecutor();
     setTrafficGraphRange(INITIAL_TRAFFIC_GRAPH_MINS);

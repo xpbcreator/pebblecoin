@@ -42,10 +42,7 @@ int64_t DaemonProcessedHeight()
   if (!pcore)
     return 0;
   
-  uint64_t current_height;
-  crypto::hash top_id;
-  pcore->get_blockchain_top(current_height, top_id);
-  return (int64_t)current_height;
+  return (int64_t)pcore->get_blockchain_storage().get_top_block_height();
 }
 
 int64_t NumBlocksOfPeers()
@@ -57,7 +54,7 @@ int64_t NumBlocksOfPeers()
   std::set<uint64_t> block_heights;
   
   pnodeSrv->for_each_connection([&](cryptonote::cryptonote_connection_context& context, nodetool::peerid_type peer_id) {
-    block_heights.insert(context.m_last_response_height);
+    block_heights.insert(context.m_remote_blockchain_height);
     return true;
   });
   

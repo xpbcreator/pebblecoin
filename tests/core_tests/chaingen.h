@@ -260,6 +260,7 @@ public:
     LOG_PRINT_CYAN("check_can_create_valid_mining_block...", LOG_LEVEL_0);
     bool got_template = m_c.get_block_template(b, account.get_keys().m_account_address, difficulty, height, blob_reserve,
                                                dpos_block);
+    b.nonce = 0; // pretend we mined it
     if (dpos_block) { g_ntp_time.apply_manual_delta(-CRYPTONOTE_DPOS_BLOCK_MINIMUM_BLOCK_SPACING); }
     
     if (!got_template)

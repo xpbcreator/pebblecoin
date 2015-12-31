@@ -10,6 +10,8 @@
 
 #include <boost/functional/hash.hpp>
 
+#include "packing.h"
+
 #include "common/types.h"
 
 #include "generic-ops.h"
@@ -23,37 +25,36 @@ namespace crypto {
 
   extern std::mutex random_lock;
 
-#pragma pack(push, 1)
-  POD_CLASS ec_point {
+  PACK(POD_CLASS ec_point {
     char data[32];
-  };
+  })
 
-  POD_CLASS ec_scalar {
+  PACK(POD_CLASS ec_scalar {
     char data[32];
-  };
+  })
 
-  POD_CLASS public_key: ec_point {
+  PACK(POD_CLASS public_key: ec_point {
     friend class crypto_ops;
-  };
+  })
 
-  POD_CLASS secret_key: ec_scalar {
+  PACK(POD_CLASS secret_key: ec_scalar {
     friend class crypto_ops;
-  };
+  })
 
-  POD_CLASS key_derivation: ec_point {
+  PACK(POD_CLASS key_derivation: ec_point {
     friend class crypto_ops;
-  };
+  })
 
-  POD_CLASS key_image: ec_point {
+  PACK(POD_CLASS key_image: ec_point {
     friend class crypto_ops;
-  };
+  })
 
-  POD_CLASS signature {
-    ec_scalar c, r;
+  PACK(POD_CLASS signature {
+    ec_scalar c;
+    ec_scalar r;
     friend class crypto_ops;
     friend std::size_t hash_value(const signature&);
-  };
-#pragma pack(pop)
+  })
 
   static_assert(sizeof(ec_point) == 32 && sizeof(ec_scalar) == 32 &&
     sizeof(public_key) == 32 && sizeof(secret_key) == 32 &&

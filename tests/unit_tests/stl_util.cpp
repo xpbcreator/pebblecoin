@@ -2,7 +2,11 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef _MSC_VER // no initializer list support
+#if defined(_MSC_VER) && _MSC_VER < 1900
+
+// no initializer list support
+
+#else
 
 #include <list>
 

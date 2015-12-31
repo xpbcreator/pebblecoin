@@ -127,7 +127,11 @@ namespace cryptonote
     if(!info_set.size())
     {
       //it is now empty hash container for this key_image
+#ifdef __clang__
+      m_txin_infos.erase(it->first);
+#else
       m_txin_infos.erase(it);
+#endif
     }
     
     return true;

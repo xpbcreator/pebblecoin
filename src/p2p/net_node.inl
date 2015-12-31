@@ -109,7 +109,15 @@ namespace nodetool
   template<class t_payload_net_handler>
   bool node_server<t_payload_net_handler>::parse_peer_from_string(nodetool::net_address& pe, const std::string& node_addr)
   {
-    return epee::string_tools::parse_peer_from_string(pe.ip, pe.port, node_addr);
+    decltype(pe.ip) ip;
+    decltype(pe.port) port;
+    
+    bool r = epee::string_tools::parse_peer_from_string(ip, port, node_addr);
+    
+    pe.ip = ip;
+    pe.port = port;
+    
+    return r;
   }
   //-----------------------------------------------------------------------------------
   template<class t_payload_net_handler>

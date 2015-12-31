@@ -159,8 +159,6 @@ public slots:
     */
     void setEncryptionStatus(int status);
 
-    bool handlePaymentRequest(const SendCoinsRecipient& recipient);
-
     /** Show incoming transaction notification for new transactions. */
     void incomingTransaction(const QString& date, int unit, qint64 amount, const QString& type, const QString& address);
 #endif
@@ -194,10 +192,10 @@ private slots:
     void aboutClicked();
     /** Show help message dialog */
     void showHelpMessageClicked();
-#ifndef Q_OS_MAC
-    /** Handle tray icon clicked */
+/*#ifndef Q_OS_MAC
+    /// Handle tray icon clicked
     void trayIconActivated(QSystemTrayIcon::ActivationReason reason);
-#endif
+#endif*/
 
     /** Show window if hidden, unminimize when minimized, rise when obscured or show if hidden and fToggleHidden is true */
     void showNormalIfMinimized(bool fToggleHidden = false);

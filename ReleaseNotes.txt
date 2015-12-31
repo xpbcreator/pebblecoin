@@ -1,3 +1,18 @@
+Release Notes 0.4.4.1
+- (All) Fix blockchain RAM usage, from almost 2 GB to less than 200 MB
+  - Seamless blockchain conversion on first run with new binaries
+- (Qt) Fix high CPU usage
+- (Qt) Fix sync indicator (# of total blocks)
+- (Mac) Mac binaries
+- Technical Notes:
+  - (All) Blockchain disk-backed storage with sqlite3 and stxxl
+  - (Mac) Fix mac compilation
+  - (All) Update build files & instructions for linux, mac, windows
+  - (All) Remove unused protobuf and OpenSSL dependencies for Qt wallet
+  - (Tests) Fix valgrind errors
+  - (Tests) Use local directory for blockchain instead of default directory
+  - (Tests) Run tests on Windows if using new enough MSVC
+
 Release Notes 0.4.3.1
 - RPC calls for DPOS:
   - getdelegateinfos RPC call

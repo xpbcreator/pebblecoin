@@ -11,6 +11,14 @@
 #include <boost/variant/apply_visitor.hpp>
 #include <boost/lexical_cast.hpp>
 
+#ifdef __clang__
+namespace cryptonote
+{
+  class transaction;
+  class tx_builder;
+}
+#endif
+
 namespace tools
 {
   struct identity
@@ -21,6 +29,12 @@ namespace tools
     {
         return std::forward<U>(v);
     }
+    
+#ifdef __clang__
+    // work-around clang which doesn't like the above
+    void operator()(cryptonote::transaction& x) const { }
+    void operator()(cryptonote::tx_builder& x) const { }
+#endif
   };
   
   template <typename Visitor>

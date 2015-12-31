@@ -86,8 +86,8 @@ bool test_generator::add_block(const cryptonote::block& blk, size_t tsx_size, st
   }
   
   const size_t block_size = tsx_size + miner_tx_size;
-  uint64_t block_reward;
-  crypto::hash block_id;
+  uint64_t block_reward = 0;
+  crypto::hash block_id = cryptonote::null_hash;
   if (!get_block_hash(blk, block_id))
     return false;
   
@@ -287,6 +287,7 @@ bool test_generator::construct_block_manually(block& blk, const block& prev_bloc
   blk.timestamp     = actual_params & bf_timestamp ? timestamp : prev_block.timestamp + cryptonote::config::difficulty_blocks_estimate_timespan(); // Keep difficulty unchanged
   blk.prev_id       = actual_params & bf_prev_id   ? prev_id   : get_block_hash(prev_block);
   blk.tx_hashes     = actual_params & bf_tx_hashes ? tx_hashes : std::vector<crypto::hash>();
+  blk.nonce         = 0;
 
   size_t height = get_block_height(prev_block) + 1;
   uint64_t already_generated_coins = get_already_generated_coins(prev_block);
@@ -1047,6 +1048,10 @@ bool do_replay_events(std::vector<test_event_entry>& events, test_chain_unit_bas
   });
   if (!r)
     return false;
+  
+  // use local config folder
+  vm.insert(std::make_pair(command_line::arg_data_dir.name,
+                           boost::program_options::variable_value(std::string("coretests_data"), false)));
 
   cryptonote::cryptonote_protocol_stub pr; //TODO: stub only for this kind of test, make real validation of relayed objects
   core_t c(&pr, g_ntp_time);

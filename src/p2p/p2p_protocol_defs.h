@@ -8,6 +8,7 @@
 #include "serialization/keyvalue_serialization.h"
 #include "misc_language.h"
 #include "crypto/crypto.h"
+#include "packing.h"
 
 extern const bool ALLOW_DEBUG_COMMANDS;
 
@@ -16,29 +17,25 @@ namespace nodetool
   typedef boost::uuids::uuid uuid;
   typedef uint64_t peerid_type;
 
-#pragma pack (push, 1)
-  
-  struct net_address
+  PACK(struct net_address
   {
     uint32_t ip;
     uint32_t port;
-  };
+  })
 
-  struct peerlist_entry
+  PACK(struct peerlist_entry
   {
     net_address adr;
     peerid_type id;
     time_t last_seen;
-  };
+  })
 
-  struct connection_entry
+  PACK(struct connection_entry
   {
     net_address adr;
     peerid_type id;
     bool is_income;
-  };
-
-#pragma pack(pop)
+  })
 
   inline bool operator <(const net_address& a, const net_address& b)
   {

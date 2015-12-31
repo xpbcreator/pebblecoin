@@ -249,27 +249,6 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     // Pre-check input data for validity
     foreach(const SendCoinsRecipient &rcp, recipients)
     {
-        if (rcp.paymentRequest.IsInitialized())
-        {/*   // PaymentRequest...
-            int64_t subtotal = 0;
-            const payments::PaymentDetails& details = rcp.paymentRequest.getDetails();
-            for (int i = 0; i < details.outputs_size(); i++)
-            {
-                const payments::Output& out = details.outputs(i);
-                if (out.amount() <= 0) continue;
-                subtotal += out.amount();
-                const unsigned char* scriptStr = (const unsigned char*)out.script().data();
-                CScript scriptPubKey(scriptStr, scriptStr+out.script().size());
-                vecSend.push_back(std::pair<CScript, int64_t>(scriptPubKey, out.amount()));
-            }
-            if (subtotal <= 0)
-            {
-                return InvalidAmount;
-            }
-            total += subtotal;*/
-            return NotYetImplemented;
-        }
-        else
         {   // User-entered bitcoin address / amount:
             if(!validateAddress(rcp.address))
             {
@@ -349,9 +328,6 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
     
     foreach(const SendCoinsRecipient &rcp, recipients)
     {
-        if (rcp.paymentRequest.IsInitialized())
-            return NotYetImplemented;
-        
         cryptonote::tx_destination_entry de;
         if(!get_account_address_from_str(de.addr, rcp.address.toStdString()))
             return InvalidAddress;
@@ -537,7 +513,7 @@ WalletModel::EncryptionStatus WalletModel::getEncryptionStatus() const
     return Unencrypted;
 }
 
-bool WalletModel::setWalletEncrypted(bool encrypted, const SecureString &passphrase)
+bool WalletModel::setWalletEncrypted(bool encrypted, const std::string &passphrase)
 {
     /*if(encrypted)
     {
@@ -552,7 +528,7 @@ bool WalletModel::setWalletEncrypted(bool encrypted, const SecureString &passphr
     return false;
 }
 
-bool WalletModel::setWalletLocked(bool locked, const SecureString &passPhrase)
+bool WalletModel::setWalletLocked(bool locked, const std::string &passPhrase)
 {
     /*if(locked)
     {
@@ -567,7 +543,7 @@ bool WalletModel::setWalletLocked(bool locked, const SecureString &passPhrase)
     return false;
 }
 
-bool WalletModel::changePassphrase(const SecureString &oldPass, const SecureString &newPass)
+bool WalletModel::changePassphrase(const std::string &oldPass, const std::string &newPass)
 {
     /*bool retval;
     {

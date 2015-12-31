@@ -46,8 +46,6 @@
 #include <boost/program_options/detail/config_file.hpp>
 #include <boost/program_options/parsers.hpp>
 #include <boost/thread/once.hpp>
-#include <openssl/crypto.h>
-#include <openssl/rand.h>
 
 #include "include_base_utils.h"
 
@@ -88,17 +86,6 @@ bool fPrintToDebugLog = true;
 string strMiscWarning;
 bool fLogTimestamps = false;
 volatile bool fReopenDebugLog = false;
-
-// Init OpenSSL library multithreading support
-static CCriticalSection** ppmutexOpenSSL;
-void locking_callback(int mode, int i, const char* file, int line)
-{
-    if (mode & CRYPTO_LOCK) {
-        ENTER_CRITICAL_SECTION(*ppmutexOpenSSL[i]);
-    } else {
-        LEAVE_CRITICAL_SECTION(*ppmutexOpenSSL[i]);
-    }
-}
 
 // LogPrintf() has been broken a couple of times now
 // by well-meaning people adding mutexes in the most straightforward way.

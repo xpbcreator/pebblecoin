@@ -30,6 +30,8 @@
 
 #include "portable_storage_base.h"
 
+#include "packing.h"
+
 namespace epee
 {
   namespace serialization
@@ -89,15 +91,12 @@ namespace epee
 
       hsection    insert_new_section(const std::string& pentry_name, hsection psection);
 
-#pragma pack(push)
-#pragma pack(1)
-      struct storage_block_header
+      PACK(struct storage_block_header
       {
         uint32_t m_signature_a;
         uint32_t m_signature_b;
         uint8_t  m_ver;
-      };
-#pragma pack(pop)
+      })
     };
   }
 }

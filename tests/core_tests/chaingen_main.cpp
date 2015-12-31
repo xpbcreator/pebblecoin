@@ -168,12 +168,16 @@ int main(int argc, char* argv[])
 
   // --------------- gen/replay tests ---------------
   
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1900
     
   LOG_ERROR("MSVC does not support initializer lists, can't run DPOS tests");
     
 #else
-    
+  
+  if (tester.only_test == "gen_dpos_speed_test") {
+    GENERATE_AND_PLAY(gen_dpos_speed_test);
+  }
+  
   GENERATE_AND_PLAY(gen_dpos_register);
   GENERATE_AND_PLAY(gen_dpos_register_too_soon);
   GENERATE_AND_PLAY(gen_dpos_register_invalid_id);

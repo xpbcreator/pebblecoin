@@ -1,4 +1,4 @@
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && _MSC_VER < 1900
 
   // Visual Studio 11 does not support initialiezr lists
 
@@ -18,24 +18,6 @@ using namespace crypto;
 using namespace cryptonote;
 
 static account_base g_junk_account;
-
-namespace {
-  crypto::public_key generate_invalid_pub_key()
-  {
-    for (int i = 0; i <= 0xFF; ++i)
-    {
-      crypto::public_key key;
-      memset(&key, i, sizeof(crypto::public_key));
-      if (!crypto::check_key(key))
-      {
-        return key;
-      }
-    }
-    
-    throw std::runtime_error("invalid public key wasn't found");
-    return crypto::public_key();
-  }
-}
 
 template <class txb_call_t, class tx_modifier_t>
 cryptonote::transaction make_register_delegate_tx(std::vector<test_event_entry>& events,
@@ -1479,6 +1461,54 @@ bool gen_dpos_altchain_voting_4::generate(std::vector<test_event_entry>& events)
 
   do_debug_mark(events, "rewind to no votes");
   rewind_blocks(generator, events, blk_last_pow, A[0], 8);
+  
+  return true;
+  
+  TEST_NEW_END();
+}
+
+bool gen_dpos_speed_test::generate(std::vector<test_event_entry>& events) const
+{
+  TEST_NEW_BEGIN();
+  
+  auto A = generate_accounts(3);
+
+  test_generator generator;
+  auto blk_last_pow = setup_full_dpos_test(generator, events, {A[0]},
+                                           {
+                                             {A[1], MK_COINS(5)},
+                                             {A[2], MK_COINS(50)},
+                                           },
+                                           {
+                                             {A[1], 0x001},
+                                           },
+                                           {
+                                             MT(A[2], MK_COINS(50), 0x001),
+                                           });
+  
+  // remove superfluous tests, only care about blockchain speed
+  SET_EVENT_VISITOR_SETT(events, event_visitor_settings::set_check_can_create_block_from_template, false);
+  do_callback_func(events, [](core_t& c, size_t ev_index) {
+    config::test_serialize_unserialize_block = false;
+    return true;
+  });
+  
+  block last_block = blk_last_pow;
+  
+  // 10000 blocks
+  for (int i=0; i < 10000; i++) {
+    LOG_PRINT_L0("make_next_pos_block no fee calc");
+    
+    g_ntp_time.apply_manual_delta(CRYPTONOTE_DPOS_BLOCK_MINIMUM_BLOCK_SPACING);
+    
+    cryptonote::block blk;
+    if (!generator.construct_block_pos(blk, last_block, A[1], 0x001, 0))
+    {
+      throw test_gen_error("Failed to make_next_pos_block");
+    }
+    events.push_back(blk);
+    last_block = blk;
+  }
   
   return true;
   
