@@ -43,8 +43,12 @@ cd src
 strip pebblecoind
 strip simplewallet
 strip pebblecoin-qt
+
+# remove dynamic dependencies for qt
+bash ../../../src/mac_dylib.sh
+
 # create package
-tar -cvzf $ARCHIVE pebblecoind simplewallet pebblecoin-qt
+tar -cvzf $ARCHIVE pebblecoind simplewallet pebblecoin-qt lib
 cd ../../..
 # store archive name
 echo build/$PLATFORM_NAME/src/$ARCHIVE > archive_name

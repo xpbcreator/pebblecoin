@@ -37,7 +37,7 @@ VERSION=`src\\\\Release\\\\print_version`
 REPO_BRANCH=`git branch -r --contains HEAD | tail -n 1`
 REPO=`echo $REPO_BRANCH | cut -d/ -f1`
 BRANCH=`echo $REPO_BRANCH | cut -d/ -f2`
-ARCHIVE=pebblecoin-all-$PLATFORM_NAME-v$VERSION-$REPO-$BRANCH-$BUILD_NUMBER.tar.gz
+ARCHIVE=pebblecoin-all-$PLATFORM_NAME-v$VERSION-$REPO-$BRANCH-$BUILD_NUMBER.zip
 
 rm -rf dist
 mkdir -p dist
